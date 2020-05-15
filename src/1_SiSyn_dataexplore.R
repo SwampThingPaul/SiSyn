@@ -120,25 +120,6 @@ krr.dat.melt=merge(krr.dat.melt,param.list,"variable")
 krr.dat.melt$site=krr.dat.melt$'Site/Stream.Name'
 krr.dat.melt$variable=as.character(krr.dat.melt$variable)
 
-xlim.val=as.Date(c("1991-01-01","2020-01-01"));xmaj=seq(xlim.val[1],xlim.val[2],"5 years");xmin=seq(xlim.val[1],xlim.val[2],"1 years")
-ylim.val=c(1,nrow(param.list));ymaj=seq(ylim.val[1],ylim.val[2],1)
-
-site.name.ls=unique(krr.dat.melt$site)
-par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,3,0.5,0.5));
-layout(matrix(1:6,3,2,byrow=F))
-for(j in 1:length(site.name.ls)){
-  tmp=subset(krr.dat.melt,site==site.name.ls[j])
-  plot(xlim.val,0:1,type="n",ylim=ylim.val,xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
-  abline(v=xmin,h=ymaj,lty=2,col="grey80")
-  with(tmp,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
-  if(j%in%c(3,6)){axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))}else{axis_fun(1,line=-0.5,xmaj,xmin,NA)}
-  if(j%in%c(1:3)){axis_fun(2,ymaj,ymaj,param.list$variable,cex=0.8)}else{axis_fun(2,ymaj,ymaj,NA)};
-  box(lwd=1)
-  mtext(side=3,paste("Site:",site.name.ls[j]),cex=0.8)
-  if(j%in%c(3,6)){mtext(side=1,line=1.75,"Date (Month-Year)")}
-}
-
-
 krr.basin=read.xlsx(paste0(data.path,"SiSyn_Data_KRR.xlsx"),sheet=4,startRow=4,na.strings = "NA")
 krr.basin=krr.basin[,vars]
 #
