@@ -65,7 +65,7 @@ dms2dec <- function(dms, separators = c("º", "°", "\'", "\"")) {
 wgs84=CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
 
 # Data --------------------------------------------------------------------
-cpcrw.dat=read.xlsx(paste0(data.path,"SiSyn_Data_CPCRW.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+cpcrw.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_CPCRW.xlsx"),sheet=1,startRow=2,na.strings = "NA")
 cpcrw.dat$Sampling.Date=convertToDate(cpcrw.dat$Sampling.Date)
 
 idvars=c("LTER","Site/Stream.Name","Sampling.Date")
@@ -87,7 +87,25 @@ cpcrw.dat.melt=merge(cpcrw.dat.melt,param.list,"variable")
 cpcrw.dat.melt$site=cpcrw.dat.melt$'Site/Stream.Name'
 cpcrw.dat.melt$variable=as.character(cpcrw.dat.melt$variable)
 
-cpcrw.dat.inv=ddply(cpcrw.dat.melt,c("Sampling.Date","variable","plot.val"),summarise,N.val=N(site))
+cpcrw.dat.inv=ddply(cpcrw.dat.melt,c("Sampling.Date","variable","plot.val"),summarise,N.val=N.obs(site))
+
+#ggplot experiment
+library(ggplot2)
+xlim.val=as.Date(c("1991-01-01","2020-01-01"));xmaj=seq(xlim.val[1],xlim.val[2],"5 years");xmin=seq(xlim.val[1],xlim.val[2],"1 years")
+ggplot(cpcrw.dat.inv,aes(x=Sampling.Date,y=plot.val))+
+  geom_point(shape="|",colour="red",alpha=0.5,size=2)+
+  theme(panel.background=element_rect(fill="white"),
+        panel.border = element_rect(fill=NA,colour = "black"),
+        panel.grid.major=element_line(size=0.5,linetype = 3,colour="grey"),
+        axis.line=element_line(colour="black"),
+        text=element_text(family="serif"))+
+  scale_x_date("Date (Month-Year)",breaks=xmaj,labels=format(xmaj,"%m-%Y"),limits=xlim.val)+
+  scale_y_continuous(name="",position="left",breaks=1:length(param.list$variable),labels=param.list$variable)+
+  labs(title="Bonanza Creek LTER",
+       subtitle="Data Inventory")
+  
+  
+
 
 par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,3,0.5,0.5));
 xlim.val=as.Date(c("1991-01-01","2020-01-01"));xmaj=seq(xlim.val[1],xlim.val[2],"5 years");xmin=seq(xlim.val[1],xlim.val[2],"1 years")
@@ -110,7 +128,7 @@ vars=c("LTER","Site/Stream","Unique.ID","Latitude","Longitude")
 cpcrw.basin=cpcrw.basin[,vars]
 
 #
-krr.dat=read.xlsx(paste0(data.path,"SiSyn_Data_KRR.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+krr.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_KRR.xlsx"),sheet=1,startRow=2,na.strings = "NA")
 krr.dat$Sampling.Date=convertToDate(krr.dat$Sampling.Date)
 
 krr.dat.melt=melt(krr.dat[,c(idvars,param.vars)],id.vars=idvars)
@@ -119,6 +137,20 @@ krr.dat.melt=subset(krr.dat,is.na(value)==F)
 krr.dat.melt=merge(krr.dat.melt,param.list,"variable")
 krr.dat.melt$site=krr.dat.melt$'Site/Stream.Name'
 krr.dat.melt$variable=as.character(krr.dat.melt$variable)
+
+krr.dat.inv=ddply(krr.dat.melt,c("Sampling.Date","variable","plot.val"),summarise,N.val=N.obs(site))
+xlim.val=as.Date(c("1991-01-01","2020-01-01"));xmaj=seq(xlim.val[1],xlim.val[2],"5 years");xmin=seq(xlim.val[1],xlim.val[2],"1 years")
+ggplot(krr.dat.inv,aes(x=Sampling.Date,y=plot.val))+
+  geom_point(shape="|",colour="red",alpha=0.5,size=2)+
+  theme(panel.background=element_rect(fill="white"),
+        panel.border = element_rect(fill=NA,colour = "black"),
+        panel.grid.major=element_line(size=0.5,linetype = 3,colour="grey"),
+        axis.line=element_line(colour="black"),
+        text=element_text(family="serif"))+
+  scale_x_date("Date (Month-Year)",breaks=xmaj,labels=format(xmaj,"%m-%Y"),limits=xlim.val)+
+  scale_y_continuous(name="",position="left",breaks=1:length(param.list$variable),labels=param.list$variable)+
+  labs(title="Kissimmee River",
+       subtitle="Data Inventory")
 
 krr.basin=read.xlsx(paste0(data.path,"SiSyn_Data_KRR.xlsx"),sheet=4,startRow=4,na.strings = "NA")
 krr.basin=krr.basin[,vars]
