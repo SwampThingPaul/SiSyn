@@ -28,9 +28,18 @@ library(rgdal)
 library(rgeos)
 library(raster)
 
+#Paths
 wd="C:/Julian_LaCie/_GitHub/SiSyn"
 
-data.path=paste0(wd,"/Data/")
+#https://www.r-bloggers.com/structuring-r-projects/
+#https://nicercode.github.io/blog/2013-04-05-projects/
+
+paths=paste0(wd,c("/Plots/","/Export/","/Data/","/src/"))
+#Folder.Maker(paths);#One and done. Creates folders in working directory.
+plot.path=paths[1]
+export.path=paths[2]
+data.path=paths[3]
+
 # Extra functions 
 dms2dec <- function(dms, separators = c("º", "°", "\'", "\"")) {
   # version 1.0 (25 Sep 3013)
@@ -61,116 +70,252 @@ dms2dec <- function(dms, separators = c("º", "°", "\'", "\"")) {
 # Helper variables 
 wgs84=CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
 
-# Data -------------------------------------------------------------------
-#Bonanza Creek LTER
-#Caribou-Poker Creeks Research Watershed 
-cpcrw.dat=read.xlsx(paste0(data.path,"SiSyn_Data_CPCRW.xlsx"),sheet=1,startRow=2,na.strings = "NA")
-cpcrw.dat$Sampling.Date=convertToDate(cpcrw.dat$Sampling.Date)
-
+# Data --------------------------------------------------------------------
+param.list=data.frame(variable=c("Daily.Avg.Q.(Discharge)", "Instantaneous.Q.(Discharge)", "Stage.Height", 
+                                 "Temp.C", "Conductivity", "Spec.Cond", "Turbidity", "TSS", "VSS", 
+                                 "DSi", "TN","TDN", "DIN", "NOx","NO3","NO2", "NH4","DON", "TP","TDP", "PO4", "SRP", "DOC", 
+                                 "TOC", "alkalinity", "ANC", "pH", "DIC", "Suspended.Chl", "Benthic.Chl", 
+                                 "Na", "K", "Ca", "Mg", "SO4", "Cl"),
+                      plot.val=1:36)
 idvars=c("LTER","Site/Stream.Name","Sampling.Date")
 param.vars=c("Daily.Avg.Q.(Discharge)", "Instantaneous.Q.(Discharge)", "Stage.Height", 
              "Temp.C", "Conductivity", "Spec.Cond", "Turbidity", "TSS", "VSS", 
-             "DSi", "TN", "DIN", "NOx", "NH4", "TP", "PO4", "SRP", "DOC", 
+             "DSi", "TN","TDN", "DIN", "NOx","NO3","NO2", "NH4","DON", "TP","TDP", "PO4", "SRP", "DOC", 
              "TOC", "alkalinity", "ANC", "pH", "DIC", "Suspended.Chl", "Benthic.Chl", 
              "Na", "K", "Ca", "Mg", "SO4", "Cl")
+basin.vars=c("LTER","Site/Stream","Unique.ID","Latitude","Longitude")
+
+data.filelist=list.files(data.path)
+
+## ARCLTER
+arc.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_ARCLTER_05012020.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+arc.dat$Sampling.Date=convertToDate(arc.dat$Sampling.Date)
+names(arc.dat)
+arc.note.Look=arc.dat[,c("Site/Stream.Name","Notes")]
+
+#fix header
+arc.dat=rename(arc.dat,c("Dsi"="DSi"))
+arc.dat[,c("TDN","TDP","NO3","NO2","DON")]=as.numeric(NA); #Add empty columns for uniformity
+
+##
+arc.dat.melt=melt(arc.dat[,c(idvars,param.vars)],id.vars=idvars)
+arc.dat.melt=subset(arc.dat.melt,is.na(value)==F)
+
+arc.dat.melt=merge(arc.dat.melt,param.list,"variable")
+arc.dat.melt$site=arc.dat.melt$'Site/Stream.Name'
+arc.dat.melt$variable=as.character(arc.dat.melt$variable)
+
+arc.dat.inv=ddply(arc.dat.melt,c("Sampling.Date","variable","plot.val"),summarise,N.val=N.obs(site))
+
+arc.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_ARCLTER_05012020.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+arc.basin=arc.basin[,basin.vars]
+
+## BcZO
+bczo.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_BcCZO.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+bczo.dat$Sampling.Date=convertToDate(bczo.dat$Sampling.Date)
+names(bczo.dat)
+bczo.dat[,c("TN","TP","NO3","NO2","DON")]=as.numeric(NA);
+
+bczo.dat.melt=melt(bczo.dat[,c(idvars,param.vars)],id.vars=idvars)
+bczo.dat.melt=subset(bczo.dat.melt,is.na(value)==F)
+
+bczo.dat.melt=merge(bczo.dat.melt,param.list,"variable")
+bczo.dat.melt$site=bczo.dat.melt$'Site/Stream.Name'
+bczo.dat.melt$variable=as.character(bczo.dat.melt$variable)
+
+bczo.dat.inv=ddply(bczo.dat.melt,c("Sampling.Date","variable","plot.val"),summarise,N.val=N.obs(site))
+
+bczo.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_BcCZO.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+bczo.basin=bczo.basin[,basin.vars]
+
+## Carey
+carey.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_Carey_6.12.20.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+carey.dat$Sampling.Date=convertToDate(carey.dat$Sampling.Date)
+carey.dat=carey.dat[2:nrow(carey.dat),]
+carey.dat[,6:ncol(carey.dat)]=sapply(carey.dat[,6:ncol(carey.dat)],as.numeric)
+
+carey.dat=rename(carey.dat,c("NO3.(uM)"="NO3","NO2.(uM)"="NO2"))
+carey.dat[,c("TDN","TDP","DON")]=as.numeric(NA)
+
+carey.dat.melt=melt(carey.dat[,c(idvars,param.vars)],id.vars=idvars)
+carey.dat.melt=subset(carey.dat.melt,is.na(value)==F)
+
+carey.dat.melt=merge(carey.dat.melt,param.list,"variable")
+carey.dat.melt$site=carey.dat.melt$'Site/Stream.Name'
+carey.dat.melt$variable=as.character(carey.dat.melt$variable)
+
+carey.dat.inv=ddply(carey.dat.melt,c("Sampling.Date","variable","plot.val"),summarise,N.val=N.obs(site))
+
+carey.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_Carey_6.12.20.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+carey.basin=carey.basin[,basin.vars]
+carey.basin$Longitude=carey.basin$Longitude*-1
+
+## Coal Creek
+coal.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_Coal_Creek.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+coal.dat$Sampling.Date=convertToDate(coal.dat$Sampling.Date)
+names(coal.dat)
+coal.dat[,c("TDN","TDP","NO3","NO2")]=as.numeric(NA);
+
+coal.dat.melt=melt(coal.dat[,c(idvars,param.vars)],id.vars=idvars)
+coal.dat.melt=subset(coal.dat.melt,is.na(value)==F)
+coal.dat.melt=merge(coal.dat.melt,param.list,"variable")
+coal.dat.melt$site=coal.dat.melt$'Site/Stream.Name'
+coal.dat.melt$variable=as.character(coal.dat.melt$variable)
+
+coal.dat.inv=ddply(coal.dat.melt,c("Sampling.Date","variable","plot.val"),summarise,N.val=N.obs(site))
+
+coal.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_Coal_Creek.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+coal.basin=coal.basin[,basin.vars]
+coal.basin$Latitude=dms2dec(coal.basin$Latitude)
+coal.basin$Latitude=coal.basin$Latitude*-1
+coal.basin$Longitude=dms2dec(coal.basin$Longitude)
+
+## CPCRW
+cpcrw.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_CPCRW.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+cpcrw.dat$Sampling.Date=convertToDate(cpcrw.dat$Sampling.Date)
+names(cpcrw.dat)
+cpcrw.dat[,c("TDN","TDP","NO3","NO2","DON")]=as.numeric(NA);
+
 cpcrw.dat.melt=melt(cpcrw.dat[,c(idvars,param.vars)],id.vars=idvars)
 cpcrw.dat.melt=subset(cpcrw.dat.melt,is.na(value)==F)
-
-unique(cpcrw.dat.melt$variable)
-param.list=data.frame(variable=c("Daily.Avg.Q.(Discharge)", "Instantaneous.Q.(Discharge)", "Stage.Height", 
-             "Temp.C", "Conductivity", "Spec.Cond", "Turbidity", "TSS", "VSS", 
-             "DSi","TDN", "TN", "DIN", "NOx", "NH4", "TP", "PO4", "SRP", "DOC", 
-             "TOC", "alkalinity", "ANC", "pH", "DIC", "Suspended.Chl", "Benthic.Chl", 
-             "Na", "K", "Ca", "Mg", "SO4", "Cl"),plot.val=1:32)
 cpcrw.dat.melt=merge(cpcrw.dat.melt,param.list,"variable")
 cpcrw.dat.melt$site=cpcrw.dat.melt$'Site/Stream.Name'
 cpcrw.dat.melt$variable=as.character(cpcrw.dat.melt$variable)
 
-cpcrw.dat.inv=ddply(cpcrw.dat.melt,c("Sampling.Date","variable","plot.val"),summarise,N.val=N(site))
+cpcrw.dat.inv=ddply(cpcrw.dat.melt,c("Sampling.Date","variable","plot.val"),summarise,N.val=N.obs(site))
 
-cpcrw.basin=read.xlsx(paste0(data.path,"SiSyn_Data_CPCRW.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+cpcrw.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_CPCRW.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+cpcrw.basin=cpcrw.basin[,basin.vars]
 cpcrw.basin$Latitude=dms2dec(cpcrw.basin$Latitude)
 cpcrw.basin$Longitude=dms2dec(cpcrw.basin$Longitude)
-names(cpcrw.basin)
 
-vars=c("LTER","Site/Stream","Unique.ID","Latitude","Longitude")
-cpcrw.basin=cpcrw.basin[,vars]
+#Knonza
+konza.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_Konza.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+konza.dat$Sampling.Date=convertToDate(konza.dat$Sampling.Date)
+names(konza.dat)
+konza.dat[,c("TDN","TDP","NO2","DON")]=as.numeric(NA);
+konza.dat=rename(konza.dat,c("no3"="NO3"))
 
-# Kissimmee River Restoration
-krr.dat=read.xlsx(paste0(data.path,"SiSyn_Data_KRR.xlsx"),sheet=1,startRow=2,na.strings = "NA")
-krr.dat$Sampling.Date=convertToDate(krr.dat$Sampling.Date)
+konza.dat.melt=melt(konza.dat[,c(idvars,param.vars)],id.vars=idvars)
+konza.dat.melt=subset(konza.dat.melt,is.na(value)==F)
+konza.dat.melt=merge(konza.dat.melt,param.list,"variable")
+konza.dat.melt$site=konza.dat.melt$'Site/Stream.Name'
+konza.dat.melt$variable=as.character(konza.dat.melt$variable)
 
-krr.dat.melt=melt(krr.dat[,c(idvars,param.vars)],id.vars=idvars)
-krr.dat.melt=subset(krr.dat.melt,is.na(value)==F)
-krr.dat.melt=merge(krr.dat.melt,param.list,"variable")
-krr.dat.melt$site=krr.dat.melt$'Site/Stream.Name'
-krr.dat.melt$variable=as.character(krr.dat.melt$variable)
+konza.dat.inv=ddply(konza.dat.melt,c("Sampling.Date","variable","plot.val"),summarise,N.val=N.obs(site))
 
-krr.dat.inv=ddply(krr.dat.melt,c("Sampling.Date","variable","plot.val"),summarise,N.val=N(site))
+konza.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_Konza.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+konza.basin=konza.basin[,basin.vars]
+konza.basin$Latitude=dms2dec(konza.basin$Latitude)
+konza.basin$Longitude=dms2dec(konza.basin$Longitude)
+konza.basin[4,4]=konza.basin[4,4]*-1
 
-krr.basin=read.xlsx(paste0(data.path,"SiSyn_Data_KRR.xlsx"),sheet=4,startRow=4,na.strings = "NA")
-krr.basin=krr.basin[,vars]
+## KRR
+KRR.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_KRR.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+KRR.dat$Sampling.Date=convertToDate(KRR.dat$Sampling.Date)
+names(KRR.dat)
+KRR.dat[,c("TDN","TDP","NO3","NO2","DON")]=as.numeric(NA);
 
-# Artic LTER
-arclter.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_ARCLTER_05012020.xlsx"),sheet=1,startRow=2,na.strings = "NA")
-arclter.dat$Sampling.Date=convertToDate(arclter.dat$Sampling.Date)
+KRR.dat.melt=melt(KRR.dat[,c(idvars,param.vars)],id.vars=idvars)
+KRR.dat.melt=subset(KRR.dat.melt,is.na(value)==F)
+KRR.dat.melt=merge(KRR.dat.melt,param.list,"variable")
+KRR.dat.melt$site=KRR.dat.melt$'Site/Stream.Name'
+KRR.dat.melt$variable=as.character(KRR.dat.melt$variable)
 
-arclter.dat=rename(arclter.dat,c("Dsi"="DSi"))
-arclter.dat.melt=melt(arclter.dat[,c(idvars,param.vars)],id.vars=idvars)
-arclter.dat.melt=subset(arclter.dat.melt,is.na(value)==F)
-arclter.dat.melt=merge(arclter.dat.melt,param.list,"variable")
-arclter.dat.melt$site=arclter.dat.melt$'Site/Stream.Name'
-arclter.dat.melt$variable=as.character(arclter.dat.melt$variable)
+KRR.dat.inv=ddply(KRR.dat.melt,c("Sampling.Date","variable","plot.val"),summarise,N.val=N.obs(site))
 
-arclter.dat.inv=ddply(krr.dat.melt,c("Sampling.Date","variable","plot.val"),summarise,N.val=N(site))
+KRR.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_KRR.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+KRR.basin=KRR.basin[,basin.vars]
 
-arc.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_ARCLTER_05012020.xlsx"),sheet=4,startRow=4,na.strings = "NA")
-arc.basin=arc.basin[,vars]
+## MCM
+MCM.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_MCM.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+MCM.dat$Sampling.Date=convertToDate(MCM.dat$Sampling.Date)
+names(MCM.dat)
+MCM.dat[,c("TDN","TDP","NO3","NO2","DON")]=as.numeric(NA);
 
-# Lamprey River Hydrologic Observatory
-lmp.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_V1_LMP.xlsx"),sheet=1,startRow=2,na.strings = "NA")
-lmp.dat$Sampling.Date=convertToDate(lmp.dat$Sampling.Date)
+MCM.dat.melt=melt(MCM.dat[,c(idvars,param.vars)],id.vars=idvars)
+MCM.dat.melt=subset(MCM.dat.melt,is.na(value)==F)
+MCM.dat.melt=merge(MCM.dat.melt,param.list,"variable")
+MCM.dat.melt$site=MCM.dat.melt$'Site/Stream.Name'
+MCM.dat.melt$variable=as.character(MCM.dat.melt$variable)
 
-lmp.dat.melt=melt(lmp.dat[,c(idvars,param.vars)],id.vars=idvars)
-lmp.dat.melt=subset(lmp.dat.melt,is.na(value)==F)
-lmp.dat.melt=merge(lmp.dat.melt,param.list,"variable")
-lmp.dat.melt$site=lmp.dat.melt$'Site/Stream.Name'
-lmp.dat.melt$variable=as.character(lmp.dat.melt$variable)
+MCM.dat.inv=ddply(MCM.dat.melt,c("Sampling.Date","variable","plot.val"),summarise,N.val=N.obs(site))
 
-lmp.dat.inv=ddply(lmp.dat.melt,c("Sampling.Date","variable","plot.val"),summarise,N.val=N(site))
+MCM.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_MCM.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+MCM.basin=MCM.basin[,basin.vars]
 
-lmp.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_V1_LMP.xlsx"),sheet=4,startRow=4,na.strings = "NA")
-lmp.basin=lmp.basin[,vars]
+## NWT
+NWT.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_NWT.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+NWT.dat$Sampling.Date=convertToDate(NWT.dat$Sampling.Date)
+names(NWT.dat)
+NWT.dat[,c("TDN","TDP","NO3","NO2","DON")]=as.numeric(NA);
+NWT.dat=rename(NWT.dat,c("InstantaneoNAs.Q.(Discharge)"="Instantaneous.Q.(Discharge)",
+                         "CondNActivity"="Conductivity",
+                         "TNArbidity"="Turbidity",
+                         "SNAspended.Chl"="Suspended.Chl"))
 
-#Luquillo LTER
-luq.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_V1_LUQ.xlsx"),sheet=1,startRow=2,na.strings = "NA")
-luq.dat$Sampling.Date=convertToDate(luq.dat$Sampling.Date)
+NWT.dat.melt=melt(NWT.dat[,c(idvars,param.vars)],id.vars=idvars)
+NWT.dat.melt=subset(NWT.dat.melt,is.na(value)==F)
+NWT.dat.melt=merge(NWT.dat.melt,param.list,"variable")
+NWT.dat.melt$site=NWT.dat.melt$'Site/Stream.Name'
+NWT.dat.melt$variable=as.character(NWT.dat.melt$variable)
 
-luq.dat.melt=melt(luq.dat[,c(idvars,param.vars)],id.vars=idvars)
-luq.dat.melt=subset(luq.dat.melt,is.na(value)==F)
-luq.dat.melt=merge(luq.dat.melt,param.list,"variable")
-luq.dat.melt$site=luq.dat.melt$'Site/Stream.Name'
-luq.dat.melt$variable=as.character(luq.dat.melt$variable)
+NWT.dat.inv=ddply(NWT.dat.melt,c("Sampling.Date","variable","plot.val"),summarise,N.val=N.obs(site))
 
-luq.dat.inv=ddply(luq.dat.melt,c("Sampling.Date","variable","plot.val"),summarise,N.val=N(site))
+NWT.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_NWT.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+NWT.basin=NWT.basin[,basin.vars]
 
-luq.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_V1_LUQ.xlsx"),sheet=4,startRow=4,na.strings = "NA")
-luq.basin=luq.basin[,vars]
+## LMP
+LMP.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_V1_LMP.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+LMP.dat$Sampling.Date=convertToDate(LMP.dat$Sampling.Date)
+names(LMP.dat)
+LMP.dat[,c("TDP","NO3","NO2","DON")]=as.numeric(NA);
 
-# Plum Island LTER
+LMP.dat.melt=melt(LMP.dat[,c(idvars,param.vars)],id.vars=idvars)
+LMP.dat.melt=subset(LMP.dat.melt,is.na(value)==F)
+LMP.dat.melt=merge(LMP.dat.melt,param.list,"variable")
+LMP.dat.melt$site=LMP.dat.melt$'Site/Stream.Name'
+LMP.dat.melt$variable=as.character(LMP.dat.melt$variable)
+
+LMP.dat.inv=ddply(LMP.dat.melt,c("Sampling.Date","variable","plot.val"),summarise,N.val=N.obs(site))
+
+LMP.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_V1_LMP.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+LMP.basin=LMP.basin[,basin.vars]
+
+## LUQ
+LUQ.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_V1_LUQ.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+LUQ.dat$Sampling.Date=convertToDate(LUQ.dat$Sampling.Date)
+names(LUQ.dat)
+LUQ.dat[,c("TDP","NO3","NO2","DON")]=as.numeric(NA);
+
+LUQ.dat.melt=melt(LUQ.dat[,c(idvars,param.vars)],id.vars=idvars)
+LUQ.dat.melt=subset(LUQ.dat.melt,is.na(value)==F)
+LUQ.dat.melt=merge(LUQ.dat.melt,param.list,"variable")
+LUQ.dat.melt$site=LUQ.dat.melt$'Site/Stream.Name'
+LUQ.dat.melt$variable=as.character(LUQ.dat.melt$variable)
+
+LUQ.dat.inv=ddply(LUQ.dat.melt,c("Sampling.Date","variable","plot.val"),summarise,N.val=N.obs(site))
+
+LUQ.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_V1_LUQ.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+LUQ.basin=LUQ.basin[,basin.vars]
+LUQ.basin=subset(LUQ.basin,is.na(Latitude)==F)
+
+## PIE
 pie.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_V1_PIEWatersheds.xlsx"),sheet=1,startRow=2,na.strings = "NA")
 pie.dat$Sampling.Date=convertToDate(pie.dat$Sampling.Date)
-pie.dat$TN=NA
+names(pie.dat)
+pie.dat[,c("TN","TDP","NO3","NO2","DON")]=as.numeric(NA);
 
-pie.dat.melt=melt(pie.dat[,c(idvars,"TDN",param.vars)],id.vars=idvars)
+pie.dat.melt=melt(pie.dat[,c(idvars,param.vars)],id.vars=idvars)
 pie.dat.melt=subset(pie.dat.melt,is.na(value)==F)
 pie.dat.melt=merge(pie.dat.melt,param.list,"variable")
 pie.dat.melt$site=pie.dat.melt$'Site/Stream.Name'
 pie.dat.melt$variable=as.character(pie.dat.melt$variable)
 
-pie.dat.inv=ddply(pie.dat.melt,c("Sampling.Date","variable","plot.val"),summarise,N.val=N(site))
+pie.dat.inv=ddply(pie.dat.melt,c("Sampling.Date","variable","plot.val"),summarise,N.val=N.obs(site))
 
 pie.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_V1_PIEWatersheds.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+pie.basin=pie.basin[,basin.vars]
 
 #lat long got flipped
 pie.basin$long=pie.basin$Latitude
@@ -178,15 +323,26 @@ pie.basin$lat=pie.basin$Longitude
 pie.basin$Longitude=pie.basin$long
 pie.basin$Latitude=pie.basin$lat
 
-pie.basin=pie.basin[,vars]
+pie.basin=pie.basin[,basin.vars]
+
 
 ##
-sites=rbind(cpcrw.basin,krr.basin)
+sites=rbind(cpcrw.basin,KRR.basin)
 sites=rbind(sites,arc.basin)
-sites=rbind(sites,lmp.basin)
-sites=rbind(sites,luq.basin)
+sites=rbind(sites,LMP.basin)
+sites=rbind(sites,LUQ.basin)
 sites=rbind(sites,pie.basin)
-sites=subset(sites,is.na(Latitude)==F)
+sites=rbind(sites,carey.basin)
+sites=rbind(sites,coal.basin)
+sites=rbind(sites,konza.basin)
+sites=rbind(sites,MCM.basin)
+sites=rbind(sites,NWT.basin)
+sites=rbind(sites,bczo.basin)
+
+sites$Longitude=as.numeric(sites$Longitude)
+subset(sites,is.na(Longitude)==T)
+sites=subset(sites,is.na(Longitude)==F)
+
 
 sites=SpatialPointsDataFrame(coords=sites[,c("Longitude","Latitude")],
                                    data=sites,
@@ -215,17 +371,17 @@ xlim.val=as.Date(c("1983-01-01","2020-01-01"));xmaj=seq(xlim.val[1],xlim.val[2],
 
 
 ### Arctic LTER
-```{r ALTER,fig.width=7,fig.height=5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Arctic LTER period of record parameter inventory for all sites.'}
-par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,5,0.5,0.5));
+```{r ARC,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Arctic LTER period of record parameter inventory for all sites.'}
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
 
 ylim.val=c(1,nrow(param.list));ymaj=seq(ylim.val[1],ylim.val[2],1)
 plot(xlim.val,0:1,type="n",ylim=ylim.val,xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
 abline(v=xmin,h=ymaj,lty=2,col="grey80")
-with(arclter.dat.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+with(arc.dat.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
 axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
 axis_fun(2,ymaj,ymaj,param.list$variable,cex=0.8)
 box(lwd=1)
-mtext(side=3,"Arctic LTER",cex=0.8)
+mtext(side=3,"Arctic LTER",cex=0.8,adj=0)
 mtext(side=1,line=1.75,"Date (Month-Year)")
 
 ```
@@ -236,7 +392,7 @@ mtext(side=1,line=1.75,"Date (Month-Year)")
 ```{r,echo=FALSE,warning=FALSE, message=FALSE}
 
 
-tmp=cast(arclter.dat.melt,site~variable,value="value",fun.aggregate = function(x)N(x))
+tmp=cast(arc.dat.melt,site~variable,value="value",fun.aggregate = function(x)N.obs(x))
 tmp=tmp[,c("site",param.vars)[c("site",param.vars)%in%names(tmp)]]
 
 knitr::kable(tmp,format="html",row.names = F,escape=F, booktabs = T)%>%
@@ -245,8 +401,8 @@ knitr::kable(tmp,format="html",row.names = F,escape=F, booktabs = T)%>%
 --->
 
 ### Bonanza Creek LTER
-```{r BCLTER,fig.width=7,fig.height=5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Bonanza Creek LTER/Caribou-Poker Creeks Research Watershed period of record parameter inventory for all sites.'}
-par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,5,0.5,0.5));
+```{r BCLTER,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Bonanza Creek LTER/Caribou-Poker Creeks Research Watershed period of record parameter inventory for all sites.'}
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
 
 ylim.val=c(1,nrow(param.list));ymaj=seq(ylim.val[1],ylim.val[2],1)
 plot(xlim.val,0:1,type="n",ylim=ylim.val,xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
@@ -255,30 +411,94 @@ with(cpcrw.dat.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0
 axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
 axis_fun(2,ymaj,ymaj,param.list$variable,cex=0.8)
 box(lwd=1)
-mtext(side=3,"Bonanza Creek LTER",cex=0.8)
+mtext(side=3,"Bonanza Creek LTER",cex=0.8, adj=0)
 mtext(side=1,line=1.75,"Date (Month-Year)")
 
 ```
 
-### Lamprey River Hydrologic Observatory
-```{r LMP,fig.width=7,fig.height=5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Lamprey River Hydrologic Observatory period of record parameter inventory for all sites.'}
-par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,5,0.5,0.5));
+### Boulder Critical Zone Observatory (CZO network)
+```{r BcCZO,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Boulder Critical Zone Observatory period of record parameter inventory for all sites.'}
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
 
 ylim.val=c(1,nrow(param.list));ymaj=seq(ylim.val[1],ylim.val[2],1)
 plot(xlim.val,0:1,type="n",ylim=ylim.val,xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
 abline(v=xmin,h=ymaj,lty=2,col="grey80")
-with(lmp.dat.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+with(bczo.dat.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
 axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
 axis_fun(2,ymaj,ymaj,param.list$variable,cex=0.8)
 box(lwd=1)
-mtext(side=3,"Lamprey River Hydrologic Observatory",cex=0.8)
+mtext(side=3,"Boulder CZO",cex=0.8, adj=0)
 mtext(side=1,line=1.75,"Date (Month-Year)")
 
 ```
 
+### Niwot Ridge LTER
+```{r NWT,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Niwot Ridge LTER period of record parameter inventory for all sites.'}
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
+
+ylim.val=c(1,nrow(param.list));ymaj=seq(ylim.val[1],ylim.val[2],1)
+plot(xlim.val,0:1,type="n",ylim=ylim.val,xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
+abline(v=xmin,h=ymaj,lty=2,col="grey80")
+with(NWT.dat.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
+axis_fun(2,ymaj,ymaj,param.list$variable,cex=0.8)
+box(lwd=1)
+mtext(side=3,"Niwot Ridge LTER",cex=0.8, adj=0)
+mtext(side=1,line=1.75,"Date (Month-Year)")
+
+```
+
+### East River Scientific Focus Area (non-LTER)
+```{r DOE_SFA,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='East River Scientific Focus Area period of record parameter inventory for all sites.'}
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
+
+ylim.val=c(1,nrow(param.list));ymaj=seq(ylim.val[1],ylim.val[2],1)
+plot(xlim.val,0:1,type="n",ylim=ylim.val,xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
+abline(v=xmin,h=ymaj,lty=2,col="grey80")
+with(coal.dat.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
+axis_fun(2,ymaj,ymaj,param.list$variable,cex=0.8)
+box(lwd=1)
+mtext(side=3,"East River SFA",cex=0.8, adj=0)
+mtext(side=1,line=1.75,"Date (Month-Year)")
+
+```
+
+### Konza Prairie LTER
+```{r KNZ,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Konza Prairie LTER period of record parameter inventory for all sites.'}
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
+
+ylim.val=c(1,nrow(param.list));ymaj=seq(ylim.val[1],ylim.val[2],1)
+plot(xlim.val,0:1,type="n",ylim=ylim.val,xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
+abline(v=xmin,h=ymaj,lty=2,col="grey80")
+with(konza.dat.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
+axis_fun(2,ymaj,ymaj,param.list$variable,cex=0.8)
+box(lwd=1)
+mtext(side=3,"Konza Prairie LTER",cex=0.8, adj=0)
+mtext(side=1,line=1.75,"Date (Month-Year)")
+
+```
+
+### Lamprey River Hydrologic Observatory (non-LTER)
+```{r LMP,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Lamprey River Hydrologic Observatory period of record parameter inventory for all sites.'}
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
+
+ylim.val=c(1,nrow(param.list));ymaj=seq(ylim.val[1],ylim.val[2],1)
+plot(xlim.val,0:1,type="n",ylim=ylim.val,xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
+abline(v=xmin,h=ymaj,lty=2,col="grey80")
+with(LMP.dat.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
+axis_fun(2,ymaj,ymaj,param.list$variable,cex=0.8)
+box(lwd=1)
+mtext(side=3,"Lamprey River Hydrologic Observatory",cex=0.8, adj=0)
+mtext(side=1,line=1.75,"Date (Month-Year)")
+```
+
 ### Plum Island Ecosystems LTER
-```{r PIE,fig.width=7,fig.height=5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Plum Island Ecosystems LTER period of record parameter inventory for all sites.'}
-par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,5,0.5,0.5));
+```{r PIE,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Plum Island Ecosystems LTER period of record parameter inventory for all sites.'}
+
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
 
 ylim.val=c(1,nrow(param.list));ymaj=seq(ylim.val[1],ylim.val[2],1)
 plot(xlim.val,0:1,type="n",ylim=ylim.val,xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
@@ -287,38 +507,87 @@ with(pie.dat.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5
 axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
 axis_fun(2,ymaj,ymaj,param.list$variable,cex=0.8)
 box(lwd=1)
-mtext(side=3,"Plum Island Ecosystems LTER",cex=0.8)
+mtext(side=3,"Plum Island Ecosystems LTER",cex=0.8, adj=0)
 mtext(side=1,line=1.75,"Date (Month-Year)")
-
 ```
 
-### Kissimmee River
-```{r KRR,fig.width=7,fig.height=5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Kissimmee River period of record parameter inventory for all sites.'}
-par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,5,0.5,0.5));
+### Ipswich (non-LTER)
+```{r Ipswich_carey,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Ipswich dataset period of record parameter inventory for all sites.'}
+
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
 
 ylim.val=c(1,nrow(param.list));ymaj=seq(ylim.val[1],ylim.val[2],1)
 plot(xlim.val,0:1,type="n",ylim=ylim.val,xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
 abline(v=xmin,h=ymaj,lty=2,col="grey80")
-with(krr.dat.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+with(carey.dat.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
 axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
 axis_fun(2,ymaj,ymaj,param.list$variable,cex=0.8)
 box(lwd=1)
-mtext(side=3,"Kissimmee River",cex=0.8)
+mtext(side=3,"Ipswich",cex=0.8, adj=0)
+mtext(side=1,line=1.75,"Date (Month-Year)")
+```
+
+### Upper Mississippi River (non-LTER)
+```{r UMR,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Upper Mississippi River dataset period of record parameter inventory for all sites.'}
+
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
+
+ylim.val=c(1,nrow(param.list));ymaj=seq(ylim.val[1],ylim.val[2],1)
+plot(xlim.val,0:1,type="n",ylim=ylim.val,xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
+abline(v=xmin,h=ymaj,lty=2,col="grey80")
+axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
+axis_fun(2,ymaj,ymaj,param.list$variable,cex=0.8)
+box(lwd=1)
+mtext(side=3,"Upper Mississippi River",cex=0.8, adj=0)
+mtext(side=1,line=1.75,"Date (Month-Year)")
+
+```
+
+### Kissimmee River (non-LTER)
+```{r KRR,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Kissimmee River dataset period of record parameter inventory for all sites.'}
+
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
+
+ylim.val=c(1,nrow(param.list));ymaj=seq(ylim.val[1],ylim.val[2],1)
+plot(xlim.val,0:1,type="n",ylim=ylim.val,xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
+abline(v=xmin,h=ymaj,lty=2,col="grey80")
+with(KRR.dat.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
+axis_fun(2,ymaj,ymaj,param.list$variable,cex=0.8)
+box(lwd=1)
+mtext(side=3,"Kissimmee River",cex=0.8,adj=0)
 mtext(side=1,line=1.75,"Date (Month-Year)")
 
 ```
 
 ### Luquillo LTER
-```{r LUQ,fig.width=7,fig.height=5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Luquillo LTER period of record parameter inventory for all sites.'}
-par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,5,0.5,0.5));
+```{r LUQ,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Luquillo LTER period of record parameter inventory for all sites.'}
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
+
 ylim.val=c(1,nrow(param.list));ymaj=seq(ylim.val[1],ylim.val[2],1)
 plot(xlim.val,0:1,type="n",ylim=ylim.val,xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
 abline(v=xmin,h=ymaj,lty=2,col="grey80")
-with(luq.dat.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+with(LUQ.dat.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
 axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
 axis_fun(2,ymaj,ymaj,param.list$variable,cex=0.8)
 box(lwd=1)
-mtext(side=3,"Luquillo LTER",cex=0.8)
+mtext(side=3,"Luquillo LTER",cex=0.8,adj=0)
+mtext(side=1,line=1.75,"Date (Month-Year)")
+
+```
+
+### McMurdo Dry Valleys LTER
+```{r MCM,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='McMurdo Dry Valleys LTER period of record parameter inventory for all sites.'}
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
+
+ylim.val=c(1,nrow(param.list));ymaj=seq(ylim.val[1],ylim.val[2],1)
+plot(xlim.val,0:1,type="n",ylim=ylim.val,xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
+abline(v=xmin,h=ymaj,lty=2,col="grey80")
+with(MCM.dat.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
+axis_fun(2,ymaj,ymaj,param.list$variable,cex=0.8)
+box(lwd=1)
+mtext(side=3,"McMurdo Dry Valleys LTER",cex=0.8,adj=0)
 mtext(side=1,line=1.75,"Date (Month-Year)")
 
 ```
