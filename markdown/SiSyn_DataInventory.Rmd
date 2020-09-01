@@ -114,8 +114,6 @@ arc.dat.inv=ddply(arc.dat.melt,c("Sampling.Date","variable","plot.val"),summaris
 arc.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_ARCLTER_05012020.xlsx"),sheet=4,startRow=4,na.strings = "NA")
 arc.basin=arc.basin[,basin.vars]
 
-arc.site.inv=ddply(arc.dat,c("Sampling.Date","site"),summarise,N.val=N.obs(DSi))
-arc.site.inv=merge(arc.site.inv,data.frame(site=unique(arc.site.inv$site),plot.val=1:length(unique(arc.site.inv$site))))
 
 ## BcZO
 bczo.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_BcCZO.xlsx"),sheet=1,startRow=2,na.strings = "NA")
@@ -468,7 +466,14 @@ mtext(side=1,line=1.75,"Date (Month-Year)")
 ```
 
 
-```{r ARC site,fig.width=6.5,fig.height=7,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Silica data inventory for sites wihtin the Arctic LTER (Note: not all monitoring locations may be visible (i.e. labeled) on the figure. '}
+```{r ARC site,fig.width=6.5,fig.height=7,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Silica data inventory for sites wihtin the Arctic LTER (Note: not all monitoring locations may be visible (i.e. labeled) on the figure). '}
+arc.dat$site=arc.dat$`Site/Stream.Name`
+arc.dat$CY=as.numeric(format(arc.dat$Sampling.Date,"%Y"))
+arc.site.inv=ddply(arc.dat,c("Sampling.Date","site"),summarise,N.val=N.obs(DSi))
+arc.site.inv=merge(arc.site.inv,data.frame(site=unique(arc.site.inv$site),plot.val=1:length(unique(arc.site.inv$site))))
+arc.site.yrs=ddply(arc.dat,c("site","CY"),summarise,n.val=N.obs(DSi))
+mean(ddply(subset(arc.site.yrs,n.val>4),"site",summarise,n.val=N.obs(CY))$n.val)
+
 par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,5,0.5,0.5));
 
 ylim.val=c(1,length(unique(arc.site.inv$site)));ymaj=seq(ylim.val[1],ylim.val[2],1)
@@ -484,7 +489,7 @@ mtext(side=1,line=1.75,"Date (Month-Year)")
 ```
 
 **Number of sites:** `r length(unique(arc.site.inv$site))`
-
+**Mean number of site years (with >4 samples per calendar year):** `r mean(ddply(subset(arc.site.yrs,n.val>4),"site",summarise,n.val=N.obs(CY))$n.val)`
 
 ## Bonanza Creek LTER
 ```{r BCLTER,fig.width=6.5,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Bonanza Creek LTER/Caribou-Poker Creeks Research Watershed period of record parameter inventory for all sites.'}
@@ -503,7 +508,7 @@ mtext(side=1,line=1.75,"Date (Month-Year)")
 ```
 
 
-```{r BC site,fig.width=6.5,fig.height=5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Silica data inventory for sites wihtin the Bonanza Creek LTER/Caribou-Poker Creeks Research Watershed (Note: not all monitoring locations may be visible (i.e. labeled) on the figure. '}
+```{r BC site,fig.width=6.5,fig.height=5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Silica data inventory for sites wihtin the Bonanza Creek LTER/Caribou-Poker Creeks Research Watershed (Note: not all monitoring locations may be visible (i.e. labeled) on the figure). '}
 cpcrw.dat$site=cpcrw.dat$`Site/Stream.Name`
 cpcrw.site.inv=ddply(cpcrw.dat,c("Sampling.Date","site"),summarise,N.val=N.obs(DSi))
 cpcrw.site.inv=merge(cpcrw.site.inv,data.frame(site=unique(cpcrw.site.inv$site),plot.val=1:length(unique(cpcrw.site.inv$site))))
