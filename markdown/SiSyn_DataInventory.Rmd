@@ -2,7 +2,7 @@
 title: "SiSyn - Data Inventory"
 output: 
   html_document: 
-    toc: yes
+    toc: no
 editor_options: 
   chunk_output_type: console
 ---
@@ -21,6 +21,7 @@ library(AnalystHelper);
 library(plyr)
 library(reshape)
 library(openxlsx)
+library(lubridate)
 
 # GIS Libraries
 library(tmap)
@@ -90,25 +91,31 @@ data.filelist=list.files(data.path)
 ## ARCLTER
 arc.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_ARCLTER_05012020.xlsx"),sheet=1,startRow=2,na.strings = "NA")
 arc.dat$Sampling.Date=convertToDate(arc.dat$Sampling.Date)
+arc.dat$dec.date=decimal_date(arc.dat$Sampling.Date)
 names(arc.dat)
 arc.note.Look=arc.dat[,c("Site/Stream.Name","Notes")]
+
+arc.dat$site=arc.dat$'Site/Stream.Name'
 
 #fix header
 arc.dat=rename(arc.dat,c("Dsi"="DSi"))
 arc.dat[,c("TDN","TDP","NO3","NO2","DON")]=as.numeric(NA); #Add empty columns for uniformity
 
 ##
-arc.dat.melt=melt(arc.dat[,c(idvars,param.vars)],id.vars=idvars)
+arc.dat.melt=melt(arc.dat[,c(idvars,"dec.date",param.vars)],id.vars=c(idvars,"dec.date"))
 arc.dat.melt=subset(arc.dat.melt,is.na(value)==F)
-
 arc.dat.melt=merge(arc.dat.melt,param.list,"variable")
 arc.dat.melt$site=arc.dat.melt$'Site/Stream.Name'
 arc.dat.melt$variable=as.character(arc.dat.melt$variable)
 
+#arc.dat.inv=ddply(arc.dat.melt,c("dec.date","variable","plot.val"),summarise,N.val=N.obs(site))
 arc.dat.inv=ddply(arc.dat.melt,c("Sampling.Date","variable","plot.val"),summarise,N.val=N.obs(site))
 
 arc.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_ARCLTER_05012020.xlsx"),sheet=4,startRow=4,na.strings = "NA")
 arc.basin=arc.basin[,basin.vars]
+
+arc.site.inv=ddply(arc.dat,c("Sampling.Date","site"),summarise,N.val=N.obs(DSi))
+arc.site.inv=merge(arc.site.inv,data.frame(site=unique(arc.site.inv$site),plot.val=1:length(unique(arc.site.inv$site))))
 
 ## BcZO
 bczo.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_BcCZO.xlsx"),sheet=1,startRow=2,na.strings = "NA")
@@ -325,6 +332,76 @@ pie.basin$Latitude=pie.basin$lat
 
 pie.basin=pie.basin[,basin.vars]
 
+# HJ Andrews
+hja.dat=read.xlsx(paste0(data.path,"HJAndrewsSiSyn.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+hja.dat$Sampling.Date=convertToDate(hja.dat$Sampling.Date)
+names(hja.dat)
+hja.dat=rename(hja.dat,c("Si"="DSi"))
+
+hja.dat[,c("TDN","TDP","NO3","NO2","DON","NH4")]=as.numeric(NA);
+hja.dat$NH4=hja.dat$NH3
+
+hja.dat.melt=melt(hja.dat[,c(idvars,param.vars)],id.vars=idvars)
+hja.dat.melt=subset(hja.dat.melt,is.na(value)==F)
+hja.dat.melt=merge(hja.dat.melt,param.list,"variable")
+hja.dat.melt$site=hja.dat.melt$'Site/Stream.Name'
+hja.dat.melt$variable=as.character(hja.dat.melt$variable)
+
+hja.dat.inv=ddply(hja.dat.melt,c("Sampling.Date","variable","plot.val"),summarise,N.val=N.obs(site))
+
+hja.basin=read.xlsx(paste0(data.path,"HJAndrewsSiSyn.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+hja.basin=hja.basin[,basin.vars]
+
+# Sagehen
+sage.dat=read.xlsx(paste0(data.path,"SagehenSiSyn.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+sage.dat$Sampling.Date=convertToDate(sage.dat$Sampling.Date)
+names(sage.dat)
+
+sage.dat[,c("TDN","TDP","NO3","NO2","DON")]=as.numeric(NA);
+sage.dat[,c(idvars,param.vars)]
+
+chter.val=names(sage.dat)[lapply(sage.dat,class)=="character"]
+
+tmp=melt(sage.dat[,c("Site/Stream.Name",chter.val[2:length(chter.val)])],id.vars="Site/Stream.Name")
+spl=strsplit(as.character(tmp$value)," ")
+tmp=data.frame(V1=sapply(spl,"[",1),V2=sapply(spl,"[",2),V3=sapply(spl,"[",3))
+head(sort(unique(tmp$V1),decreasing=T))
+head(sort(unique(tmp$V2),decreasing=T))
+sort(unique(tmp$V3),decreasing=T)
+
+## For now till we figure out coding
+sage.dat[chter.val[2:length(chter.val)]]=sapply(sage.dat[chter.val[2:length(chter.val)]],as.numeric)
+
+sage.dat.melt=melt(sage.dat[,c(idvars,param.vars)],id.vars=idvars)
+sage.dat.melt=subset(sage.dat.melt,is.na(value)==F)
+sage.dat.melt=merge(sage.dat.melt,param.list,"variable")
+sage.dat.melt$site=sage.dat.melt$'Site/Stream.Name'
+sage.dat.melt$variable=as.character(sage.dat.melt$variable)
+
+sage.dat.inv=ddply(sage.dat.melt,c("Sampling.Date","variable","plot.val"),summarise,N.val=N.obs(site))
+
+sage.basin=read.xlsx(paste0(data.path,"SagehenSiSyn.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+sage.basin=sage.basin[,basin.vars]
+sage.basin$Longitude=sage.basin$Longitude*-1
+
+# UMR
+umr.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_UMR.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+umr.dat$Sampling.Date=convertToDate(umr.dat$Sampling.Date)
+names(umr.dat)
+
+umr.dat[,c("TDN","TDP","NO3","NO2","DON")]=as.numeric(NA);
+umr.dat[,c(idvars,param.vars)]
+
+umr.dat.melt=melt(umr.dat[,c(idvars,param.vars)],id.vars=idvars)
+umr.dat.melt=subset(umr.dat.melt,is.na(value)==F)
+umr.dat.melt=merge(umr.dat.melt,param.list,"variable")
+umr.dat.melt$site=umr.dat.melt$'Site/Stream.Name'
+umr.dat.melt$variable=as.character(umr.dat.melt$variable)
+
+umr.dat.inv=ddply(umr.dat.melt,c("Sampling.Date","variable","plot.val"),summarise,N.val=N.obs(site))
+
+umr.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_UMR.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+umr.basin=umr.basin[,basin.vars]
 
 ##
 sites=rbind(cpcrw.basin,KRR.basin)
@@ -338,6 +415,9 @@ sites=rbind(sites,konza.basin)
 sites=rbind(sites,MCM.basin)
 sites=rbind(sites,NWT.basin)
 sites=rbind(sites,bczo.basin)
+sites=rbind(sites,hja.basin)
+sites=rbind(sites,sage.basin)
+sites=rbind(sites,umr.basin)
 
 sites$Longitude=as.numeric(sites$Longitude)
 subset(sites,is.na(Longitude)==T)
@@ -365,12 +445,13 @@ tm_basemap(leaflet::providers$Esri.WorldImagery,alpha=0.9)+
 
 The following plots provide a graphical depiction of data on the Data set level (i.e. Bonanza LTER, Lamprey River, etc.). 
 
+# {.tabset .tabset-fade}
+
 ```{r,echo=FALSE,warning=FALSE, message=FALSE}
 xlim.val=as.Date(c("1983-01-01","2020-01-01"));xmaj=seq(xlim.val[1],xlim.val[2],"10 years");xmin=seq(xlim.val[1],xlim.val[2],"1 years")
 ```
 
-
-### Arctic LTER
+## Arctic LTER
 ```{r ARC,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Arctic LTER period of record parameter inventory for all sites.'}
 par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
 
@@ -386,23 +467,28 @@ mtext(side=1,line=1.75,"Date (Month-Year)")
 
 ```
 
-<!--
-<br>
-<center> Count of data for each site and variable for Arctic Creek LTER.</center>
-```{r,echo=FALSE,warning=FALSE, message=FALSE}
 
+```{r ARC site,fig.width=6.5,fig.height=7,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Silica data inventory for sites wihtin the Arctic LTER (Note: not all monitoring locations may be visible (i.e. labeled) on the figure. '}
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,5,0.5,0.5));
 
-tmp=cast(arc.dat.melt,site~variable,value="value",fun.aggregate = function(x)N.obs(x))
-tmp=tmp[,c("site",param.vars)[c("site",param.vars)%in%names(tmp)]]
+ylim.val=c(1,length(unique(arc.site.inv$site)));ymaj=seq(ylim.val[1],ylim.val[2],1)
+plot(xlim.val,ylim.val,type="n",ylim=c(0.5-ylim.val[1],ylim.val[2]+0.5),xlim=xlim.val,axes=F,ylab=NA,xlab=NA,yaxs="i")
+abline(v=xmin,lty=2,col="grey80",lwd=0.75)
+with(arc.site.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
+axis_fun(2,ymaj,ymaj,unique(arc.site.inv$site),cex=0.5)
+box(lwd=1)
+mtext(side=3,"Arctic LTER - DSi data",cex=0.8,adj=0)
+mtext(side=1,line=1.75,"Date (Month-Year)")
 
-knitr::kable(tmp,format="html",row.names = F,escape=F, booktabs = T)%>%
-  kable_styling(bootstrap_options = "striped",full_width = F)
 ```
---->
 
-### Bonanza Creek LTER
-```{r BCLTER,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Bonanza Creek LTER/Caribou-Poker Creeks Research Watershed period of record parameter inventory for all sites.'}
-par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
+**Number of sites:** `r length(unique(arc.site.inv$site))`
+
+
+## Bonanza Creek LTER
+```{r BCLTER,fig.width=6.5,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Bonanza Creek LTER/Caribou-Poker Creeks Research Watershed period of record parameter inventory for all sites.'}
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,3.5,0.5,0.5));
 
 ylim.val=c(1,nrow(param.list));ymaj=seq(ylim.val[1],ylim.val[2],1)
 plot(xlim.val,0:1,type="n",ylim=ylim.val,xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
@@ -416,7 +502,62 @@ mtext(side=1,line=1.75,"Date (Month-Year)")
 
 ```
 
-### Boulder Critical Zone Observatory (CZO network)
+
+```{r BC site,fig.width=6.5,fig.height=5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Silica data inventory for sites wihtin the Bonanza Creek LTER/Caribou-Poker Creeks Research Watershed (Note: not all monitoring locations may be visible (i.e. labeled) on the figure. '}
+cpcrw.dat$site=cpcrw.dat$`Site/Stream.Name`
+cpcrw.site.inv=ddply(cpcrw.dat,c("Sampling.Date","site"),summarise,N.val=N.obs(DSi))
+cpcrw.site.inv=merge(cpcrw.site.inv,data.frame(site=unique(cpcrw.site.inv$site),plot.val=1:length(unique(cpcrw.site.inv$site))))
+
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
+
+ylim.val=c(1,length(unique(cpcrw.site.inv$site)));ymaj=seq(ylim.val[1],ylim.val[2],1)
+plot(xlim.val,ylim.val,type="n",ylim=c(ylim.val[1],ylim.val[2]),xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
+abline(v=xmin,lty=2,col="grey80",lwd=0.75)
+with(cpcrw.site.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
+axis_fun(2,ymaj,ymaj,unique(cpcrw.site.inv$site),cex=1)
+box(lwd=1)
+mtext(side=3,"Bonanza Creek LTER - DSi data",cex=0.8,adj=0)
+mtext(side=1,line=1.75,"Date (Month-Year)")
+
+```
+
+
+**Number of sites:** `r length(unique(cpcrw.site.inv$site))`
+
+## H.J. Andrews LTER
+```{r HJA,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='H.J. Andrews LTER period of record parameter inventory for all sites.'}
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
+
+ylim.val=c(1,nrow(param.list));ymaj=seq(ylim.val[1],ylim.val[2],1)
+plot(xlim.val,0:1,type="n",ylim=ylim.val,xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
+abline(v=xmin,h=ymaj,lty=2,col="grey80")
+with(subset(hja.dat.inv,Sampling.Date>xlim.val[1]),points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
+axis_fun(2,ymaj,ymaj,param.list$variable,cex=0.8)
+box(lwd=1)
+mtext(side=3,"H.J. Andrews (LTER)",cex=0.8, adj=0)
+mtext(side=1,line=1.75,"Date (Month-Year)")
+
+```
+
+## Sagehen Creek (non-LTER)
+```{r sage,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Sagehen Creek period of record parameter inventory for all sites.'}
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
+
+ylim.val=c(1,nrow(param.list));ymaj=seq(ylim.val[1],ylim.val[2],1)
+plot(xlim.val,0:1,type="n",ylim=ylim.val,xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
+abline(v=xmin,h=ymaj,lty=2,col="grey80")
+with(subset(sage.dat.inv,Sampling.Date>xlim.val[1]),points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
+axis_fun(2,ymaj,ymaj,param.list$variable,cex=0.8)
+box(lwd=1)
+mtext(side=3,"Sagehen Creek (non-LTER)",cex=0.8, adj=0)
+mtext(side=1,line=1.75,"Date (Month-Year)")
+
+```
+
+## Boulder Critical Zone Observatory (CZO network)
 ```{r BcCZO,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Boulder Critical Zone Observatory period of record parameter inventory for all sites.'}
 par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
 
@@ -432,7 +573,8 @@ mtext(side=1,line=1.75,"Date (Month-Year)")
 
 ```
 
-### Niwot Ridge LTER
+
+## Niwot Ridge LTER
 ```{r NWT,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Niwot Ridge LTER period of record parameter inventory for all sites.'}
 par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
 
@@ -448,7 +590,8 @@ mtext(side=1,line=1.75,"Date (Month-Year)")
 
 ```
 
-### East River Scientific Focus Area (non-LTER)
+
+## East River Scientific Focus Area (non-LTER)
 ```{r DOE_SFA,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='East River Scientific Focus Area period of record parameter inventory for all sites.'}
 par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
 
@@ -464,7 +607,7 @@ mtext(side=1,line=1.75,"Date (Month-Year)")
 
 ```
 
-### Konza Prairie LTER
+## Konza Prairie LTER
 ```{r KNZ,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Konza Prairie LTER period of record parameter inventory for all sites.'}
 par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
 
@@ -480,7 +623,8 @@ mtext(side=1,line=1.75,"Date (Month-Year)")
 
 ```
 
-### Lamprey River Hydrologic Observatory (non-LTER)
+
+## Lamprey River Hydrologic Observatory (non-LTER)
 ```{r LMP,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Lamprey River Hydrologic Observatory period of record parameter inventory for all sites.'}
 par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
 
@@ -495,7 +639,8 @@ mtext(side=3,"Lamprey River Hydrologic Observatory",cex=0.8, adj=0)
 mtext(side=1,line=1.75,"Date (Month-Year)")
 ```
 
-### Plum Island Ecosystems LTER
+
+## Plum Island Ecosystems LTER
 ```{r PIE,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Plum Island Ecosystems LTER period of record parameter inventory for all sites.'}
 
 par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
@@ -511,7 +656,8 @@ mtext(side=3,"Plum Island Ecosystems LTER",cex=0.8, adj=0)
 mtext(side=1,line=1.75,"Date (Month-Year)")
 ```
 
-### Ipswich (non-LTER)
+
+## Ipswich (non-LTER)
 ```{r Ipswich_carey,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Ipswich dataset period of record parameter inventory for all sites.'}
 
 par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
@@ -527,7 +673,8 @@ mtext(side=3,"Ipswich",cex=0.8, adj=0)
 mtext(side=1,line=1.75,"Date (Month-Year)")
 ```
 
-### Upper Mississippi River (non-LTER)
+
+## Upper Mississippi River (non-LTER)
 ```{r UMR,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Upper Mississippi River dataset period of record parameter inventory for all sites.'}
 
 par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
@@ -535,6 +682,7 @@ par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
 ylim.val=c(1,nrow(param.list));ymaj=seq(ylim.val[1],ylim.val[2],1)
 plot(xlim.val,0:1,type="n",ylim=ylim.val,xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
 abline(v=xmin,h=ymaj,lty=2,col="grey80")
+with(umr.dat.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
 axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
 axis_fun(2,ymaj,ymaj,param.list$variable,cex=0.8)
 box(lwd=1)
@@ -543,7 +691,8 @@ mtext(side=1,line=1.75,"Date (Month-Year)")
 
 ```
 
-### Kissimmee River (non-LTER)
+
+## Kissimmee River (non-LTER)
 ```{r KRR,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Kissimmee River dataset period of record parameter inventory for all sites.'}
 
 par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
@@ -560,7 +709,8 @@ mtext(side=1,line=1.75,"Date (Month-Year)")
 
 ```
 
-### Luquillo LTER
+
+## Luquillo LTER
 ```{r LUQ,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Luquillo LTER period of record parameter inventory for all sites.'}
 par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
 
@@ -576,7 +726,7 @@ mtext(side=1,line=1.75,"Date (Month-Year)")
 
 ```
 
-### McMurdo Dry Valleys LTER
+## McMurdo Dry Valleys LTER
 ```{r MCM,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='McMurdo Dry Valleys LTER period of record parameter inventory for all sites.'}
 par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
 
@@ -591,3 +741,10 @@ mtext(side=3,"McMurdo Dry Valleys LTER",cex=0.8,adj=0)
 mtext(side=1,line=1.75,"Date (Month-Year)")
 
 ```
+
+<br>
+
+***
+
+<br>
+<br>
