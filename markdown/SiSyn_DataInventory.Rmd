@@ -1,8 +1,9 @@
 ---
 title: "SiSyn - Data Inventory"
 output: 
-  html_document: 
-    toc: no
+  html_document:
+    includes:
+      after_body: footer.html
 editor_options: 
   chunk_output_type: console
 ---
@@ -120,6 +121,8 @@ bczo.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_BcCZO.xlsx"),sheet=1,sta
 bczo.dat$Sampling.Date=convertToDate(bczo.dat$Sampling.Date)
 names(bczo.dat)
 bczo.dat[,c("TN","TP","NO3","NO2","DON")]=as.numeric(NA);
+
+bczo.dat=subset(bczo.dat,is.na('Site/Stream.Name')==F)
 
 bczo.dat.melt=melt(bczo.dat[,c(idvars,param.vars)],id.vars=idvars)
 bczo.dat.melt=subset(bczo.dat.melt,is.na(value)==F)
@@ -356,15 +359,15 @@ sage.dat$Sampling.Date=convertToDate(sage.dat$Sampling.Date)
 names(sage.dat)
 
 sage.dat[,c("TDN","TDP","NO3","NO2","DON")]=as.numeric(NA);
-sage.dat[,c(idvars,param.vars)]
+# sage.dat[,c(idvars,param.vars)]
 
 chter.val=names(sage.dat)[lapply(sage.dat,class)=="character"]
 
 tmp=melt(sage.dat[,c("Site/Stream.Name",chter.val[2:length(chter.val)])],id.vars="Site/Stream.Name")
 spl=strsplit(as.character(tmp$value)," ")
 tmp=data.frame(V1=sapply(spl,"[",1),V2=sapply(spl,"[",2),V3=sapply(spl,"[",3))
-head(sort(unique(tmp$V1),decreasing=T))
-head(sort(unique(tmp$V2),decreasing=T))
+# head(sort(unique(tmp$V1),decreasing=T))
+# head(sort(unique(tmp$V2),decreasing=T))
 sort(unique(tmp$V3),decreasing=T)
 
 ## For now till we figure out coding
@@ -388,7 +391,7 @@ umr.dat$Sampling.Date=convertToDate(umr.dat$Sampling.Date)
 names(umr.dat)
 
 umr.dat[,c("TDN","TDP","NO3","NO2","DON")]=as.numeric(NA);
-umr.dat[,c(idvars,param.vars)]
+# umr.dat[,c(idvars,param.vars)]
 
 umr.dat.melt=melt(umr.dat[,c(idvars,param.vars)],id.vars=idvars)
 umr.dat.melt=subset(umr.dat.melt,is.na(value)==F)
@@ -418,7 +421,7 @@ sites=rbind(sites,sage.basin)
 sites=rbind(sites,umr.basin)
 
 sites$Longitude=as.numeric(sites$Longitude)
-subset(sites,is.na(Longitude)==T)
+# subset(sites,is.na(Longitude)==T)
 sites=subset(sites,is.na(Longitude)==F)
 
 
@@ -428,6 +431,10 @@ sites=SpatialPointsDataFrame(coords=sites[,c("Longitude","Latitude")],
 tmap_mode("view")
 ```
 
+
+**FROM POLES TO TROPICS: A MULTI-BIOME SYNTHESIS INVESTIGATING THE CONTROLS ON RIVER SI EXPORTS**
+
+[Project Overview](https://lternet.edu/working-groups/river-si-exports/){target="_blank"}
 
 ## Spatial Distribution of Sites 
 
@@ -472,7 +479,7 @@ arc.dat$CY=as.numeric(format(arc.dat$Sampling.Date,"%Y"))
 arc.site.inv=ddply(arc.dat,c("Sampling.Date","site"),summarise,N.val=N.obs(DSi))
 arc.site.inv=merge(arc.site.inv,data.frame(site=unique(arc.site.inv$site),plot.val=1:length(unique(arc.site.inv$site))))
 arc.site.yrs=ddply(arc.dat,c("site","CY"),summarise,n.val=N.obs(DSi))
-mean(ddply(subset(arc.site.yrs,n.val>4),"site",summarise,n.val=N.obs(CY))$n.val)
+# mean(ddply(subset(arc.site.yrs,n.val>4),"site",summarise,n.val=N.obs(CY))$n.val)
 
 par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,5,0.5,0.5));
 
@@ -489,7 +496,10 @@ mtext(side=1,line=1.75,"Date (Month-Year)")
 ```
 
 **Number of sites:** `r length(unique(arc.site.inv$site))`
-**Mean number of site years (with >4 samples per calendar year):** `r mean(ddply(subset(arc.site.yrs,n.val>4),"site",summarise,n.val=N.obs(CY))$n.val)`
+
+**Mean number of site years (with >4 samples per calendar year):** `r round(mean(ddply(subset(arc.site.yrs,n.val>4),"site",summarise,n.val=N.obs(CY))$n.val),2)`
+
+<br>
 
 ## Bonanza Creek LTER
 ```{r BCLTER,fig.width=6.5,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Bonanza Creek LTER/Caribou-Poker Creeks Research Watershed period of record parameter inventory for all sites.'}
@@ -510,8 +520,12 @@ mtext(side=1,line=1.75,"Date (Month-Year)")
 
 ```{r BC site,fig.width=6.5,fig.height=5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Silica data inventory for sites wihtin the Bonanza Creek LTER/Caribou-Poker Creeks Research Watershed (Note: not all monitoring locations may be visible (i.e. labeled) on the figure). '}
 cpcrw.dat$site=cpcrw.dat$`Site/Stream.Name`
+cpcrw.dat$CY=as.numeric(format(cpcrw.dat$Sampling.Date,"%Y"))
 cpcrw.site.inv=ddply(cpcrw.dat,c("Sampling.Date","site"),summarise,N.val=N.obs(DSi))
 cpcrw.site.inv=merge(cpcrw.site.inv,data.frame(site=unique(cpcrw.site.inv$site),plot.val=1:length(unique(cpcrw.site.inv$site))))
+
+cpcrw.site.yrs=ddply(cpcrw.dat,c("site","CY"),summarise,n.val=N.obs(DSi))
+
 
 par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
 
@@ -530,6 +544,10 @@ mtext(side=1,line=1.75,"Date (Month-Year)")
 
 **Number of sites:** `r length(unique(cpcrw.site.inv$site))`
 
+**Mean number of site years (with >4 samples per calendar year):** `r round(mean(ddply(subset(cpcrw.site.yrs,n.val>4),"site",summarise,n.val=N.obs(CY))$n.val),2)`
+
+<br>
+
 ## H.J. Andrews LTER
 ```{r HJA,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='H.J. Andrews LTER period of record parameter inventory for all sites.'}
 par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
@@ -546,7 +564,40 @@ mtext(side=1,line=1.75,"Date (Month-Year)")
 
 ```
 
+```{r HJA site,fig.width=6.5,fig.height=5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Silica data inventory for sites wihtin the H.J. Andrews LTER. '}
+hja.dat$site=hja.dat$`Site/Stream.Name`
+hja.dat$CY=as.numeric(format(hja.dat$Sampling.Date,"%Y"))
+hja.site.inv=ddply(hja.dat,c("Sampling.Date","site"),summarise,N.val=N.obs(DSi))
+hja.site.inv=merge(hja.site.inv,data.frame(site=unique(hja.site.inv$site),plot.val=1:length(unique(hja.site.inv$site))))
+
+hja.site.yrs=ddply(hja.dat,c("site","CY"),summarise,n.val=N.obs(DSi))
+
+
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
+
+ylim.val=c(1,length(unique(hja.site.inv$site)));ymaj=seq(ylim.val[1],ylim.val[2],1)
+plot(xlim.val,ylim.val,type="n",ylim=c(ylim.val[1],ylim.val[2]),xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
+abline(v=xmin,lty=2,col="grey80",lwd=0.75)
+with(hja.site.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
+axis_fun(2,ymaj,ymaj,unique(hja.site.inv$site),cex=1)
+box(lwd=1)
+mtext(side=3,"H.J. Andrews LTER - DSi data",cex=0.8,adj=0)
+mtext(side=1,line=1.75,"Date (Month-Year)")
+
+```
+
+
+**Number of sites:** `r length(unique(hja.site.inv$site))`
+
+**Mean number of site years (with >4 samples per calendar year):** `r round(mean(ddply(subset(hja.site.yrs,n.val>4),"site",summarise,n.val=N.obs(CY))$n.val),2)`
+
+<br>
+
 ## Sagehen Creek (non-LTER)
+
+<h1 style="color:red;"><u>Currently working through QA/QC, therefore this may not be a true representation of the avalable data. </u></h1>
+
 ```{r sage,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Sagehen Creek period of record parameter inventory for all sites.'}
 par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
 
@@ -562,7 +613,37 @@ mtext(side=1,line=1.75,"Date (Month-Year)")
 
 ```
 
+```{r sage site,fig.width=6.5,fig.height=3,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Silica data inventory for sites wihtin the Sagehen Creek. '}
+sage.dat$site=sage.dat$`Site/Stream.Name`
+sage.dat$CY=as.numeric(format(sage.dat$Sampling.Date,"%Y"))
+sage.site.inv=ddply(sage.dat,c("Sampling.Date","site"),summarise,N.val=N.obs(DSi))
+sage.site.inv=merge(sage.site.inv,data.frame(site=unique(sage.site.inv$site),plot.val=1:length(unique(sage.site.inv$site))))
+
+sage.site.yrs=ddply(sage.dat,c("site","CY"),summarise,n.val=N.obs(DSi))
+
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
+
+ylim.val=c(1,length(unique(sage.site.inv$site)));ymaj=seq(ylim.val[1],ylim.val[2],1)
+plot(xlim.val,ylim.val,type="n",ylim=c(ylim.val[1],ylim.val[2]),xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
+abline(v=xmin,lty=2,col="grey80",lwd=0.75)
+with(sage.site.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
+axis_fun(2,ymaj,ymaj,unique(sage.site.inv$site),cex=1)
+box(lwd=1)
+mtext(side=3,"Sagehen Creek - DSi data",cex=0.8,adj=0)
+mtext(side=1,line=1.75,"Date (Month-Year)")
+
+```
+
+
+**Number of sites:** `r length(unique(sage.site.inv$site))`
+
+**Mean number of site years (with >4 samples per calendar year):** `r round(mean(ddply(subset(sage.site.yrs,n.val>4),"site",summarise,n.val=N.obs(CY))$n.val),2)`
+
+<br>
+
 ## Boulder Critical Zone Observatory (CZO network)
+
 ```{r BcCZO,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Boulder Critical Zone Observatory period of record parameter inventory for all sites.'}
 par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
 
@@ -578,6 +659,34 @@ mtext(side=1,line=1.75,"Date (Month-Year)")
 
 ```
 
+```{r bczo site,fig.width=6.5,fig.height=5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Silica data inventory for sites wihtin the Boulder Critical Zone Observatory. '}
+bczo.dat$site=bczo.dat$`Site/Stream.Name`
+bczo.dat$CY=as.numeric(format(bczo.dat$Sampling.Date,"%Y"))
+bczo.site.inv=ddply(bczo.dat,c("Sampling.Date","site"),summarise,N.val=N.obs(DSi))
+bczo.site.inv=merge(bczo.site.inv,data.frame(site=unique(bczo.site.inv$site),plot.val=1:length(unique(bczo.site.inv$site))))
+
+bczo.site.yrs=ddply(bczo.dat,c("site","CY"),summarise,n.val=N.obs(DSi))
+
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
+
+ylim.val=c(1,length(unique(bczo.site.inv$site)));ymaj=seq(ylim.val[1],ylim.val[2],1)
+plot(xlim.val,ylim.val,type="n",ylim=c(ylim.val[1],ylim.val[2]),xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
+abline(v=xmin,lty=2,col="grey80",lwd=0.75)
+with(bczo.site.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
+axis_fun(2,ymaj,ymaj,unique(bczo.site.inv$site),cex=1)
+box(lwd=1)
+mtext(side=3,"Boulder CZO - DSi data",cex=0.8,adj=0)
+mtext(side=1,line=1.75,"Date (Month-Year)")
+
+```
+
+
+**Number of sites:** `r length(unique(bczo.site.inv$site))`
+
+**Mean number of site years (with >4 samples per calendar year):** `r round(mean(ddply(subset(bczo.site.yrs,n.val>4),"site",summarise,n.val=N.obs(CY))$n.val),2)`
+
+<br>
 
 ## Niwot Ridge LTER
 ```{r NWT,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Niwot Ridge LTER period of record parameter inventory for all sites.'}
@@ -596,6 +705,36 @@ mtext(side=1,line=1.75,"Date (Month-Year)")
 ```
 
 
+```{r NWT site,fig.width=6.5,fig.height=4,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Silica data inventory for sites wihtin the Niwot Ridge LTER. '}
+NWT.dat$site=NWT.dat$`Site/Stream.Name`
+NWT.dat$CY=as.numeric(format(NWT.dat$Sampling.Date,"%Y"))
+NWT.site.inv=ddply(NWT.dat,c("Sampling.Date","site"),summarise,N.val=N.obs(DSi))
+NWT.site.inv=merge(NWT.site.inv,data.frame(site=unique(NWT.site.inv$site),plot.val=1:length(unique(NWT.site.inv$site))))
+
+NWT.site.yrs=ddply(NWT.dat,c("site","CY"),summarise,n.val=N.obs(DSi))
+
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
+
+ylim.val=c(1,length(unique(NWT.site.inv$site)));ymaj=seq(ylim.val[1],ylim.val[2],1)
+plot(xlim.val,ylim.val,type="n",ylim=c(ylim.val[1],ylim.val[2]),xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
+abline(v=xmin,lty=2,col="grey80",lwd=0.75)
+with(NWT.site.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
+axis_fun(2,ymaj,ymaj,unique(NWT.site.inv$site),cex=1)
+box(lwd=1)
+mtext(side=3,"Niwot Ridge LTER - DSi data",cex=0.8,adj=0)
+mtext(side=1,line=1.75,"Date (Month-Year)")
+
+```
+
+
+**Number of sites:** `r length(unique(NWT.site.inv$site))`
+
+**Mean number of site years (with >4 samples per calendar year):** `r round(mean(ddply(subset(NWT.site.yrs,n.val>4),"site",summarise,n.val=N.obs(CY))$n.val),2)`
+
+<br>
+
+
 ## East River Scientific Focus Area (non-LTER)
 ```{r DOE_SFA,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='East River Scientific Focus Area period of record parameter inventory for all sites.'}
 par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
@@ -611,6 +750,35 @@ mtext(side=3,"East River SFA",cex=0.8, adj=0)
 mtext(side=1,line=1.75,"Date (Month-Year)")
 
 ```
+
+```{r DOE_SFA site,fig.width=6.5,fig.height=3,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Silica data inventory for sites wihtin the East River Scientific Focus Area. '}
+coal.dat$site=coal.dat$`Site/Stream.Name`
+coal.dat$CY=as.numeric(format(coal.dat$Sampling.Date,"%Y"))
+coal.site.inv=ddply(coal.dat,c("Sampling.Date","site"),summarise,N.val=N.obs(DSi))
+coal.site.inv=merge(coal.site.inv,data.frame(site=unique(coal.site.inv$site),plot.val=1:length(unique(coal.site.inv$site))))
+
+coal.site.yrs=ddply(coal.dat,c("site","CY"),summarise,n.val=N.obs(DSi))
+
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
+
+ylim.val=c(1,length(unique(coal.site.inv$site)));ymaj=seq(ylim.val[1],ylim.val[2],1)
+plot(xlim.val,ylim.val,type="n",ylim=c(ylim.val[1],ylim.val[2]),xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
+abline(v=xmin,lty=2,col="grey80",lwd=0.75)
+with(coal.site.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
+axis_fun(2,ymaj,ymaj,unique(coal.site.inv$site),cex=1)
+box(lwd=1)
+mtext(side=3,"East River SFA - DSi data",cex=0.8,adj=0)
+mtext(side=1,line=1.75,"Date (Month-Year)")
+
+```
+
+
+**Number of sites:** `r length(unique(coal.site.inv$site))`
+
+**Mean number of site years (with >4 samples per calendar year):** `r round(mean(ddply(subset(coal.site.yrs,n.val>4),"site",summarise,n.val=N.obs(CY))$n.val),2)`
+
+<br>
 
 ## Konza Prairie LTER
 ```{r KNZ,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Konza Prairie LTER period of record parameter inventory for all sites.'}
@@ -628,6 +796,34 @@ mtext(side=1,line=1.75,"Date (Month-Year)")
 
 ```
 
+```{r KNZ site,fig.width=6.5,fig.height=4,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Silica data inventory for sites wihtin the Konza Prairie LTER. '}
+konza.dat$site=konza.dat$`Site/Stream.Name`
+konza.dat$CY=as.numeric(format(konza.dat$Sampling.Date,"%Y"))
+konza.site.inv=ddply(konza.dat,c("Sampling.Date","site"),summarise,N.val=N.obs(DSi))
+konza.site.inv=merge(konza.site.inv,data.frame(site=unique(konza.site.inv$site),plot.val=1:length(unique(konza.site.inv$site))))
+
+konza.site.yrs=ddply(konza.dat,c("site","CY"),summarise,n.val=N.obs(DSi))
+
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
+
+ylim.val=c(1,length(unique(konza.site.inv$site)));ymaj=seq(ylim.val[1],ylim.val[2],1)
+plot(xlim.val,ylim.val,type="n",ylim=c(ylim.val[1],ylim.val[2]),xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
+abline(v=xmin,lty=2,col="grey80",lwd=0.75)
+with(konza.site.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
+axis_fun(2,ymaj,ymaj,unique(konza.site.inv$site),cex=1)
+box(lwd=1)
+mtext(side=3,"Konza Prairie LTER - DSi data",cex=0.8,adj=0)
+mtext(side=1,line=1.75,"Date (Month-Year)")
+
+```
+
+
+**Number of sites:** `r length(unique(konza.site.inv$site))`
+
+**Mean number of site years (with >4 samples per calendar year):** `r round(mean(ddply(subset(konza.site.yrs,n.val>4),"site",summarise,n.val=N.obs(CY))$n.val),2)`
+
+<br>
 
 ## Lamprey River Hydrologic Observatory (non-LTER)
 ```{r LMP,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Lamprey River Hydrologic Observatory period of record parameter inventory for all sites.'}
@@ -644,6 +840,34 @@ mtext(side=3,"Lamprey River Hydrologic Observatory",cex=0.8, adj=0)
 mtext(side=1,line=1.75,"Date (Month-Year)")
 ```
 
+```{r LMP site,fig.width=6.5,fig.height=5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Silica data inventory for sites wihtin the Lamprey River Hydrologic Observatory. '}
+LMP.dat$site=LMP.dat$`Site/Stream.Name`
+LMP.dat$CY=as.numeric(format(LMP.dat$Sampling.Date,"%Y"))
+LMP.site.inv=ddply(LMP.dat,c("Sampling.Date","site"),summarise,N.val=N.obs(DSi))
+LMP.site.inv=merge(LMP.site.inv,data.frame(site=unique(LMP.site.inv$site),plot.val=1:length(unique(LMP.site.inv$site))))
+
+LMP.site.yrs=ddply(LMP.dat,c("site","CY"),summarise,n.val=N.obs(DSi))
+
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
+
+ylim.val=c(1,length(unique(LMP.site.inv$site)));ymaj=seq(ylim.val[1],ylim.val[2],1)
+plot(xlim.val,ylim.val,type="n",ylim=c(ylim.val[1],ylim.val[2]),xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
+abline(v=xmin,lty=2,col="grey80",lwd=0.75)
+with(LMP.site.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
+axis_fun(2,ymaj,ymaj,unique(LMP.site.inv$site),cex=1)
+box(lwd=1)
+mtext(side=3,"Lamprey River Hydrologic Observatory - DSi data",cex=0.8,adj=0)
+mtext(side=1,line=1.75,"Date (Month-Year)")
+
+```
+
+
+**Number of sites:** `r length(unique(LMP.site.inv$site))`
+
+**Mean number of site years (with >4 samples per calendar year):** `r round(mean(ddply(subset(LMP.site.yrs,n.val>4),"site",summarise,n.val=N.obs(CY))$n.val),2)`
+
+<br>
 
 ## Plum Island Ecosystems LTER
 ```{r PIE,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Plum Island Ecosystems LTER period of record parameter inventory for all sites.'}
@@ -661,6 +885,34 @@ mtext(side=3,"Plum Island Ecosystems LTER",cex=0.8, adj=0)
 mtext(side=1,line=1.75,"Date (Month-Year)")
 ```
 
+```{r PIE site,fig.width=6.5,fig.height=5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Silica data inventory for sites wihtin the Plum Island Ecosystems LTER. '}
+pie.dat$site=pie.dat$`Site/Stream.Name`
+pie.dat$CY=as.numeric(format(pie.dat$Sampling.Date,"%Y"))
+pie.site.inv=ddply(pie.dat,c("Sampling.Date","site"),summarise,N.val=N.obs(DSi))
+pie.site.inv=merge(pie.site.inv,data.frame(site=unique(pie.site.inv$site),plot.val=1:length(unique(pie.site.inv$site))))
+
+pie.site.yrs=ddply(pie.dat,c("site","CY"),summarise,n.val=N.obs(DSi))
+
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
+
+ylim.val=c(1,length(unique(pie.site.inv$site)));ymaj=seq(ylim.val[1],ylim.val[2],1)
+plot(xlim.val,ylim.val,type="n",ylim=c(ylim.val[1],ylim.val[2]),xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
+abline(v=xmin,lty=2,col="grey80",lwd=0.75)
+with(pie.site.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
+axis_fun(2,ymaj,ymaj,unique(pie.site.inv$site),cex=1)
+box(lwd=1)
+mtext(side=3,"Plum Island Ecosystems LTER - DSi data",cex=0.8,adj=0)
+mtext(side=1,line=1.75,"Date (Month-Year)")
+
+```
+
+
+**Number of sites:** `r length(unique(pie.site.inv$site))`
+
+**Mean number of site years (with >4 samples per calendar year):** `r round(mean(ddply(subset(pie.site.yrs,n.val>4),"site",summarise,n.val=N.obs(CY))$n.val),2)`
+
+<br>
 
 ## Ipswich (non-LTER)
 ```{r Ipswich_carey,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Ipswich dataset period of record parameter inventory for all sites.'}
@@ -678,6 +930,34 @@ mtext(side=3,"Ipswich",cex=0.8, adj=0)
 mtext(side=1,line=1.75,"Date (Month-Year)")
 ```
 
+```{r Ipswich_carey site,fig.width=6.5,fig.height=4,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Silica data inventory for sites wihtin the Ipswich region. '}
+carey.dat$site=carey.dat$`Site/Stream.Name`
+carey.dat$CY=as.numeric(format(carey.dat$Sampling.Date,"%Y"))
+carey.site.inv=ddply(carey.dat,c("Sampling.Date","site"),summarise,N.val=N.obs(DSi))
+carey.site.inv=merge(carey.site.inv,data.frame(site=unique(carey.site.inv$site),plot.val=1:length(unique(carey.site.inv$site))))
+
+carey.site.yrs=ddply(carey.dat,c("site","CY"),summarise,n.val=N.obs(DSi))
+
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
+
+ylim.val=c(1,length(unique(carey.site.inv$site)));ymaj=seq(ylim.val[1],ylim.val[2],1)
+plot(xlim.val,ylim.val,type="n",ylim=c(ylim.val[1],ylim.val[2]),xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
+abline(v=xmin,lty=2,col="grey80",lwd=0.75)
+with(carey.site.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
+axis_fun(2,ymaj,ymaj,unique(carey.site.inv$site),cex=1)
+box(lwd=1)
+mtext(side=3,"Ipswich - DSi data",cex=0.8,adj=0)
+mtext(side=1,line=1.75,"Date (Month-Year)")
+
+```
+
+
+**Number of sites:** `r length(unique(carey.site.inv$site))`
+
+**Mean number of site years (with >4 samples per calendar year):** `r round(mean(ddply(subset(carey.site.yrs,n.val>4),"site",summarise,n.val=N.obs(CY))$n.val),2)`
+
+<br>
 
 ## Upper Mississippi River (non-LTER)
 ```{r UMR,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Upper Mississippi River dataset period of record parameter inventory for all sites.'}
@@ -696,6 +976,34 @@ mtext(side=1,line=1.75,"Date (Month-Year)")
 
 ```
 
+```{r UMR site,fig.width=6.5,fig.height=5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Silica data inventory for sites wihtin the Upper Mississippi River region. '}
+umr.dat$site=umr.dat$`Site/Stream.Name`
+umr.dat$CY=as.numeric(format(umr.dat$Sampling.Date,"%Y"))
+umr.site.inv=ddply(umr.dat,c("Sampling.Date","site"),summarise,N.val=N.obs(DSi))
+umr.site.inv=merge(umr.site.inv,data.frame(site=unique(umr.site.inv$site),plot.val=1:length(unique(umr.site.inv$site))))
+
+umr.site.yrs=ddply(umr.dat,c("site","CY"),summarise,n.val=N.obs(DSi))
+
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
+
+ylim.val=c(1,length(unique(umr.site.inv$site)));ymaj=seq(ylim.val[1],ylim.val[2],1)
+plot(xlim.val,ylim.val,type="n",ylim=c(ylim.val[1],ylim.val[2]),xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
+abline(v=xmin,lty=2,col="grey80",lwd=0.75)
+with(umr.site.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
+axis_fun(2,ymaj,ymaj,unique(umr.site.inv$site),cex=1)
+box(lwd=1)
+mtext(side=3,"Upper Mississippi River - DSi data",cex=0.8,adj=0)
+mtext(side=1,line=1.75,"Date (Month-Year)")
+
+```
+
+
+**Number of sites:** `r length(unique(umr.site.inv$site))`
+
+**Mean number of site years (with >4 samples per calendar year):** `r round(mean(ddply(subset(umr.site.yrs,n.val>4),"site",summarise,n.val=N.obs(CY))$n.val),2)`
+
+<br>
 
 ## Kissimmee River (non-LTER)
 ```{r KRR,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Kissimmee River dataset period of record parameter inventory for all sites.'}
@@ -714,6 +1022,34 @@ mtext(side=1,line=1.75,"Date (Month-Year)")
 
 ```
 
+```{r KRR site,fig.width=6.5,fig.height=5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Silica data inventory for sites wihtin the Kissimmee River. '}
+KRR.dat$site=KRR.dat$`Site/Stream.Name`
+KRR.dat$CY=as.numeric(format(KRR.dat$Sampling.Date,"%Y"))
+KRR.site.inv=ddply(KRR.dat,c("Sampling.Date","site"),summarise,N.val=N.obs(DSi))
+KRR.site.inv=merge(KRR.site.inv,data.frame(site=unique(KRR.site.inv$site),plot.val=1:length(unique(KRR.site.inv$site))))
+
+KRR.site.yrs=ddply(KRR.dat,c("site","CY"),summarise,n.val=N.obs(DSi))
+
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
+
+ylim.val=c(1,length(unique(KRR.site.inv$site)));ymaj=seq(ylim.val[1],ylim.val[2],1)
+plot(xlim.val,ylim.val,type="n",ylim=c(ylim.val[1],ylim.val[2]),xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
+abline(v=xmin,lty=2,col="grey80",lwd=0.75)
+with(KRR.site.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
+axis_fun(2,ymaj,ymaj,unique(KRR.site.inv$site),cex=1)
+box(lwd=1)
+mtext(side=3,"Kissimmee River - DSi data",cex=0.8,adj=0)
+mtext(side=1,line=1.75,"Date (Month-Year)")
+
+```
+
+
+**Number of sites:** `r length(unique(KRR.site.inv$site))`
+
+**Mean number of site years (with >4 samples per calendar year):** `r round(mean(ddply(subset(KRR.site.yrs,n.val>4),"site",summarise,n.val=N.obs(CY))$n.val),2)`
+
+<br>
 
 ## Luquillo LTER
 ```{r LUQ,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Luquillo LTER period of record parameter inventory for all sites.'}
@@ -731,6 +1067,35 @@ mtext(side=1,line=1.75,"Date (Month-Year)")
 
 ```
 
+```{r LUQ site,fig.width=6.5,fig.height=5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Silica data inventory for sites wihtin the Luquillo LTER. '}
+LUQ.dat$site=LUQ.dat$`Site/Stream.Name`
+LUQ.dat$CY=as.numeric(format(LUQ.dat$Sampling.Date,"%Y"))
+LUQ.site.inv=ddply(LUQ.dat,c("Sampling.Date","site"),summarise,N.val=N.obs(DSi))
+LUQ.site.inv=merge(LUQ.site.inv,data.frame(site=unique(LUQ.site.inv$site),plot.val=1:length(unique(LUQ.site.inv$site))))
+
+LUQ.site.yrs=ddply(LUQ.dat,c("site","CY"),summarise,n.val=N.obs(DSi))
+
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
+
+ylim.val=c(1,length(unique(LUQ.site.inv$site)));ymaj=seq(ylim.val[1],ylim.val[2],1)
+plot(xlim.val,ylim.val,type="n",ylim=c(ylim.val[1],ylim.val[2]),xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
+abline(v=xmin,lty=2,col="grey80",lwd=0.75)
+with(LUQ.site.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
+axis_fun(2,ymaj,ymaj,unique(LUQ.site.inv$site),cex=1)
+box(lwd=1)
+mtext(side=3,"Luquillo LTER - DSi data",cex=0.8,adj=0)
+mtext(side=1,line=1.75,"Date (Month-Year)")
+
+```
+
+
+**Number of sites:** `r length(unique(LUQ.site.inv$site))`
+
+**Mean number of site years (with >4 samples per calendar year):** `r round(mean(ddply(subset(LUQ.site.yrs,n.val>4),"site",summarise,n.val=N.obs(CY))$n.val),2)`
+
+<br>
+
 ## McMurdo Dry Valleys LTER
 ```{r MCM,fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='McMurdo Dry Valleys LTER period of record parameter inventory for all sites.'}
 par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
@@ -747,9 +1112,41 @@ mtext(side=1,line=1.75,"Date (Month-Year)")
 
 ```
 
+```{r MCM site,fig.width=6.5,fig.height=5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE,fig.cap='Silica data inventory for sites wihtin the McMurdo Dry Valleys LTER. '}
+MCM.dat$site=MCM.dat$`Site/Stream.Name`
+MCM.dat$CY=as.numeric(format(MCM.dat$Sampling.Date,"%Y"))
+MCM.site.inv=ddply(MCM.dat,c("Sampling.Date","site"),summarise,N.val=N.obs(DSi))
+MCM.site.inv=merge(MCM.site.inv,data.frame(site=unique(MCM.site.inv$site),plot.val=1:length(unique(MCM.site.inv$site))))
+
+MCM.site.yrs=ddply(MCM.dat,c("site","CY"),summarise,n.val=N.obs(DSi))
+
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
+
+ylim.val=c(1,length(unique(MCM.site.inv$site)));ymaj=seq(ylim.val[1],ylim.val[2],1)
+plot(xlim.val,ylim.val,type="n",ylim=c(ylim.val[1],ylim.val[2]),xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
+abline(v=xmin,lty=2,col="grey80",lwd=0.75)
+with(MCM.site.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
+axis_fun(2,ymaj,ymaj,unique(MCM.site.inv$site),cex=1)
+box(lwd=1)
+mtext(side=3,"McMurdo Dry Valleys LTER - DSi data",cex=0.8,adj=0)
+mtext(side=1,line=1.75,"Date (Month-Year)")
+
+```
+
+
+**Number of sites:** `r length(unique(MCM.site.inv$site))`
+
+**Mean number of site years (with >4 samples per calendar year):** `r round(mean(ddply(subset(MCM.site.yrs,n.val>4),"site",summarise,n.val=N.obs(CY))$n.val),2)`
+
+<br>
+
+<br>
 <br>
 
 ***
 
 <br>
 <br>
+
+Updated `r format(Sys.Date(),"%d %b %Y")`
