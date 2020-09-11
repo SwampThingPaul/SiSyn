@@ -100,6 +100,7 @@ arc.dat$site=arc.dat$'Site/Stream.Name'
 #fix header
 arc.dat=rename(arc.dat,c("Dsi"="DSi"))
 arc.dat[,c("TDN","TDP","NO3","NO2","DON")]=as.numeric(NA); #Add empty columns for uniformity
+write.csv(arc.dat,paste0(export.path,"/20200911_GD_ARC.csv"),row.names=F)
 
 ##
 arc.dat.melt=melt(arc.dat[,c(idvars,"dec.date",param.vars)],id.vars=c(idvars,"dec.date"))
@@ -260,6 +261,7 @@ NWT.dat=rename(NWT.dat,c("InstantaneoNAs.Q.(Discharge)"="Instantaneous.Q.(Discha
                          "CondNActivity"="Conductivity",
                          "TNArbidity"="Turbidity",
                          "SNAspended.Chl"="Suspended.Chl"))
+write.csv(NWT.dat,paste0(export.path,"20200911_GD_NWT.csv"),row.names = F)
 
 NWT.dat.melt=melt(NWT.dat[,c(idvars,param.vars)],id.vars=idvars)
 NWT.dat.melt=subset(NWT.dat.melt,is.na(value)==F)

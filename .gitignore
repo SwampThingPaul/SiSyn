@@ -37,4 +37,5 @@ vignettes/*.pdf
 
 #
 /Data/
+/Export/
 /README.Rmd
