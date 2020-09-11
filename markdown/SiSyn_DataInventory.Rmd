@@ -71,6 +71,16 @@ dms2dec <- function(dms, separators = c("º", "°", "\'", "\"")) {
 # Helper variables 
 wgs84=CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
 
+N.mw=14.0067
+P.mw=30.973762
+C.mw=12.0107
+Si.mw=28.0855
+H.mw=1.00784
+O.mw=15.999
+
+12/Si.mw
+12*1/Si.mw
+
 # Data --------------------------------------------------------------------
 param.list=data.frame(variable=c("Daily.Avg.Q.(Discharge)", "Instantaneous.Q.(Discharge)", "Stage.Height", 
                                  "Temp.C", "Conductivity", "Spec.Cond", "Turbidity", "TSS", "VSS", 
@@ -86,6 +96,58 @@ param.vars=c("Daily.Avg.Q.(Discharge)", "Instantaneous.Q.(Discharge)", "Stage.He
              "Na", "K", "Ca", "Mg", "SO4", "Cl")
 basin.vars=c("LTER","Site/Stream","Unique.ID","Latitude","Longitude")
 
+
+# UnitConvert
+arc.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_ARCLTER_05012020.xlsx"),sheet=2,na.strings = "NA")
+arc.unit$data.set="ARC"
+bczo.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_BcCZO.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+bczo.unit$data.set="BcCZO"
+carey.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_Carey_6.12.20.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+carey.unit$data.set="carey"
+coal.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_Coal_Creek.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+coal.unit$data.set="coal"
+cpcrw.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_CPCRW.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+cpcrw.unit$data.set="cpcrw"
+konza.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_Konza.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+konza.unit$data.set="konza"
+KRR.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_KRR.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+KRR.unit$data.set="KRR"
+MCM.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_MCM.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+MCM.unit=MCM.unit[,1:2]
+MCM.unit$data.set="MCM"
+NWT.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_NWT.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+NWT.unit$data.set="NWT"
+LMP.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_V1_LMP.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+LMP.unit$data.set="LMP"
+LUQ.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_V1_LUQ.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+LUQ.unit=LUQ.unit[,1:2]
+LUQ.unit$data.set="LUQ"
+pie.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_V1_PIEWatersheds.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+pie.unit$data.set="pie"
+hja.unit=read.xlsx(paste0(data.path,"HJAndrewsSiSyn.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+hja.unit$data.set="hja"
+sage.unit=read.xlsx(paste0(data.path,"SagehenSiSyn.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+sage.unit$data.set="sage"
+umr.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_UMR.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+umr.unit$data.set="umr"
+
+unit.all=rbind(arc.unit,bczo.unit,carey.unit,coal.unit,cpcrw.unit,konza.unit,KRR.unit,MCM.unit,NWT.unit,LMP.unit,LUQ.unit,pie.unit,hja.unit,sage.unit,umr.unit)
+
+#
+subset(unit.all,Measurement=="Si")
+Si.CF=data.frame(Measurement="Si",
+                 Unit=c("mg Si/L","mg SiO2/L"),
+                 CF=c((1/Si.mw)*1000,1/((Si.mw+(O.mw*2))*Si.mw/(Si.mw+(O.mw*2)))*1000))
+
+subset(unit.all,Measurement=="TN")
+subset(unit.all,Measurement=="DIN")
+subset(unit.all,Measurement=="NOX")
+data.frame(Measurement=c("TN","DIN"),Unit=c("mg N/L"),CF=c((1/N.mw)*1000))
+
+
+unit.all$CF=with(unit.all,ifelse(Unit=="mM",1000,CF))
+
+##
 data.filelist=list.files(data.path)
 
 ## ARCLTER
@@ -100,7 +162,7 @@ arc.dat$site=arc.dat$'Site/Stream.Name'
 #fix header
 arc.dat=rename(arc.dat,c("Dsi"="DSi"))
 arc.dat[,c("TDN","TDP","NO3","NO2","DON")]=as.numeric(NA); #Add empty columns for uniformity
-write.csv(arc.dat,paste0(export.path,"/20200911_GD_ARC.csv"),row.names=F)
+# write.csv(arc.dat[,c(idvars,param.vars)],paste0(export.path,"/20200911_GD_ARC.csv"),row.names=F)
 
 ##
 arc.dat.melt=melt(arc.dat[,c(idvars,"dec.date",param.vars)],id.vars=c(idvars,"dec.date"))
@@ -108,6 +170,8 @@ arc.dat.melt=subset(arc.dat.melt,is.na(value)==F)
 arc.dat.melt=merge(arc.dat.melt,param.list,"variable")
 arc.dat.melt$site=arc.dat.melt$'Site/Stream.Name'
 arc.dat.melt$variable=as.character(arc.dat.melt$variable)
+
+
 
 #arc.dat.inv=ddply(arc.dat.melt,c("dec.date","variable","plot.val"),summarise,N.val=N.obs(site))
 arc.dat.inv=ddply(arc.dat.melt,c("Sampling.Date","variable","plot.val"),summarise,N.val=N.obs(site))
@@ -261,7 +325,7 @@ NWT.dat=rename(NWT.dat,c("InstantaneoNAs.Q.(Discharge)"="Instantaneous.Q.(Discha
                          "CondNActivity"="Conductivity",
                          "TNArbidity"="Turbidity",
                          "SNAspended.Chl"="Suspended.Chl"))
-write.csv(NWT.dat,paste0(export.path,"20200911_GD_NWT.csv"),row.names = F)
+# write.csv(NWT.dat[,c(idvars,param.vars)],paste0(export.path,"20200911_GD_NWT.csv"),row.names = F)
 
 NWT.dat.melt=melt(NWT.dat[,c(idvars,param.vars)],id.vars=idvars)
 NWT.dat.melt=subset(NWT.dat.melt,is.na(value)==F)
