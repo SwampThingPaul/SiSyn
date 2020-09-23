@@ -39,3 +39,6 @@ vignettes/*.pdf
 /Data/
 /Export/
 /README.Rmd
+
+/DataInventory/Export/
+/DataInventory/README.RMD

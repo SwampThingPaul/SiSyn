@@ -30,7 +30,7 @@ library(rgeos)
 library(raster)
 
 #Paths
-wd="C:/Julian_LaCie/_GitHub/SiSyn"
+wd="C:/Julian_LaCie/_GitHub/SiSyn/DataInventory"
 
 #https://www.r-bloggers.com/structuring-r-projects/
 #https://nicercode.github.io/blog/2013-04-05-projects/
@@ -39,7 +39,7 @@ paths=paste0(wd,c("/Plots/","/Export/","/Data/","/src/"))
 #Folder.Maker(paths);#One and done. Creates folders in working directory.
 plot.path=paths[1]
 export.path=paths[2]
-data.path=paths[3]
+data.path=paste0(dirname(wd),"/Data/")
 
 # Extra functions 
 dms2dec <- function(dms, separators = c("º", "°", "\'", "\"")) {
