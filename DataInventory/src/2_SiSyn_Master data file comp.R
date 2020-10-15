@@ -1,0 +1,440 @@
+## 
+## SiSyn - Master Dataset
+##
+##
+## Code was compiled by Paul Julian
+## contact info: pjulian@ufl.edu
+## contact info: pauljulianphd@gmail.com
+
+## BAD ## https://www.tidyverse.org/articles/2017/12/workflow-vs-script/
+#Clears Everything...start fresh.
+rm(list=ls(all=T));cat("\014");dev.off()
+
+#Libraries
+#devtools::install_github("SwampThingPaul/AnalystHelper")
+library(AnalystHelper);
+
+library(plyr)
+library(reshape)
+library(openxlsx)
+library(lubridate)
+
+library(PeriodicTable)
+#Paths
+wd="C:/Julian_LaCie/_GitHub/SiSyn/DataInventory"
+
+#https://www.r-bloggers.com/structuring-r-projects/
+#https://nicercode.github.io/blog/2013-04-05-projects/
+
+paths=paste0(wd,c("/Plots/","/Export/","/Data/","/src/"))
+#Folder.Maker(paths);#One and done. Creates folders in working directory.
+plot.path=paths[1]
+export.path=paths[2]
+data.path=paste0(dirname(wd),"/Data/")
+
+
+# Helper functions
+# molecular weight
+N.mw=14.0067
+P.mw=30.973762
+C.mw=12.0107
+Si.mw=28.0855
+H.mw=1.00784
+O.mw=15.999
+
+Na.mw=mass("Na")
+K.mw=mass("K")
+Ca.mw=mass("Ca")
+Mg.mw=mass("Mg")
+S.mw=mass("S")
+Cl.mw=mass("Cl")
+
+# Data --------------------------------------------------------------------
+# param.list=data.frame(variable=c("Daily.Avg.Q.(Discharge)", "Instantaneous.Q.(Discharge)", "Stage.Height", 
+#                                  "Temp.C", "Conductivity", "Spec.Cond", "Turbidity", "TSS", "VSS", 
+#                                  "DSi", "TN","TDN", "DIN", "NOx","NO3","NO2", "NH4","DON", "TP","TDP", "PO4", "SRP", "DOC", 
+#                                  "TOC", "alkalinity", "ANC", "pH", "DIC", "Suspended.Chl", "Benthic.Chl", 
+#                                  "Na", "K", "Ca", "Mg", "SO4", "Cl"),
+#                       plot.val=1:36)
+
+idvars=c("LTER","Site/Stream.Name","Sampling.Date")
+param.vars=c("Daily.Avg.Q.(Discharge)", "Instantaneous.Q.(Discharge)", "Stage.Height", 
+             "Temp.C", "Conductivity", "Spec.Cond", "Turbidity", "TSS", "VSS", 
+             "DSi", "TN","TDN", "DIN", "NOx","NO3","NO2", "NH4","DON", "TP","TDP", "PO4", "SRP", "DOC", 
+             "TOC", "alkalinity", "ANC", "pH", "DIC", "Suspended.Chl", "Benthic.Chl", 
+             "Na", "K", "Ca", "Mg", "SO4", "Cl")
+basin.vars=c("LTER","Site/Stream","Unique.ID","Latitude","Longitude")
+
+
+# UnitConvert
+arc.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_ARCLTER_05012020.xlsx"),sheet=2,na.strings = "NA")
+arc.unit$data.set="ARC"
+bczo.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_BcCZO.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+bczo.unit$data.set="BcCZO"
+carey.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_Carey_6.12.20.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+carey.unit$data.set="carey"
+coal.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_Coal_Creek.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+coal.unit$data.set="coal"
+cpcrw.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_CPCRW.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+cpcrw.unit$data.set="cpcrw"
+konza.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_Konza.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+konza.unit$data.set="konza"
+KRR.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_KRR.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+KRR.unit$data.set="KRR"
+MCM.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_MCM.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+MCM.unit=MCM.unit[,1:2]
+MCM.unit$data.set="MCM"
+NWT.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_NWT.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+NWT.unit$data.set="NWT"
+LMP.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_V1_LMP.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+LMP.unit$data.set="LMP"
+LUQ.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_V1_LUQ.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+LUQ.unit=LUQ.unit[,1:2]
+LUQ.unit$data.set="LUQ"
+pie.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_V1_PIEWatersheds.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+pie.unit$data.set="pie"
+hja.unit=read.xlsx(paste0(data.path,"HJAndrewsSiSyn.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+hja.unit$data.set="hja"
+sage.unit=read.xlsx(paste0(data.path,"SagehenSiSyn.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+sage.unit$data.set="sage"
+umr.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_UMR.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+umr.unit$data.set="umr"
+
+unit.all=rbind(arc.unit,bczo.unit,carey.unit,coal.unit,cpcrw.unit,konza.unit,KRR.unit,MCM.unit,NWT.unit,LMP.unit,LUQ.unit,pie.unit,hja.unit,sage.unit,umr.unit)
+
+# https://ocean.ices.dk/tools/unitconversion.aspx
+# http://www.salinitymanagement.org/Salinity%20Management%20Guide/ls/ls_3c.html
+#
+SiO2.mw=(Si.mw+(O.mw*2))
+NO3.mw=(N.mw+(O.mw*3))
+NH4.mw=(N.mw+(H.mw*4))
+PO4.mw=P.mw+(O.mw*4)
+unique(unit.all$Measurement)
+subset(unit.all,Measurement=="Si")
+Si.CF=data.frame(Measurement="Si",
+                 Unit=c("mg Si/L","mg SiO2/L"),
+                 CF=c((1/Si.mw)*1000,((1/SiO2.mw)*(SiO2.mw/Si.mw))*1000))
+N.cf=data.frame(Measurement=c("TN","DIN","DIN","TN"),Unit=c(rep("mg N/L",2),"uM N","uM N"),CF=c(rep((1/N.mw)*1000,2),1,1))
+NOX.cf=data.frame(Measurement="NOX",
+                  Unit=c("uM NO3","mg NO3-N/L","ug NO3-N/L","ueq/L","uM NO3-N"),
+                  CF=c(NO3.mw/N.mw,(1/N.mw)*1000,1/N.mw,NO3.mw*(NO3.mw/N.mw),1))
+NO3.cf=data.frame(Measurement="NO3",Unit=c("ug/L"),CF=c(1/N.mw))
+NH4.cf=data.frame(Measurement="NH4",
+                  Unit=c("ueq/L","ug NH4/L","mg NH4-N/L","ug NH4-N/L","uM NH4-N","uM NH4"),
+                  CF=c(NH4.mw*(NH4.mw/N.mw),((1/NH4.mw)*(NH4.mw/N.mw)),(1/N.mw)*1000,(1/N.mw),1,1))
+other.N=data.frame(Measurement=c(rep("TDN",3),"DON","DTN"),
+                   Unit=c("mg N/L","mg/L","uM N","ug/L","ug/L"),
+                   CF=c(rep((1/N.mw)*1000,2),1,rep(1/N.mw,2)))
+TP.cf=data.frame(Measurement=c("TP"),Unit=c("mg P/L","uM P"),CF=c((1/P.mw)*1000,1))
+
+PO4.cf=data.frame(Measurement=c("PO4"),
+                  Unit=c("ueq/L","ug PO4-P/L","mg PO4-P/L","mg PO4/L","uM PO4-P","uM PO4"),
+                  CF=c(PO4.mw*(PO4.mw/P.mw),(1/P.mw),(1/P.mw)*1000,((1/PO4.mw)*(PO4.mw/P.mw))*1000,1,1))
+SRP.cf=data.frame(Measurement=c("SRP"),
+                  Unit=c("ug P/L","mg P/L","uM P"),
+                  CF=c(1/P.mw,(1/P.mw)*1000,1))
+C.cf=data.frame(Measurement=c(rep("DOC",2),rep("TOC",2),rep("DIC",2)),Unit=c("mg C/L","uM C"),CF=c((1/C.mw)*1000,1))
+Q.cf=data.frame(Measurement=c("Instantaneous Q","Daily Avg Q"),
+                  Unit=c("cfs"),
+                  CF=0.0283168)
+
+subset(unit.all,Measurement=="Cl")
+alk.cf=data.frame(Measurement=c("Alkalinity"),Unit=c("ueq/L","meq/L","mg HCO3-C"),CF=c(1,1000,(1/(H.mw+C.mw+(O.mw*3)))*1000))
+Na.cf=data.frame(Measurement=c("Na"),Unit=c("ueq/L","uM","mg/L"),CF=c(1,1,(1/Na.mw)*1000))
+K.cf=data.frame(Measurement=c("K"),Unit=c("ueq/L","uM","mg/L"),CF=c(1,1,(1/K.mw)*1000))
+Ca.cf=data.frame(Measurement=c("Ca"),Unit=c("ueq/L","uM","mg/L"),CF=c(1/2,1,(1/Ca.mw)*1000))
+Mg.cf=data.frame(Measurement=c("Mg"),Unit=c("ueq/L","uM","mg/L"),CF=c(1/2,1,(1/Mg.mw)*1000))
+SO4.cf=data.frame(Measurement=c("SO4"),Unit=c("ueq/L","uM","umols SO4","umols SO4-S","mg SO4/L","mg SO4-S/L","mg/L"),
+                  CF=c(1/2,1,1,1,rep((1/(S.mw+O.mw*4))*1000,3)))
+Cl.cf=data.frame(Measurement=c("Cl"),Unit=c("ueq/L","uM","mg/L"),CF=c(1/2,1,(1/Cl.mw)*1000))
+
+cf.all=rbind(Si.CF,N.cf,NOX.cf,NO3.cf,NH4.cf,other.N,TP.cf,PO4.cf,SRP.cf,C.cf,Q.cf,
+             alk.cf,Na.cf,K.cf,Ca.cf,Mg.cf,SO4.cf,Cl.cf)
+
+unit.all=merge(unit.all,cf.all,all.x=T)
+#unit.all$CF=with(unit.all,ifelse(Unit=="mM",1000,CF))
+unit.all$CF=with(unit.all,ifelse(Unit=="uM",1,CF))
+unit.all$CF=with(unit.all,ifelse(Unit=="cms",1,CF))
+unit.all$CF=with(unit.all,ifelse(Measurement=="pH",1,CF))
+unit.all$CF=with(unit.all,ifelse(Measurement=="TDP"&Unit=="mM P",1000,CF))
+
+other.vars=c("Temp","Conductivity","Specific Conductance","Turbidity","TSS","VSS", "Chl a (benthic)", "Chl a (suspended)")
+unit.all$CF=with(unit.all,ifelse(Measurement%in%other.vars,1,CF))
+
+subset(unit.all,Measurement=="Instantaneous Q")
+subset(unit.all,Measurement=="Daily Avg Q")
+
+meas.var=data.frame(Measurement=c("Alkalinity", "ANC", "Ca", "Chl a (benthic)", "Chl a (suspended)", 
+                         "Cl", "Conductivity", "Daily Avg Q", "DIC", "DIN", "DOC", "DON", 
+                         "DTN", "Instantaneous Q", "K", "Mg", "Na", "NH4", "NO3", "NOX", 
+                         "pH", "PO4", "Si", "SO4", "Specific Conductance", "SRP", "Stage Height", 
+                         "TDN", "TDP", "Temp", "TN", "TOC", "TP", "TSS", "Turbidity", 
+                         "VSS"),
+           variable=c("alkalinity", "ANC", "Ca", "Benthic.Chl", "Suspended.Chl", 
+                      "Cl", "Conductivity", "Daily.Avg.Q.(Discharge)", "DIC", "DIN", "DOC", "DON", 
+                      "DTN", "Instantaneous.Q.(Discharge)", "K", "Mg", "Na", "NH4", "NO3", "NOx", 
+                      "pH", "PO4", "DSi", "SO4", "Spec.Cond", "SRP", "Stage.Height", 
+                      "TDN", "TDP", "Temp.C", "TN", "TOC", "TP", "TSS", "Turbidity", 
+                      "VSS"))
+unit.all=merge(unit.all,meas.var,"Measurement")
+head(unit.all)
+unit.all2=unit.all[,c("variable","data.set","CF")]
+##
+data.filelist=list.files(data.path)
+
+## ARCLTER
+arc.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_ARCLTER_05012020.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+arc.dat$Sampling.Date=convertToDate(arc.dat$Sampling.Date)
+arc.note.Look=arc.dat[,c("Site/Stream.Name","Notes")]
+arc.dat$site=arc.dat$'Site/Stream.Name'
+
+#fix header
+arc.dat=rename(arc.dat,c("Dsi"="DSi"))
+arc.dat[,c("TDN","TDP","NO3","NO2","DON")]=as.numeric(NA); #Add empty columns for uniformity
+# write.csv(arc.dat[,c(idvars,param.vars)],paste0(export.path,"/20200911_GD_ARC.csv"),row.names=F)
+
+##
+arc.dat.melt=melt(arc.dat[,c(idvars,param.vars)],id.vars=c(idvars))
+arc.dat.melt=subset(arc.dat.melt,is.na(value)==F)
+# arc.dat.melt=merge(arc.dat.melt,param.list,"variable")
+arc.dat.melt$site=arc.dat.melt$'Site/Stream.Name'
+arc.dat.melt$variable=as.character(arc.dat.melt$variable)
+
+arc.dat.melt=merge(arc.dat.melt,subset(unit.all2,data.set=="ARC"))
+arc.dat.melt$value=with(arc.dat.melt,value*CF)
+
+## BcZO
+bczo.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_BcCZO.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+bczo.dat$Sampling.Date=convertToDate(bczo.dat$Sampling.Date)
+names(bczo.dat)
+bczo.dat[,c("TN","TP","NO3","NO2","DON")]=as.numeric(NA);
+bczo.dat=subset(bczo.dat,is.na('Site/Stream.Name')==F)
+
+bczo.dat.melt=melt(bczo.dat[,c(idvars,param.vars)],id.vars=idvars)
+bczo.dat.melt=subset(bczo.dat.melt,is.na(value)==F)
+bczo.dat.melt$site=bczo.dat.melt$'Site/Stream.Name'
+bczo.dat.melt$variable=as.character(bczo.dat.melt$variable)
+
+bczo.dat.melt=merge(bczo.dat.melt,subset(unit.all2,data.set=="BcCZO"))
+# charge blaance difference >10%,NP and DL in "value" field for some of the values.
+bczo.dat.melt$value=with(bczo.dat.melt,as.numeric(value)*CF)
+
+## Carey
+carey.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_Carey_6.12.20.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+carey.dat$Sampling.Date=convertToDate(carey.dat$Sampling.Date)
+carey.dat=carey.dat[2:nrow(carey.dat),]
+carey.dat[,6:ncol(carey.dat)]=sapply(carey.dat[,6:ncol(carey.dat)],as.numeric)
+carey.dat=rename(carey.dat,c("NO3.(uM)"="NO3","NO2.(uM)"="NO2"))
+carey.dat[,c("TDN","TDP","DON")]=as.numeric(NA)
+
+carey.dat.melt=melt(carey.dat[,c(idvars,param.vars)],id.vars=idvars)
+carey.dat.melt=subset(carey.dat.melt,is.na(value)==F)
+carey.dat.melt$site=carey.dat.melt$'Site/Stream.Name'
+carey.dat.melt$variable=as.character(carey.dat.melt$variable)
+
+carey.dat.melt=merge(carey.dat.melt,subset(unit.all2,data.set=="carey"))
+carey.dat.melt$value=with(carey.dat.melt,value*CF)
+
+## Coal Creek
+coal.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_Coal_Creek.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+coal.dat$Sampling.Date=convertToDate(coal.dat$Sampling.Date)
+names(coal.dat)
+coal.dat[,c("TDN","TDP","NO3","NO2")]=as.numeric(NA);
+
+coal.dat.melt=melt(coal.dat[,c(idvars,param.vars)],id.vars=idvars)
+coal.dat.melt=subset(coal.dat.melt,is.na(value)==F)
+coal.dat.melt$site=coal.dat.melt$'Site/Stream.Name'
+coal.dat.melt$variable=as.character(coal.dat.melt$variable)
+
+coal.dat.melt=merge(coal.dat.melt,subset(unit.all2,data.set=="coal"))
+coal.dat.melt$value=with(coal.dat.melt,value*CF)
+
+## CPCRW
+cpcrw.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_CPCRW.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+cpcrw.dat$Sampling.Date=convertToDate(cpcrw.dat$Sampling.Date)
+names(cpcrw.dat)
+cpcrw.dat[,c("TDN","TDP","NO3","NO2","DON")]=as.numeric(NA);
+
+cpcrw.dat.melt=melt(cpcrw.dat[,c(idvars,param.vars)],id.vars=idvars)
+cpcrw.dat.melt=subset(cpcrw.dat.melt,is.na(value)==F)
+cpcrw.dat.melt$site=cpcrw.dat.melt$'Site/Stream.Name'
+cpcrw.dat.melt$variable=as.character(cpcrw.dat.melt$variable)
+
+cpcrw.dat.melt=merge(cpcrw.dat.melt,subset(unit.all2,data.set=="cpcrw"))
+cpcrw.dat.melt$value=with(cpcrw.dat.melt,value*CF)
+
+#Knonza
+konza.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_Konza.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+konza.dat$Sampling.Date=convertToDate(konza.dat$Sampling.Date)
+names(konza.dat)
+konza.dat[,c("TDN","TDP","NO2","DON")]=as.numeric(NA);
+konza.dat=rename(konza.dat,c("no3"="NO3"))
+
+konza.dat.melt=melt(konza.dat[,c(idvars,param.vars)],id.vars=idvars)
+konza.dat.melt=subset(konza.dat.melt,is.na(value)==F)
+konza.dat.melt$site=konza.dat.melt$'Site/Stream.Name'
+konza.dat.melt$variable=as.character(konza.dat.melt$variable)
+
+konza.dat.melt=merge(konza.dat.melt,subset(unit.all2,data.set=="konza"))
+konza.dat.melt$value=with(konza.dat.melt,value*CF)
+
+## KRR
+KRR.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_KRR.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+KRR.dat$Sampling.Date=convertToDate(KRR.dat$Sampling.Date)
+names(KRR.dat)
+KRR.dat[,c("TDN","TDP","NO3","NO2","DON")]=as.numeric(NA);
+
+KRR.dat.melt=melt(KRR.dat[,c(idvars,param.vars)],id.vars=idvars)
+KRR.dat.melt=subset(KRR.dat.melt,is.na(value)==F)
+KRR.dat.melt$site=KRR.dat.melt$'Site/Stream.Name'
+KRR.dat.melt$variable=as.character(KRR.dat.melt$variable)
+
+KRR.dat.melt=merge(KRR.dat.melt,subset(unit.all2,data.set=="KRR"))
+KRR.dat.melt$value=with(KRR.dat.melt,value*CF)
+
+## MCM
+MCM.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_MCM.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+MCM.dat$Sampling.Date=convertToDate(MCM.dat$Sampling.Date)
+names(MCM.dat)
+MCM.dat[,c("TDN","TDP","NO3","NO2","DON")]=as.numeric(NA);
+
+MCM.dat.melt=melt(MCM.dat[,c(idvars,param.vars)],id.vars=idvars)
+MCM.dat.melt=subset(MCM.dat.melt,is.na(value)==F)
+MCM.dat.melt$site=MCM.dat.melt$'Site/Stream.Name'
+MCM.dat.melt$variable=as.character(MCM.dat.melt$variable)
+
+MCM.dat.melt=merge(MCM.dat.melt,subset(unit.all2,data.set=="MCM"))
+MCM.dat.melt$value=with(MCM.dat.melt,value*CF)
+
+## NWT
+NWT.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_NWT.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+NWT.dat$Sampling.Date=convertToDate(NWT.dat$Sampling.Date)
+names(NWT.dat)
+NWT.dat[,c("TDN","TDP","NO3","NO2","DON")]=as.numeric(NA);
+NWT.dat=rename(NWT.dat,c("InstantaneoNAs.Q.(Discharge)"="Instantaneous.Q.(Discharge)",
+                         "CondNActivity"="Conductivity",
+                         "TNArbidity"="Turbidity",
+                         "SNAspended.Chl"="Suspended.Chl"))
+# write.csv(NWT.dat[,c(idvars,param.vars)],paste0(export.path,"20200911_GD_NWT.csv"),row.names = F)
+
+NWT.dat.melt=melt(NWT.dat[,c(idvars,param.vars)],id.vars=idvars)
+NWT.dat.melt=subset(NWT.dat.melt,is.na(value)==F)
+NWT.dat.melt$site=NWT.dat.melt$'Site/Stream.Name'
+NWT.dat.melt$variable=as.character(NWT.dat.melt$variable)
+
+NWT.dat.melt=merge(NWT.dat.melt,subset(unit.all2,data.set=="NWT"))
+# View(NWT.dat.melt[is.na(as.numeric(NWT.dat.melt$value)),])
+# values reported less than MDL set to MDL
+NWT.dat.melt$value=with(NWT.dat.melt,ifelse(is.na(as.numeric(value)),as.numeric(substr(value,2,10)),as.numeric(value)))
+NWT.dat.melt$value=with(NWT.dat.melt,value*CF)
+
+## LMP
+LMP.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_V1_LMP.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+LMP.dat$Sampling.Date=convertToDate(LMP.dat$Sampling.Date)
+names(LMP.dat)
+LMP.dat[,c("TDP","NO3","NO2","DON")]=as.numeric(NA);
+
+LMP.dat.melt=melt(LMP.dat[,c(idvars,param.vars)],id.vars=idvars)
+LMP.dat.melt=subset(LMP.dat.melt,is.na(value)==F)
+LMP.dat.melt$site=LMP.dat.melt$'Site/Stream.Name'
+LMP.dat.melt$variable=as.character(LMP.dat.melt$variable)
+
+LMP.dat.melt=merge(LMP.dat.melt,subset(unit.all2,data.set=="LMP"))
+LMP.dat.melt$value=with(LMP.dat.melt,value*CF)
+
+## LUQ
+LUQ.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_V1_LUQ.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+LUQ.dat$Sampling.Date=convertToDate(LUQ.dat$Sampling.Date)
+names(LUQ.dat)
+LUQ.dat[,c("TDP","NO3","NO2","DON")]=as.numeric(NA);
+
+LUQ.dat.melt=melt(LUQ.dat[,c(idvars,param.vars)],id.vars=idvars)
+LUQ.dat.melt=subset(LUQ.dat.melt,is.na(value)==F)
+LUQ.dat.melt$site=LUQ.dat.melt$'Site/Stream.Name'
+LUQ.dat.melt$variable=as.character(LUQ.dat.melt$variable)
+
+LUQ.dat.melt=merge(LUQ.dat.melt,subset(unit.all2,data.set=="LUQ"))
+LUQ.dat.melt$value=with(LUQ.dat.melt,value*CF)
+
+## PIE
+pie.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_V1_PIEWatersheds.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+pie.dat$Sampling.Date=convertToDate(pie.dat$Sampling.Date)
+names(pie.dat)
+pie.dat[,c("TN","TDP","NO3","NO2","DON")]=as.numeric(NA);
+
+pie.dat.melt=melt(pie.dat[,c(idvars,param.vars)],id.vars=idvars)
+pie.dat.melt=subset(pie.dat.melt,is.na(value)==F)
+pie.dat.melt$site=pie.dat.melt$'Site/Stream.Name'
+pie.dat.melt$variable=as.character(pie.dat.melt$variable)
+
+pie.dat.melt=merge(pie.dat.melt,subset(unit.all2,data.set=="pie"))
+pie.dat.melt$value=with(pie.dat.melt,value*CF)
+
+## HJ Andrews
+hja.dat=read.xlsx(paste0(data.path,"HJAndrewsSiSyn.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+hja.dat$Sampling.Date=convertToDate(hja.dat$Sampling.Date)
+names(hja.dat)
+hja.dat=rename(hja.dat,c("Si"="DSi"))
+
+hja.dat[,c("TDN","TDP","NO3","NO2","DON","NH4")]=as.numeric(NA);
+hja.dat$NH4=hja.dat$NH3
+
+hja.dat.melt=melt(hja.dat[,c(idvars,param.vars)],id.vars=idvars)
+hja.dat.melt=subset(hja.dat.melt,is.na(value)==F)
+hja.dat.melt$site=hja.dat.melt$'Site/Stream.Name'
+hja.dat.melt$variable=as.character(hja.dat.melt$variable)
+
+hja.dat.melt=merge(hja.dat.melt,subset(unit.all2,data.set=="hja"))
+hja.dat.melt$value=with(hja.dat.melt,value*CF)
+
+# Sagehen
+sage.dat=read.xlsx(paste0(data.path,"SagehenSiSyn.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+sage.dat$Sampling.Date=convertToDate(sage.dat$Sampling.Date)
+names(sage.dat)
+
+sage.dat[,c("TDN","TDP","NO3","NO2","DON")]=as.numeric(NA);
+
+sage.dat.melt=melt(sage.dat[,c(idvars,param.vars)],id.vars=idvars)
+sage.dat.melt=subset(sage.dat.melt,is.na(value)==F)
+sage.dat.melt$site=sage.dat.melt$'Site/Stream.Name'
+sage.dat.melt$variable=as.character(sage.dat.melt$variable)
+
+spl=strsplit(as.character(sage.dat.melt$value)," ")
+tmp=data.frame(V1=sapply(spl,"[",1),V2=sapply(spl,"[",2),V3=sapply(spl,"[",3))
+tmp[is.na(as.numeric(tmp$V1)),]
+tmp[is.na(as.numeric(tmp$V2)),]
+tmp[is.na(as.numeric(tmp$V3)),]
+tail(unique(tmp$V1))
+unique(tmp$V2)
+unique(tmp$V3)
+
+tmp$value=with(tmp,ifelse(is.na(V1),as.character(V2),as.character(V1)))
+fatal.qual=c("+c","bn","@nc","@c","@rc","@","b","@bc")
+tmp$value=with(tmp,ifelse(V3%in%fatal.qual,NA,as.numeric(value)))
+sage.dat.melt$value=tmp$value
+
+sage.dat.melt=merge(sage.dat.melt,subset(unit.all2,data.set=="sage"))
+sage.dat.melt$value=with(sage.dat.melt,value*CF)
+
+# UMR
+umr.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_UMR.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+umr.dat$Sampling.Date=convertToDate(umr.dat$Sampling.Date)
+names(umr.dat)
+
+umr.dat[,c("TDN","TDP","NO3","NO2","DON")]=as.numeric(NA);
+# umr.dat[,c(idvars,param.vars)]
+
+umr.dat.melt=melt(umr.dat[,c(idvars,param.vars)],id.vars=idvars)
+umr.dat.melt=subset(umr.dat.melt,is.na(value)==F)
+umr.dat.melt$site=umr.dat.melt$'Site/Stream.Name'
+umr.dat.melt$variable=as.character(umr.dat.melt$variable)
+
+umr.dat.melt=merge(umr.dat.melt,subset(unit.all2,data.set=="umr"))
+umr.dat.melt$value=with(umr.dat.melt,value*CF)
+
+# Combine all data 
+master.dat=rbind(arc.dat.melt,bczo.dat.melt,carey.dat.melt,coal.dat.melt,cpcrw.dat.melt,
+                 konza.dat.melt,KRR.dat.melt,MCM.dat.melt,NWT.dat.melt,LMP.dat.melt,
+                 LUQ.dat.melt,pie.dat.melt,hja.dat.melt,sage.dat.melt,umr.dat.melt)
+master.dat=master.dat[,c( "LTER", "Site/Stream.Name","site", "Sampling.Date","variable","value")]
+# write.csv(master.dat,paste0(export.path,"20201015_masterdata.csv"),row.names=F)
