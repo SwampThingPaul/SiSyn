@@ -201,6 +201,10 @@ arc.dat.melt$site=arc.dat.melt$'Site/Stream.Name'
 arc.dat.melt$variable=as.character(arc.dat.melt$variable)
 
 arc.dat.melt=merge(arc.dat.melt,subset(unit.all2,data.set=="ARC"))
+subset(arc.dat.melt,value<0)
+subset(arc.dat.melt,value==0)
+arc.dat.melt$value[arc.dat.melt$value==0]=NA
+arc.dat.melt$value=with(arc.dat.melt, ifelse(value<0,abs(value),value))
 arc.dat.melt$value=with(arc.dat.melt,value*CF)
 
 ## BcZO
@@ -217,6 +221,8 @@ bczo.dat.melt$variable=as.character(bczo.dat.melt$variable)
 
 bczo.dat.melt=merge(bczo.dat.melt,subset(unit.all2,data.set=="BcCZO"))
 # charge blaance difference >10%,NP and DL in "value" field for some of the values.
+subset(bczo.dat.melt,value<0)
+bczo.dat.melt$value=with(bczo.dat.melt, ifelse(value<0,abs(value),value))
 bczo.dat.melt$value=with(bczo.dat.melt,as.numeric(value)*CF)
 
 ## Carey
@@ -233,6 +239,8 @@ carey.dat.melt$site=carey.dat.melt$'Site/Stream.Name'
 carey.dat.melt$variable=as.character(carey.dat.melt$variable)
 
 carey.dat.melt=merge(carey.dat.melt,subset(unit.all2,data.set=="carey"))
+subset(carey.dat.melt,value<0)
+carey.dat.melt$value=with(carey.dat.melt, ifelse(value<0,abs(value),value))
 carey.dat.melt$value=with(carey.dat.melt,value*CF)
 
 ## Coal Creek
@@ -247,6 +255,7 @@ coal.dat.melt$site=coal.dat.melt$'Site/Stream.Name'
 coal.dat.melt$variable=as.character(coal.dat.melt$variable)
 
 coal.dat.melt=merge(coal.dat.melt,subset(unit.all2,data.set=="coal"))
+subset(coal.dat.melt,value<0)
 coal.dat.melt$value=with(coal.dat.melt,value*CF)
 
 ## CPCRW
@@ -261,6 +270,8 @@ cpcrw.dat.melt$site=cpcrw.dat.melt$'Site/Stream.Name'
 cpcrw.dat.melt$variable=as.character(cpcrw.dat.melt$variable)
 
 cpcrw.dat.melt=merge(cpcrw.dat.melt,subset(unit.all2,data.set=="cpcrw"))
+subset(cpcrw.dat.melt,value<0)
+cpcrw.dat.melt$value=with(cpcrw.dat.melt, ifelse(value<0,abs(value),value))
 cpcrw.dat.melt$value=with(cpcrw.dat.melt,value*CF)
 
 #Knonza
@@ -276,6 +287,8 @@ konza.dat.melt$site=konza.dat.melt$'Site/Stream.Name'
 konza.dat.melt$variable=as.character(konza.dat.melt$variable)
 
 konza.dat.melt=merge(konza.dat.melt,subset(unit.all2,data.set=="konza"))
+subset(konza.dat.melt,value<0)
+konza.dat.melt$value=with(konza.dat.melt, ifelse(value<0,abs(value),value))
 konza.dat.melt$value=with(konza.dat.melt,value*CF)
 
 ## KRR
@@ -290,6 +303,7 @@ KRR.dat.melt$site=KRR.dat.melt$'Site/Stream.Name'
 KRR.dat.melt$variable=as.character(KRR.dat.melt$variable)
 
 KRR.dat.melt=merge(KRR.dat.melt,subset(unit.all2,data.set=="KRR"))
+subset(KRR.dat.melt,value<0)
 KRR.dat.melt$value=with(KRR.dat.melt,value*CF)
 
 ## MCM
@@ -304,6 +318,8 @@ MCM.dat.melt$site=MCM.dat.melt$'Site/Stream.Name'
 MCM.dat.melt$variable=as.character(MCM.dat.melt$variable)
 
 MCM.dat.melt=merge(MCM.dat.melt,subset(unit.all2,data.set=="MCM"))
+subset(MCM.dat.melt,value<0)
+MCM.dat.melt$value=with(MCM.dat.melt, ifelse(value<0,abs(value),value))
 MCM.dat.melt$value=with(MCM.dat.melt,value*CF)
 
 ## NWT
@@ -326,6 +342,8 @@ NWT.dat.melt=merge(NWT.dat.melt,subset(unit.all2,data.set=="NWT"))
 # View(NWT.dat.melt[is.na(as.numeric(NWT.dat.melt$value)),])
 # values reported less than MDL set to MDL
 NWT.dat.melt$value=with(NWT.dat.melt,ifelse(is.na(as.numeric(value)),as.numeric(substr(value,2,10)),as.numeric(value)))
+subset(NWT.dat.melt,value<0)
+NWT.dat.melt$value=with(NWT.dat.melt, ifelse(value<0,abs(value),value))
 NWT.dat.melt$value=with(NWT.dat.melt,value*CF)
 
 ## LMP
@@ -340,6 +358,10 @@ LMP.dat.melt$site=LMP.dat.melt$'Site/Stream.Name'
 LMP.dat.melt$variable=as.character(LMP.dat.melt$variable)
 
 LMP.dat.melt=merge(LMP.dat.melt,subset(unit.all2,data.set=="LMP"))
+unique(subset(LMP.dat.melt,value<0)$value)
+LMP.dat.melt$value[LMP.dat.melt$value==-9999]=NA
+LMP.dat.melt$value[LMP.dat.melt$value==-888]=NA
+LMP.dat.melt$value=with(LMP.dat.melt, ifelse(value<0,abs(value),value))
 LMP.dat.melt$value=with(LMP.dat.melt,value*CF)
 
 ## LUQ
@@ -354,6 +376,8 @@ LUQ.dat.melt$site=LUQ.dat.melt$'Site/Stream.Name'
 LUQ.dat.melt$variable=as.character(LUQ.dat.melt$variable)
 
 LUQ.dat.melt=merge(LUQ.dat.melt,subset(unit.all2,data.set=="LUQ"))
+subset(LUQ.dat.melt,value<0)
+LUQ.dat.melt$value=with(LUQ.dat.melt, ifelse(value<0,abs(value),value))
 LUQ.dat.melt$value=with(LUQ.dat.melt,value*CF)
 
 ## PIE
@@ -368,6 +392,8 @@ pie.dat.melt$site=pie.dat.melt$'Site/Stream.Name'
 pie.dat.melt$variable=as.character(pie.dat.melt$variable)
 
 pie.dat.melt=merge(pie.dat.melt,subset(unit.all2,data.set=="pie"))
+subset(pie.dat.melt,value<0)
+pie.dat.melt$value=with(pie.dat.melt, ifelse(value<0,abs(value),value))
 pie.dat.melt$value=with(pie.dat.melt,value*CF)
 
 ## HJ Andrews
@@ -385,6 +411,7 @@ hja.dat.melt$site=hja.dat.melt$'Site/Stream.Name'
 hja.dat.melt$variable=as.character(hja.dat.melt$variable)
 
 hja.dat.melt=merge(hja.dat.melt,subset(unit.all2,data.set=="hja"))
+subset(hja.dat.melt,value<0)
 hja.dat.melt$value=with(hja.dat.melt,value*CF)
 
 # Sagehen
@@ -412,6 +439,7 @@ tmp$value=with(tmp,ifelse(is.na(V1),as.character(V2),as.character(V1)))
 fatal.qual=c("+c","bn","@nc","@c","@rc","@","b","@bc")
 tmp$value=with(tmp,ifelse(V3%in%fatal.qual,NA,as.numeric(value)))
 sage.dat.melt$value=tmp$value
+subset(sage.dat.melt,value<0)
 
 sage.dat.melt=merge(sage.dat.melt,subset(unit.all2,data.set=="sage"))
 sage.dat.melt$value=with(sage.dat.melt,value*CF)
@@ -430,6 +458,8 @@ umr.dat.melt$site=umr.dat.melt$'Site/Stream.Name'
 umr.dat.melt$variable=as.character(umr.dat.melt$variable)
 
 umr.dat.melt=merge(umr.dat.melt,subset(unit.all2,data.set=="umr"))
+subset(umr.dat.melt,value<0)
+umr.dat.melt$value=with(umr.dat.melt, ifelse(value<0,abs(value),value))
 umr.dat.melt$value=with(umr.dat.melt,value*CF)
 
 # Combine all data 
@@ -439,6 +469,10 @@ master.dat=rbind(arc.dat.melt,bczo.dat.melt,carey.dat.melt,coal.dat.melt,cpcrw.d
 master.dat=master.dat[,c( "LTER", "Site/Stream.Name","site", "Sampling.Date","variable","value")]
 # write.csv(master.dat,paste0(export.path,"20201015_masterdata.csv"),row.names=F)
 
-plot(value~site,subset(master.dat,variable=="DSi"))
+master.dat$site=as.factor(master.dat$site)
+
+boxplot(value~site,subset(master.dat,variable=="DSi"),log="y",col="grey",ylab="DSi (uM)")
 
 range(subset(master.dat,variable=="DSi")$value,na.rm=T)
+subset(master.dat,variable=="DSi"&value<0)
+subset(master.dat,variable=="DSi"&site==1)
