@@ -438,3 +438,7 @@ master.dat=rbind(arc.dat.melt,bczo.dat.melt,carey.dat.melt,coal.dat.melt,cpcrw.d
                  LUQ.dat.melt,pie.dat.melt,hja.dat.melt,sage.dat.melt,umr.dat.melt)
 master.dat=master.dat[,c( "LTER", "Site/Stream.Name","site", "Sampling.Date","variable","value")]
 # write.csv(master.dat,paste0(export.path,"20201015_masterdata.csv"),row.names=F)
+
+plot(value~site,subset(master.dat,variable=="DSi"))
+
+range(subset(master.dat,variable=="DSi")$value,na.rm=T)
