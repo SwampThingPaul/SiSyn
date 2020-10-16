@@ -206,7 +206,7 @@ subset(arc.dat.melt,value==0)
 arc.dat.melt$value[arc.dat.melt$value==0]=NA
 arc.dat.melt$value=with(arc.dat.melt, ifelse(value<0,abs(value),value))
 arc.dat.melt$value=with(arc.dat.melt,value*CF)
-
+arc.dat.melt$LTER="ARC"
 ## BcZO
 bczo.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_BcCZO.xlsx"),sheet=1,startRow=2,na.strings = "NA")
 bczo.dat$Sampling.Date=convertToDate(bczo.dat$Sampling.Date)
@@ -222,9 +222,10 @@ bczo.dat.melt$variable=as.character(bczo.dat.melt$variable)
 bczo.dat.melt=merge(bczo.dat.melt,subset(unit.all2,data.set=="BcCZO"))
 # charge blaance difference >10%,NP and DL in "value" field for some of the values.
 subset(bczo.dat.melt,value<0)
+bczo.dat.melt$value=as.numeric(bczo.dat.melt$value)
 bczo.dat.melt$value=with(bczo.dat.melt, ifelse(value<0,abs(value),value))
 bczo.dat.melt$value=with(bczo.dat.melt,as.numeric(value)*CF)
-
+bczo.dat.melt$LTER="BcCZO"
 ## Carey
 carey.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_Carey_6.12.20.xlsx"),sheet=1,startRow=2,na.strings = "NA")
 carey.dat$Sampling.Date=convertToDate(carey.dat$Sampling.Date)
@@ -242,6 +243,7 @@ carey.dat.melt=merge(carey.dat.melt,subset(unit.all2,data.set=="carey"))
 subset(carey.dat.melt,value<0)
 carey.dat.melt$value=with(carey.dat.melt, ifelse(value<0,abs(value),value))
 carey.dat.melt$value=with(carey.dat.melt,value*CF)
+carey.dat.melt$LTER="Ipswitch(Carey)"
 
 ## Coal Creek
 coal.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_Coal_Creek.xlsx"),sheet=1,startRow=2,na.strings = "NA")
@@ -305,6 +307,7 @@ KRR.dat.melt$variable=as.character(KRR.dat.melt$variable)
 KRR.dat.melt=merge(KRR.dat.melt,subset(unit.all2,data.set=="KRR"))
 subset(KRR.dat.melt,value<0)
 KRR.dat.melt$value=with(KRR.dat.melt,value*CF)
+KRR.dat.melt$LTER="KRR(Julian)"
 
 ## MCM
 MCM.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_MCM.xlsx"),sheet=1,startRow=2,na.strings = "NA")
@@ -358,11 +361,12 @@ LMP.dat.melt$site=LMP.dat.melt$'Site/Stream.Name'
 LMP.dat.melt$variable=as.character(LMP.dat.melt$variable)
 
 LMP.dat.melt=merge(LMP.dat.melt,subset(unit.all2,data.set=="LMP"))
-unique(subset(LMP.dat.melt,value<0)$value)
+subset(LMP.dat.melt,value<0)
 LMP.dat.melt$value[LMP.dat.melt$value==-9999]=NA
 LMP.dat.melt$value[LMP.dat.melt$value==-888]=NA
 LMP.dat.melt$value=with(LMP.dat.melt, ifelse(value<0,abs(value),value))
 LMP.dat.melt$value=with(LMP.dat.melt,value*CF)
+KRR.dat.melt$LTER="LMP(Wymore)"
 
 ## LUQ
 LUQ.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_V1_LUQ.xlsx"),sheet=1,startRow=2,na.strings = "NA")
@@ -443,7 +447,7 @@ subset(sage.dat.melt,value<0)
 
 sage.dat.melt=merge(sage.dat.melt,subset(unit.all2,data.set=="sage"))
 sage.dat.melt$value=with(sage.dat.melt,value*CF)
-
+sage.dat.melt$LTER="Sagehen(Sullivan)"
 # UMR
 umr.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_UMR.xlsx"),sheet=1,startRow=2,na.strings = "NA")
 umr.dat$Sampling.Date=convertToDate(umr.dat$Sampling.Date)
@@ -461,17 +465,30 @@ umr.dat.melt=merge(umr.dat.melt,subset(unit.all2,data.set=="umr"))
 subset(umr.dat.melt,value<0)
 umr.dat.melt$value=with(umr.dat.melt, ifelse(value<0,abs(value),value))
 umr.dat.melt$value=with(umr.dat.melt,value*CF)
-
+umr.dat.melt$LTER="UMR(Jankowski)"
 # Combine all data 
 master.dat=rbind(arc.dat.melt,bczo.dat.melt,carey.dat.melt,coal.dat.melt,cpcrw.dat.melt,
                  konza.dat.melt,KRR.dat.melt,MCM.dat.melt,NWT.dat.melt,LMP.dat.melt,
                  LUQ.dat.melt,pie.dat.melt,hja.dat.melt,sage.dat.melt,umr.dat.melt)
 master.dat=master.dat[,c( "LTER", "Site/Stream.Name","site", "Sampling.Date","variable","value")]
+master.dat$value[master.dat$value==0]=NA
+master.dat=subset(master.dat,is.na(value)==F)
+subset(master.dat, value==0)
+
+summary(master.dat)
 # write.csv(master.dat,paste0(export.path,"20201015_masterdata.csv"),row.names=F)
 
-master.dat$site=as.factor(master.dat$site)
-
 boxplot(value~site,subset(master.dat,variable=="DSi"),log="y",col="grey",ylab="DSi (uM)")
+
+# tiff(filename=paste0(plot.path,"site_DSi_boxplot.tiff"),width=7,height=4,units="in",res=200,type="windows",compression=c("lzw"),bg="white")
+par(family="serif",mar=c(6,4,0.75,0.5),oma=c(2,1,0.5,0.5));
+ylim.val=c(0.01,2e5);ymaj=log.scale.fun(ylim.val,"major");ymin=log.scale.fun(ylim.val,"minor")
+x=boxplot(value~LTER,subset(master.dat,variable=="DSi"),log="y",col="grey",pch=21,cex=0.5,bg=adjustcolor("grey",0.25),axes=F,ann=F,ylim=ylim.val)
+axis_fun(2,ymaj,ymin,format(ymaj,scientific = F),0.8,maj.tcl=-0.5,min.tcl=-0.25,line=-0.4)
+axis_fun(1,1:length(x$names),1:length(x$names),NA);box(lwd=1)
+text(1:length(x$names),rep(0.0015,length(x$names)),x$names,srt=90,xpd=NA,adj=1,cex=0.8)
+mtext(side=2,line=3.5,"DSi (\u03BCM)")
+dev.off()
 
 range(subset(master.dat,variable=="DSi")$value,na.rm=T)
 subset(master.dat,variable=="DSi"&value<0)
