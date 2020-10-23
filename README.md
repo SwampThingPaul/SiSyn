@@ -31,33 +31,6 @@ Jankowski, US Geological Survey
 > respond to global change.
 
 -----
-
-Participants:
-
-  - William Bowden - ARC
-
-  - Joanna Carey (Babson College)
-
-  - John Crawford - NWT
-
-  - Linda Deegan - ARC
-
-  - KathiJo Jankowski (USGS)
-
-  - Ruth Heindel - MCM
-
-  - Jeremy Jones - BNZ
-
-  - Paul Julian
-
-  - William McDowell - LUQ
-
-  - Diane McKnight - MCM
-
-  - Pamela Sullivan - KNZ
-
-  - Wilfred Wollheim - PIE
-
-  - Adam Wymore - LUQ
-
+## Git/GitHub workflow resources:
+-  [A successful Git branching model](https://nvie.com/posts/a-successful-git-branching-model/) by [Vincent Driessen](https://nvie.com/about/)
 -----
