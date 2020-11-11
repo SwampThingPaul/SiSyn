@@ -99,8 +99,10 @@ sage.unit=read.xlsx(paste0(data.path,"SagehenSiSyn.xlsx"),sheet=2,startRow=1,na.
 sage.unit$data.set="sage"
 umr.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_UMR.xlsx"),sheet=2,startRow=1,na.strings = "NA")
 umr.unit$data.set="umr"
+tang.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_Tanguro.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+tang.unit$data.set="tanguro"
 
-unit.all=rbind(arc.unit,bczo.unit,carey.unit,coal.unit,cpcrw.unit,konza.unit,KRR.unit,MCM.unit,NWT.unit,LMP.unit,LUQ.unit,pie.unit,hja.unit,sage.unit,umr.unit)
+unit.all=rbind(arc.unit,bczo.unit,carey.unit,coal.unit,cpcrw.unit,konza.unit,KRR.unit,MCM.unit,NWT.unit,LMP.unit,LUQ.unit,pie.unit,hja.unit,sage.unit,umr.unit,tang.unit)
 
 # https://ocean.ices.dk/tools/unitconversion.aspx
 # http://www.salinitymanagement.org/Salinity%20Management%20Guide/ls/ls_3c.html
@@ -158,12 +160,6 @@ unit.all$CF=with(unit.all,ifelse(Unit=="cms",1,CF))
 unit.all$CF=with(unit.all,ifelse(Measurement=="pH",1,CF))
 unit.all$CF=with(unit.all,ifelse(Measurement=="TDP"&Unit=="mM P",1000,CF))
 
-other.vars=c("Temp","Conductivity","Specific Conductance","Turbidity","TSS","VSS", "Chl a (benthic)", "Chl a (suspended)")
-unit.all$CF=with(unit.all,ifelse(Measurement%in%other.vars,1,CF))
-
-subset(unit.all,Measurement=="Instantaneous Q")
-subset(unit.all,Measurement=="Daily Avg Q")
-
 meas.var=data.frame(Measurement=c("Alkalinity", "ANC", "Ca", "Chl a (benthic)", "Chl a (suspended)", 
                          "Cl", "Conductivity", "Daily Avg Q", "DIC", "DIN", "DOC", "DON", 
                          "DTN", "Instantaneous Q", "K", "Mg", "Na", "NH4", "NO3", "NOX", 
@@ -176,11 +172,28 @@ meas.var=data.frame(Measurement=c("Alkalinity", "ANC", "Ca", "Chl a (benthic)", 
                       "pH", "PO4", "DSi", "SO4", "Spec.Cond", "SRP", "Stage.Height", 
                       "TDN", "TDP", "Temp.C", "TN", "TOC", "TP", "TSS", "Turbidity", 
                       "VSS"))
-unit.all=merge(unit.all,meas.var,"Measurement")
+meas.var2=data.frame(data.set=sort(rep(unique(unit.all$data.set),nrow(meas.var))),
+           Measurement=rep(meas.var$Measurement,length(unique(unit.all$data.set))),
+           variable=rep(meas.var$variable,length(unique(unit.all$data.set))))
+
+
+unit.all=merge(unit.all,meas.var2,c("Measurement","data.set"),all.y=T)
 head(unit.all)
+
+subset(unit.all,data.set=="ARC")
+other.vars=c("Temp","Conductivity","Specific Conductance","Turbidity","TSS","VSS", "Chl a (benthic)", "Chl a (suspended)")
+unit.all$CF=with(unit.all,ifelse(Measurement%in%other.vars,1,CF))
+
+subset(unit.all,Measurement=="Instantaneous Q")
+subset(unit.all,Measurement=="Daily Avg Q")
+
 unit.all2=unit.all[,c("variable","data.set","CF")]
 ##
 data.filelist=list.files(data.path)
+
+## EDI and Data template merged (by Dr Kristen Peach, peach@nceas.ucsb.edu)
+## Data from ARC, NWT and HBR sites (unknown units and site lat/long for HBR)
+# edi.merge.dat=read.xlsx(paste0(data.path,"SiSyn_DataEDIMerge_102920.xlsx"),sheet=1,startRow=1,na.strings = "NA")
 
 ## ARCLTER
 arc.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_ARCLTER_05012020.xlsx"),sheet=1,startRow=2,na.strings = "NA")
@@ -309,6 +322,8 @@ subset(KRR.dat.melt,value<0)
 KRR.dat.melt$value=with(KRR.dat.melt,value*CF)
 KRR.dat.melt$LTER="KRR(Julian)"
 
+subset(KRR.dat.melt,variable=="Suspended.Chl")
+
 ## MCM
 MCM.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_MCM.xlsx"),sheet=1,startRow=2,na.strings = "NA")
 MCM.dat$Sampling.Date=convertToDate(MCM.dat$Sampling.Date)
@@ -366,7 +381,7 @@ LMP.dat.melt$value[LMP.dat.melt$value==-9999]=NA
 LMP.dat.melt$value[LMP.dat.melt$value==-888]=NA
 LMP.dat.melt$value=with(LMP.dat.melt, ifelse(value<0,abs(value),value))
 LMP.dat.melt$value=with(LMP.dat.melt,value*CF)
-KRR.dat.melt$LTER="LMP(Wymore)"
+LMP.dat.melt$LTER="LMP(Wymore)"
 
 ## LUQ
 LUQ.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_V1_LUQ.xlsx"),sheet=1,startRow=2,na.strings = "NA")
@@ -448,6 +463,7 @@ subset(sage.dat.melt,value<0)
 sage.dat.melt=merge(sage.dat.melt,subset(unit.all2,data.set=="sage"))
 sage.dat.melt$value=with(sage.dat.melt,value*CF)
 sage.dat.melt$LTER="Sagehen(Sullivan)"
+
 # UMR
 umr.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_UMR.xlsx"),sheet=1,startRow=2,na.strings = "NA")
 umr.dat$Sampling.Date=convertToDate(umr.dat$Sampling.Date)
@@ -466,10 +482,30 @@ subset(umr.dat.melt,value<0)
 umr.dat.melt$value=with(umr.dat.melt, ifelse(value<0,abs(value),value))
 umr.dat.melt$value=with(umr.dat.melt,value*CF)
 umr.dat.melt$LTER="UMR(Jankowski)"
+
+# Tanguro
+tango.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_Tanguro.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+tango.dat$Sampling.Date=convertToDate(tango.dat$Sampling.Date)
+names(tango.dat)
+tango.dat[,c("TDN","TDP","NO3","NO2","DON")]=as.numeric(NA);
+
+tango.dat.melt=melt(tango.dat[,c(idvars,param.vars)],id.vars=idvars)
+tango.dat.melt=subset(tango.dat.melt,is.na(value)==F)
+tango.dat.melt$site=tango.dat.melt$'Site/Stream.Name'
+tango.dat.melt$variable=as.character(tango.dat.melt$variable)
+tango.dat.melt$value=as.numeric(tango.dat.melt$value)
+
+tango.dat.melt=merge(tango.dat.melt,subset(unit.all2,data.set=="tanguro"))
+subset(tango.dat.melt,value<0)
+tango.dat.melt$value=with(tango.dat.melt, ifelse(value<0,abs(value),value))
+tango.dat.melt$value=with(tango.dat.melt,value*CF)
+tango.dat.melt$LTER="Tanguro(Jankowski)"
+
 # Combine all data 
 master.dat=rbind(arc.dat.melt,bczo.dat.melt,carey.dat.melt,coal.dat.melt,cpcrw.dat.melt,
                  konza.dat.melt,KRR.dat.melt,MCM.dat.melt,NWT.dat.melt,LMP.dat.melt,
-                 LUQ.dat.melt,pie.dat.melt,hja.dat.melt,sage.dat.melt,umr.dat.melt)
+                 LUQ.dat.melt,pie.dat.melt,hja.dat.melt,sage.dat.melt,umr.dat.melt,
+                 tango.dat.melt)
 master.dat=master.dat[,c( "LTER", "Site/Stream.Name","site", "Sampling.Date","variable","value")]
 master.dat$value[master.dat$value==0]=NA
 master.dat=subset(master.dat,is.na(value)==F)
@@ -477,6 +513,9 @@ subset(master.dat, value==0)
 
 summary(master.dat)
 # write.csv(master.dat,paste0(export.path,"20201015_masterdata.csv"),row.names=F)
+
+# Chlorophyll data should be in master data
+# write.csv(master.dat,paste0(export.path,"20201111_masterdata.csv"),row.names=F)
 
 boxplot(value~site,subset(master.dat,variable=="DSi"),log="y",col="grey",ylab="DSi (uM)")
 
@@ -493,3 +532,14 @@ dev.off()
 range(subset(master.dat,variable=="DSi")$value,na.rm=T)
 subset(master.dat,variable=="DSi"&value<0)
 subset(master.dat,variable=="DSi"&site==1)
+
+
+# tiff(filename=paste0(plot.path,"site_Chla_boxplot.tiff"),width=5,height=4.5,units="in",res=200,type="windows",compression=c("lzw"),bg="white")
+par(family="serif",mar=c(6,4,0.75,0.5),oma=c(2,1,0.5,0.5));
+ylim.val=c(0.01,400);ymaj=log.scale.fun(ylim.val,"major");ymin=log.scale.fun(ylim.val,"minor")
+x=boxplot(value~LTER,subset(master.dat,variable%in%c("Suspended.Chl","Benthic.Chl")),log="y",col="grey",pch=21,cex=0.5,bg=adjustcolor("grey",0.25),axes=F,ann=F,ylim=ylim.val)
+axis_fun(2,ymaj,ymin,format(ymaj,scientific = F),0.8,maj.tcl=-0.5,min.tcl=-0.25,line=-0.4)
+axis_fun(1,1:length(x$names),1:length(x$names),NA);box(lwd=1)
+text(1:length(x$names),rep(0.0025,length(x$names)),x$names,srt=90,xpd=NA,adj=1,cex=0.8)
+mtext(side=2,line=3.5,"Chlorophyll (\u03BCg L\u207B\u00B9)")
+dev.off()
