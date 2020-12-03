@@ -160,5 +160,3 @@ for (i in 1:length(WRTDS_files)) {
   dev.off()
   
 }
-
-WRTDS_files[24]
