@@ -1,0 +1,164 @@
+LTER,Stream,DischargeFileName,USGSGageYN,USGSGageNumber,USGSGageName,NonUSGSGageSiteName,Units,DataQTemplate,DataDataTemplate,Downloaded,USGSGageNameFull
+AND,GSLOOK,AND_GSLOOK_Q,Y,14161500,"Lookout Creek near Blue River, OR",,cfs,Y,,Y,14161500
+AND,GSMACK,AND_GSWSMC_Q,N,NA,,GSWSMC,cfs,N,,,NA
+AND,GSWS01,AND_GSWS01_Q,N,NA,,GSWS01,cfs,Y,,Y,NA
+AND,GSWS02,AND_GSWS02_Q,N,NA,,GSWS02,cfs,Y,,Y,NA
+AND,GSWS03,AND_GSWS03_Q,N,NA,,GSWS03,cfs,Y,,Y,NA
+AND,GSWS06,AND_GSWS06_Q,N,NA,,GSWS06,cfs,N,,Y,NA
+AND,GSWS07,AND_GSWS07_Q,N,NA,,GSWS07,cfs,N,,Y,NA
+AND,GSWS08,AND_GSWS08_Q,N,NA,,GSWS08,cfs,N,,Y,NA
+AND,GSWS09,AND_GSWS09_Q,N,NA,,GSWS09,cfs,N,,Y,NA
+AND,GSWS10,AND_GSWS10_Q,N,NA,,GSWS10,cfs,N,,Y,NA
+ARC,I Minus 02,ARC_I8Outlet_Q,N,NA,,I8 Outlet,cfs,Y,,Y,NA
+ARC,I Minus Inlet,ARC_I8Outlet_Q,N,NA,,I8 Outlet,cfs,Y,,Y,NA
+ARC,I Minus Outlet,ARC_I8Outlet_Q,N,NA,,I8 Outlet,cfs,Y,,Y,NA
+ARC,I Swamp Inlet,ARC_I8Outlet_Q,N,NA,,I8 Outlet,cfs,Y,,Y,NA
+ARC,I1 into I3,ARC_I8Outlet_Q,N,NA,,I8 Outlet,cfs,Y,,Y,NA
+ARC,I1 Outlet,ARC_I8Outlet_Q,N,NA,,I8 Outlet,cfs,Y,,Y,NA
+ARC,I2 into,ARC_I8Outlet_Q,N,NA,,I8 Outlet,cfs,Y,,Y,NA
+ARC,I2 Outlet,ARC_I8Outlet_Q,N,NA,,I8 Outlet,cfs,Y,,Y,NA
+ARC,I3 Outlet,ARC_I8Outlet_Q,N,NA,,I8 Outlet,cfs,Y,,Y,NA
+ARC,I4 Into I5,ARC_I8Outlet_Q,N,NA,,I8 Outlet,cfs,Y,,Y,NA
+ARC,I4 Outlet,ARC_I8Outlet_Q,N,NA,,I8 Outlet,cfs,Y,,Y,NA
+ARC,I5 Into,ARC_I8Outlet_Q,N,NA,,I8 Outlet,cfs,Y,,Y,NA
+ARC,I5 into I6,ARC_I8Outlet_Q,N,NA,,I8 Outlet,cfs,Y,,Y,NA
+ARC,I5 Outlet,ARC_I8Outlet_Q,N,NA,,I8 Outlet,cfs,Y,,Y,NA
+ARC,I5 Outlet,ARC_I8Outlet_Q,N,NA,,I8 Outlet,cfs,Y,,Y,NA
+ARC,I6 Headwater Lake Outlet,ARC_I8Outlet_Q,N,NA,,I8 Outlet,cfs,Y,,Y,NA
+ARC,I6 Inlets West,ARC_I8Outlet_Q,N,NA,,I8 Outlet,cfs,Y,,Y,NA
+ARC,I6 Outlet,ARC_I8Outlet_Q,N,NA,,I8 Outlet,cfs,Y,,Y,NA
+ARC,I7 into I9,ARC_I8Outlet_Q,N,NA,,I8 Outlet,cfs,Y,,Y,NA
+ARC,I7 Outlet,ARC_I8Outlet_Q,N,NA,,I8 Outlet,cfs,Y,,Y,NA
+ARC,I8 Headwater,ARC_I8Outlet_Q,N,NA,,I8 Outlet,cfs,Y,,Y,NA
+ARC,I8 Inlet,ARC_I8Outlet_Q,N,NA,,I8 Outlet,cfs,Y,,Y,NA
+ARC,I8 Into I9,ARC_I8Outlet_Q,N,NA,,I8 Outlet,cfs,Y,,Y,NA
+ARC,I8 Outlet,ARC_I8Outlet_Q,N,NA,,I8 Outlet,cfs,Y,,Y,NA
+ARC,Imnavait Upper,ARC_ImnavaitCrk_Q,N,NA,,ImnavaitCr,cfs,Y,,Y,NA
+ARC,Imnavait Weir,ARC_ImnavaitCrk_Q,N,NA,,ImnavaitCr,cfs,Y,,Y,NA
+ARC,Imnavait WT07Weir,ARC_ImnavaitCrk_Q,N,NA,,ImnavaitCr,cfs,Y,,Y,NA
+ARC,KUP 1.1,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 10.1,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 10.2,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 11.1,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 11.2,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 11.3,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 12.1,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 12.2,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 12.3,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 13.1,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 13.2,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 14.1,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 14.2,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 14.3,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 14.4,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 16.1,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 16.2,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 16.3,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 17.1,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 17.2,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 17.3,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 17.4,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 18.1,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 18.2,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 18.3,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 19.1,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 19.2,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 2.1,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 2.2,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 2.3,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 2.4,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 3.1,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 4.1,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 4.2,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 4.3,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 5.1,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 5.2,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 5.3,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 6.1,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 6.2,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 6.3,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 7.1,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 8.1,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 8.2,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 8.3,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 9.1,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+ARC,KUP 9.2,ARC_UpperKuparik_Q,N,NA,,Upper_Kuparuk_River,cfs,Y,,Y,NA
+BcCZO,BC_SW_12,BcCZO_BC_Q,N,NA,,BOCOROCO,cfs,N,,Y,NA
+BcCZO,BC_SW_2,BcCZO_BC_Q,N,NA,,BOCOROCO,cfs,N,,Y,NA
+BcCZO,BC_SW_20,BcCZO_BC_Q,N,NA,,BOCOROCO,cfs,N,,Y,NA
+BcCZO,BC_SW_4,BcCZO_BC_Q,N,NA,,BOCOROCO,cfs,N,,Y,NA
+BcCZO,GGL_SW_0,BcCZO_GGL_Q,N,NA,,GGL_SW_0,cms,Y,,Y,NA
+BcCZO,GGL_SW_0_ISCO,BcCZO_GGL_Q,N,NA,,GGL_SW_0,cms,Y,,Y,NA
+BcCZO,GGU_SPW_1,BcCZO_GGU_Q,N,NA,,GGU_SW_0,cms,Y,,Y,NA
+BcCZO,GGU_SPW_2,BcCZO_GGU_Q,N,NA,,GGU_SW_0,cms,Y,,Y,NA
+BcCZO,GGU_SW_0,BcCZO_GGU_Q,N,NA,,GGU_SW_0,cms,Y,,Y,NA
+BcCZO,GGU_SW_0_ISCO,BcCZO_GGU_Q,N,NA,,GGU_SW_0,cms,Y,,Y,NA
+BNZ,C2,BNZ_C2_Q,N,NA,,C2,Ls,Y,,Y,NA
+BNZ,C3,BNZ_C3_Q,N,NA,,C3,Ls,Y,,Y,NA
+BNZ,C4,BNZ_C4_Q,N,NA,,C4,Ls,Y,,Y,NA
+BNZ,CB,BNZ_CB_Q,N,NA,,CB,Ls,Y,,Y,NA
+BNZ,CJ,BNZ_CJ_Q,N,NA,,CJ,Ls,Y,,Y,NA
+BNZ,P6,BNZ_P6_Q,N,NA,,P6,Ls,Y,,Y,NA
+BNZ,PC,BNZ_PC_Q,N,NA,,PC,Ls,Y,,Y,NA
+BNZ,PJ,BNZ_PJ_Q,N,NA,,PJ,Ls,Y,,Y,NA
+Carey,Aberjona,Carey_Aberjona_Q,Y,1102500,"Aberjona River at Winchester, MA",,cfs,N,,Y,01102500
+PIE,Ipswich at Ipswich,PIE_IpswichIps_Q,Y,1102000,"Ipswich River NR Ipswich, MA",,cfs,N,,Y,01102000
+PIE,Ipswich at Middleton,PIE_IpswichMid_Q,Y,1101500,"Ipswich River at S Middleton, MA",,cfs,N,,Y,01101500
+PIE,Parker,PIE_Parker_Q,Y,1101000,"Parker River at Byfield, MA",,cfs,N,,Y,01101000
+Coal Creek,Coal Creek,Coal_CoalCrk_Q,Y,9111250,"COAL CREEK ABV MCCORMICK DTCH AT CRESTED BUTTE, CO",,cfs,Y,,Y,09111250
+KRR,S65,KRR_S65_Q,N,NA,,S65,cfs,Y,,Y,NA
+KRR,S65A,KRR_S65A_Q,N,NA,,S65A,cfs,Y,,Y,NA
+KRR,S65B,KRR_S65B_Q,N,NA,,S65B,cfs,Y,,Y,NA
+KRR,S65C,KRR_S65C_Q,N,NA,,S65C,cfs,Y,,Y,NA
+KRR,S65D,KRR_S65D_Q,N,NA,,S65D,cfs,Y,,Y,NA
+KRR,S65E,KRR_S65E_Q,N,NA,,S65E,cfs,Y,,Y,NA
+KNZ,Kings,KNZ_Kings_Q,Y,6879650,"Kings Creek NR MANHATTAN, KS",Kings,cfs,Y,,Y,06879650
+KNZ,n01b,KNZ_n01b_Q,N,NA,,n01b,cms,Y,,Y,NA
+KNZ,n02b,KNZ_n02b_Q,N,NA,,n02b,cms,Y,,Y,NA
+KNZ,n04d,KNZ_n04d_Q,N,NA,,n04d,cms,Y,,Y,NA
+LMP,LMP73,LMP_LMP73_Q,Y,1073500,"Lamprey River near Newmarket, NH",,cfs,N,,Y,01073500
+LUQ,MPR,LUQ_MPR_Q,Y,50065500,"Rio Mameyes NR Sabana, PR",,cfs,Y,,Y,50065500
+LUQ,Q1,LUQ_Q1_Q,N,NA,,Q1,cms,Y,,Y,NA
+LUQ,Q2,LUQ_Q2_Q,N,NA,,Q2,cms,Y,,Y,NA
+LUQ,Q3,LUQ_Q3_Q,N,NA,,Q3,cms,Y,,Y,NA
+LUQ,QG,LUQ_QG_Q,Y,50074950,"Quebrada Guaba NR Naguabo, PR",,cfs,Y,,Y,50074950
+LUQ,QP,LUQ_QP_Q,N,NA,,QP,cms,Y,,Y,NA
+LUQ,QS,LUQ_QS_Q,Y,50063440,"Quebrada Sonadora NR El Verde, PR",,cfs,Y,,Y,50063440
+LUQ,RES4,LUQ_RES4_Q,Y,50063800,"Rio Espiritu Santo NR Rio Grande, PR",,cfs,Y,,Y,50063800
+LUQ,RI,LUQ_RI_Q,Y,50075000,"Rio Icacos NR Naguabo, PR",,cfs,Y,,Y,50075000
+LUQ,RS,LUQ_RS_Q,Y,50067000,"Rio Sabana at Sabana, PR",,cfs,Y,,Y,50067000
+MCM,Andersen Creek at H1,MCM_Andersen_Q,N,NA,,Andersen Creek at H1,cms,N,Y,Y,NA
+MCM,Bohner Stream,MCM_Bohner_Q,N,NA,,Bohner Stream,cms,N,Some,Y,NA
+MCM,Canada Stream at F1,MCM_Canada_Q,N,NA,,Canada Stream at F1,cms,N,Y,Y,NA
+MCM,Green Creak at F9,MCM_Green_Q,N,NA,,Green Creak at F9,cms,N,Y,Y,NA
+MCM,Lawson Creek at B3,MCM_Lawson_Q,N,NA,,Lawson Creek at B3,cms,N,Y,Y,NA
+MCM,Onyx River at Lake Vanda Weir,MCM_OnyxVandaWeir_Q,N,NA,,Onyx River at Lake Vanda Weir,cms,N,Y,Y,NA
+MCM,Onyx River at Lower Wright Weir,MCM_OnyxWrightWeir_Q,N,NA,,Onyx River at Lower Wright Weir,cms,N,Y,Y,NA
+MCM,Priscu Stream at B1,MCM_Priscu_Q,N,NA,,Priscu Stream at B1,cms,N,Y,Y,NA
+MCM,Von Guerard Stream at F6,MCM_VonGuerard_Q,N,NA,,Von Guerard Stream at F6,cms,N,Y,Y,NA
+NWT,ALBION,NWT_alb_Q,N,NA,,alb,cmd,Y,,Y,NA
+NWT,MARTINELLI,NWT_mar_Q,N,NA,,mar,cmd,Y,,Y,NA
+NWT,SADDLE STREAM 007,NWT_sdl_Q,N,NA,,sdl,cmd,Y,,Y,NA
+PIE,Cart Creek,PIE_YSICC_Q,N,NA,,YSI-CC,Ls,Y,,Y,NA
+PIE,Fish Br,PIE_YSIFB_Q,N,NA,,YSI-FB or FB-MI,Ls,N,,no data?,NA
+PIE,Ipswich at Ipswich,PIE_IpswichIps_Q,Y,1102000,"Ipswich River NR Ipswich, MA",,cfs,N,,Y,01102000
+PIE,Ipswich at Middleton,PIE_IpswichMid_Q,Y,1101500,"Ipswich River at S Middleton, MA",,cfs,N,,Y,01101500
+PIE,Ipswich at North Reading,PIE_YSIIR_Q,N,NA,,YSI-IR or IP06,Ls,Y,,Y,NA
+PIE,Parker River at Byfield,PIE_Parker_Q,Y,1101000,"Parker River at Byfield, MA",,cfs,N,,Y,01101000
+PIE,Sawmill Brook,PIE_YSISB_Q,N,NA,,YSI-SB,Ls,Y,,Y,NA
+SageHen,Sagehen,Sagehen_Q,Y,10343500,Sagehen Creek,,cfs,Y,,Y,10343500
+UMR,BK01.0M,UMR_BK01.0M_Q,Y,5382000,"Black River NR Galesville, WI",,cfs,N,,Y,05382000
+UMR,CN00.1M,UMR_CN00.1M_Q,Y,5355200,"Cannon River at Welch, MN",,cfs,N,,Y,05355200
+UMR,CH00.1M,UMR_CH00.1M_Q,Y,5369500,"Chippewa River at Durand, WI",,cfs,N,,Y,05369500
+UMR,CU11.6M,UMR_CU11.6M_Q,Y,5514500,"Cuivre River near Troy, MO",,cfs,N,,Y,05514500
+UMR,I080.2M,UMR_I080.2M_Q,Y,5568500,"Iliinois River at Kingston Mines, IL",,cfs,N,,Y,05568500
+UMR,LM00.5M,UMR_LM00.5M_Q,Y,5585000,"La Moines River at Ripley, IL",,cfs,N,,Y,05585000
+UMR,MQ02.1M,UMR_MQ02.1M_Q,Y,5418500,"Maquoketa River near Maquoketa, IA",,cfs,N,,Y,05418500
+UMR,M556.4A,UMR_M556.4A_Q,Y,5420500,"Mississippi River at Clinton, IA",,cfs,N,,Y,05420500
+UMR,M764.3A,UMR_M786.2C_Q,Y,5344500,"Mississippi River at Prescott, MN",,cfs,N,,Y,05344500
+UMR,M786.2C,UMR_M786.2C_Q,Y,5344500,"Mississippi River at Prescott, MN",,cfs,N,,Y,05344500
+UMR,M241.4K,UMR_M241.4K_Q,Y,7010000,"Mississippi River at St Louis, MO",,cfs,N,,Y,07010000
+UMR,M078.0B,UMR_M078.0B_Q,Y,7022000,"Mississippi River at Thebes, IL",,cfs,N,,Y,07022000
+UMR,M701.1B,UMR_M701.1B_Q,Y,5378500,"Mississippi River at Winona, MN",,cfs,N,,Y,05378500
+UMR,SG16.2C,UMR_SG16.2C_Q,Y,5583000,"Sangamon River near Oakford, IL",,cfs,N,,Y,05583000
+UMR,WP02.6M,UMR_WP02.6M_Q,Y,5422000,"Wapsipinicon River near De Witt, IA",,cfs,N,,Y,05422000
