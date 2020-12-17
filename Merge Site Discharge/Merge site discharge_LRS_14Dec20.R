@@ -57,6 +57,7 @@ for (i in 1:length(WRTDS_discharge$drive_resource)) {
 #loop through each downloaded csv file and add appropriate site name
 discharge_files = list.files(path="L:/GitHub/SiSyn/Merge Site Discharge/discharge files")
 
+#create list to store output from for loop
 data_list = list()
 
 for (i in 1:length(discharge_files)) {
