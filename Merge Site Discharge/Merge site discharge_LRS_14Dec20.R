@@ -74,5 +74,10 @@ for (i in 1:length(discharge_files)) {
 #all_discharge = rbindlist(data_list)
 all_discharge = ldply(data_list, data.frame)
 
-#which 
+#which sites are included in master discharge file? Different from input files?
 discharge_sites = data.frame("site"=unique(all_discharge$site.name))
+WRTDS_sites = data.frame("site"=unique(WRTDS_discharge$site))
+
+#write master discharge file to .csv
+setwd("L:/GitHub/SiSyn/Merge Site Discharge")
+write.csv(all_discharge, file="WRTDS_discharge_allsites.csv")
