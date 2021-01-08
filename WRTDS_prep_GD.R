@@ -102,7 +102,8 @@ Q$Units<-ref$Units[1]
 #convert all Q file units to CMS
 Q$Qcms<-ifelse(Q$Units=="cms", Q$Q, 
                  ifelse(Q$Units=="cfs", Q$Q*0.0283,
-                        ifelse(Q$Units=="Ls", Q$Q*0.001, "")))
+                        ifelse(Q$Units=="Ls", Q$Q*0.001,
+                               ifelse(Q$Units=="cmd", Q$Q*1.15741e-5, ""))))
 
 #subset master silica file to individual site
 Si<-subset(masterSi, masterSi$Stream==StreamList[i])
