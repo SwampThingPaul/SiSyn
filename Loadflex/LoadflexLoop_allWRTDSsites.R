@@ -12,6 +12,35 @@ na.omit(WRTDS_discharge_allsites)
 #list to store Loadflex output for each site
 data_list = list()
 
+##run code manually to troubleshoot errors##
+#Martinelli NWT stream site missing from Discharge Log file
+site_Q = subset(WRTDS_discharge_allsites, WRTDS_discharge_allsites$site.name=="MARTINELLI")
+site_Si = subset(X20201111_masterdata, X20201111_masterdata$site=="MARTINELLI" & X20201111_masterdata$variable=="DSi")
+
+names(site_Si)[names(site_Si)=="Sampling.Date"] = "Date"
+
+site_intdat = merge(site_Q,site_Si,by="Date")
+site_intdat = data.frame("Date"=site_intdat$Date,
+                         "Q"=site_intdat$Q,
+                         "DSi"=site_intdat$value*0.06)
+site_intdat[site_intdat <= 0] = NA
+site_intdat = na.omit(site_intdat)
+site_intdat = site_intdat[!duplicated(site_intdat$Date),]
+
+library(rloadest)
+site_lr = loadReg2(loadReg(DSi~Q, data=site_intdat,
+                           flow="Q", dates="Date", conc.units="mg/L", load.units="kg"))
+site_lc = loadComp(reg.model=site_lr, interp.format="conc", interp.data=site_intdat)
+site_preds_lc = predictSolute(site_lc,"flux",site_Q,se.pred=T,date=T)
+site_aggs_lc = aggregateSolute(site_preds_lc,site_meta,"flux rate","day")
+
+write.csv(site_aggs_lc, file="MARTINELLI_Loadflex_DailySi.csv")
+
+library(plyr)
+dailySiLoads = ldply(data_list, data.frame)
+###
+
+#loop to run all sites
 for (i in 1:length(site_list)) {
   site_Q = subset(WRTDS_discharge_allsites, WRTDS_discharge_allsites$site.name==site_list[i])
   site_Si = subset(X20201111_masterdata, X20201111_masterdata$site==site_list[i] & X20201111_masterdata$variable=="DSi")
@@ -22,19 +51,22 @@ for (i in 1:length(site_list)) {
   site_intdat = data.frame("Date"=site_intdat$Date,
                              "Q"=site_intdat$Q,
                              "DSi"=site_intdat$value*0.06)
-  site_intdat_nodup = site_intdat[!duplicated(site_intdat$Date),]
-  
-  site_intdat_nodup[site_intdat_nodup < 0] = NA
-  na.omit(site_intdat_nodup)
+  site_intdat[site_intdat <= 0] = NA
+  site_intdat = site_intdat[!duplicated(site_intdat$Date),]
+
   #run composite model
-  site_lr = loadReg2(loadReg(DSi~Q, data=site_intdat_nodup,
+  site_lr = loadReg2(loadReg(DSi~Q, data=site_intdat,
                              flow="Q", dates="Date", conc.units="mg/L", load.units="kg"))
-#  site_lc = loadComp(reg.model=site_lr, interp.format="conc", interp.data=site_intdat)
-#  #point predictions and daily load estimates
-#  site_preds_lc = predictSolute(site_lc,"flux",site_Q,se.pred=T,date=T)
-#  site_aggs_lc = aggregateSolute(site_preds_lc,site_meta,"flux rate","day")
+  site_lc = loadComp(reg.model=site_lr, interp.format="conc", interp.data=site_intdat)
+  #point predictions and daily load estimates
+  site_preds_lc = predictSolute(site_lc,"flux",site_Q,se.pred=T,date=T)
+  site_aggs_lc = aggregateSolute(site_preds_lc,site_meta,"flux rate","day")
   
-  data_list[[i]] = site_intdat_nodup
+  site_aggs = data.frame("Date"=site_aggs_lc$Day,
+                         "SiLoad_kg.d"=site_aggs_lc$Flux_Rate,
+                         "Site"=site_list[i])
+  
+  data_list[[i]] = site_aggs
 }
 
 ###
