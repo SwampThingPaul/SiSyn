@@ -13,9 +13,13 @@ na.omit(WRTDS_discharge_allsites)
 data_list = list()
 
 ##run code manually to troubleshoot errors##
-#Martinelli NWT stream site missing from Discharge Log file
-site_Q = subset(WRTDS_discharge_allsites, WRTDS_discharge_allsites$site.name=="MARTINELLI")
-site_Si = subset(X20201111_masterdata, X20201111_masterdata$site=="MARTINELLI" & X20201111_masterdata$variable=="DSi")
+#NWT stream sites (albion and martinelli) have discharge in units cmd
+site_Q = subset(WRTDS_discharge_allsites, WRTDS_discharge_allsites$site.name=="ALBION")
+site_Si = subset(X20201111_masterdata, X20201111_masterdata$site=="ALBION" & X20201111_masterdata$variable=="DSi")
+
+site_Q[site_Q <=0] = NA
+site_Q = na.omit(site_Q)
+site_Q$Q = site_Q$Q/86400
 
 names(site_Si)[names(site_Si)=="Sampling.Date"] = "Date"
 
@@ -31,10 +35,11 @@ library(rloadest)
 site_lr = loadReg2(loadReg(DSi~Q, data=site_intdat,
                            flow="Q", dates="Date", conc.units="mg/L", load.units="kg"))
 site_lc = loadComp(reg.model=site_lr, interp.format="conc", interp.data=site_intdat)
+
 site_preds_lc = predictSolute(site_lc,"flux",site_Q,se.pred=T,date=T)
 site_aggs_lc = aggregateSolute(site_preds_lc,site_meta,"flux rate","day")
 
-write.csv(site_aggs_lc, file="MARTINELLI_Loadflex_DailySi.csv")
+write.csv(site_aggs_lc, file="ALBION_Loadflex_DailySi.csv")
 
 library(plyr)
 dailySiLoads = ldply(data_list, data.frame)
