@@ -82,8 +82,36 @@ names(Loadflex_allsites)[names(Loadflex_allsites) == "Flux_Rate"] = "Loadflex_Da
 names(Loadflex_allsites)[names(Loadflex_allsites) == "Day"] = "Date"
 
 #merge WRTDS and Loadflex results
-#keep all results from both models
+#keep all results from both models (all=T)
 WRTDS_Loadflex_compare = merge(WRTDS_allsites, Loadflex_allsites, by=c("site","Date"),all=T)
 
 setwd("L:/GitHub/SiSyn/Loadflex/Loadflex-WRTDS compare")
 write.csv(WRTDS_Loadflex_compare, file="WRTDS-Loadflex_compare.csv")
+write.csv(Loadflex_allsites, file="Loadflex_DailySi_allsites.csv")
+
+#add in second Loadflex run 1/11/21
+Loadflex_repeat = data.frame("site" = Loadflex_DailySi_allsites$Site,
+                             "Date" = Loadflex_DailySi_allsites$Date,
+                             "Loadflex_DailyFlux_2" = Loadflex_DailySi_allsites$SiLoad_kg.d)
+WRTDS_Loadflex_compare2 = merge(WRTDS_Loadflex_compare, Loadflex_repeat, by=c("site","Date"), all=T)
+write.csv(WRTDS_Loadflex_compare2, file="WRTDS-Loadflex compare_11Jan21.csv")
+
+#plot WRTDS v. Loadflex output
+library(ggplot2)
+ggplot(WRTDS_Loadflex_compare, aes(x=Loadflex_DailyFlux, y=WRTDS_DailyFlux)) +
+  geom_line() +
+  facet_wrap(~site,scales="free")
+
+ggplot(WRTDS_Loadflex_compare, aes(x=Loadflex_DailyFlux, y=WRTDS_DailyFlux)) +
+  geom_smooth(model=lm) +
+  facet_wrap(~site,scales="free")
+
+#plot Loadflex 1 v. Loadflex 2
+ggplot(WRTDS_Loadflex_compare2, aes(x=Loadflex_DailyFlux, y=Loadflex_DailyFlux_2)) +
+  geom_line() +
+  facet_wrap(~site, scales="free")
+
+#plot WRTDS v. Loadflex 2
+ggplot(WRTDS_Loadflex_compare2, aes(x=WRTDS_DailyFlux, y=Loadflex_DailyFlux_2)) +
+  geom_line() +
+  facet_wrap(~site, scales="free")

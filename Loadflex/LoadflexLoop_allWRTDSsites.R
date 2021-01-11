@@ -3,65 +3,63 @@ library(loadflex)
 #get list of sites to run from INFO_all
 #same as sites run with WRTDS model
 site_list = c(INFO_all$shortName)
+print(site_list)
 
 #replace any negative values with NA
-WRTDS_discharge_allsites[WRTDS_discharge_allsites < 0] = NA
-na.omit(WRTDS_discharge_allsites)
+WRTDS_discharge_allsites[WRTDS_discharge_allsites <= 0] = NA
+WRTDS_discharge_allsites = na.omit(WRTDS_discharge_allsites)
 
+WRTDS_DSi_allsites[WRTDS_DSi_allsites <= 0] = NA
+WRTDS_DSi_allsites = na.omit(WRTDS_DSi_allsites)
+
+#convert discharge at NWT sites from "cmd" to "cms"
+WRTDS_discharge_allsites$Q_units = ifelse(WRTDS_discharge_allsites$site.name=="ALBION"|
+                                      WRTDS_discharge_allsites$site.name=="MARTINELLI"|
+                                      WRTDS_discharge_allsites$site.name=="SADDLE STREAM 007",
+                                      "cmd", "cms")
+WRTDS_discharge_allsites$Q_cms = ifelse(WRTDS_discharge_allsites$Q_units=="cms",
+                                        WRTDS_discharge_allsites$Q,
+                                        WRTDS_discharge_allsites$Q/86400)
+
+WRTDS_discharge_allsites = data.frame("Date"=WRTDS_discharge_allsites$Date,
+                                      "site.name"=WRTDS_discharge_allsites$site.name,
+                                      "Q"=WRTDS_discharge_allsites$Q_cms)
 
 #list to store Loadflex output for each site
 data_list = list()
 
 ##run code manually to troubleshoot errors##
-#NWT stream sites (albion and martinelli) have discharge in units cmd
-site_Q = subset(WRTDS_discharge_allsites, WRTDS_discharge_allsites$site.name=="ALBION")
-site_Si = subset(X20201111_masterdata, X20201111_masterdata$site=="ALBION" & X20201111_masterdata$variable=="DSi")
+site_Q = subset(WRTDS_discharge_allsites, WRTDS_discharge_allsites$site.name=="S65A")
+site_Si = subset(WRTDS_DSi_allsites, WRTDS_DSi_allsites$site.name=="S65A")
 
-site_Q[site_Q <=0] = NA
-site_Q = na.omit(site_Q)
-site_Q$Q = site_Q$Q/86400
-
-names(site_Si)[names(site_Si)=="Sampling.Date"] = "Date"
-
-site_intdat = merge(site_Q,site_Si,by="Date")
-site_intdat = data.frame("Date"=site_intdat$Date,
-                         "Q"=site_intdat$Q,
-                         "DSi"=site_intdat$value*0.06)
+site_intdat = merge(site_Q,site_Si,by=c("Date","site.name"))
 site_intdat[site_intdat <= 0] = NA
 site_intdat = na.omit(site_intdat)
 site_intdat = site_intdat[!duplicated(site_intdat$Date),]
 
 library(rloadest)
-site_lr = loadReg2(loadReg(DSi~Q, data=site_intdat,
-                           flow="Q", dates="Date", conc.units="mg/L", load.units="kg"))
+site_lr = loadReg2(loadReg(Si~Q, data=site_intdat,
+                           flow="Q", flow.units="cms", dates="Date", conc.units="mg/L", load.units="kg"))
 site_lc = loadComp(reg.model=site_lr, interp.format="conc", interp.data=site_intdat)
 
 site_preds_lc = predictSolute(site_lc,"flux",site_Q,se.pred=T,date=T)
 site_aggs_lc = aggregateSolute(site_preds_lc,site_meta,"flux rate","day")
 
-write.csv(site_aggs_lc, file="ALBION_Loadflex_DailySi.csv")
+write.csv(site_aggs_lc, file="S65A_Loadflex_DailySi.csv")
 
-library(plyr)
-dailySiLoads = ldply(data_list, data.frame)
 ###
 
 #loop to run all sites
 for (i in 1:length(site_list)) {
   site_Q = subset(WRTDS_discharge_allsites, WRTDS_discharge_allsites$site.name==site_list[i])
-  site_Si = subset(X20201111_masterdata, X20201111_masterdata$site==site_list[i] & X20201111_masterdata$variable=="DSi")
-
-  names(site_Si)[names(site_Si)=="Sampling.Date"] = "Date"
+  site_Si = subset(WRTDS_DSi_allsites, WRTDS_DSi_allsites$site.name==site_list[i])
   
   site_intdat = merge(site_Q,site_Si,by="Date")
-  site_intdat = data.frame("Date"=site_intdat$Date,
-                             "Q"=site_intdat$Q,
-                             "DSi"=site_intdat$value*0.06)
-  site_intdat[site_intdat <= 0] = NA
   site_intdat = site_intdat[!duplicated(site_intdat$Date),]
 
   #run composite model
-  site_lr = loadReg2(loadReg(DSi~Q, data=site_intdat,
-                             flow="Q", dates="Date", conc.units="mg/L", load.units="kg"))
+  site_lr = loadReg2(loadReg(Si~Q, data=site_intdat,
+                             flow="Q", flow.units="cms", dates="Date", conc.units="mg/L", load.units="kg"))
   site_lc = loadComp(reg.model=site_lr, interp.format="conc", interp.data=site_intdat)
   #point predictions and daily load estimates
   site_preds_lc = predictSolute(site_lc,"flux",site_Q,se.pred=T,date=T)
@@ -74,15 +72,10 @@ for (i in 1:length(site_list)) {
   data_list[[i]] = site_aggs
 }
 
-###
-#run simple lm model
-#site_meta = metadata(constituent="DSi", flow="Q", dates="Date",
-#                     conc.units="mg L^-1", flow.units="cfs", load.units="kg",
-#                     load.rate.units="kg d^-1", site.name="site",
-#                     consti.name="Dissolved SiO2")
-#site_lm = loadLm(formula=log(DSi) ~ log(Q), pred.format="conc",
-#                 data=site_intdat, metadata=site_meta, retrans=exp)
+names(data_list) = site_list
+#exporting each site into its own dataframe? 
 
+library(plyr)
+dailySiLoads = ldply(data_list, data.frame)
 
-
-###
+write.csv(dailySiLoads, file="Loadflex_DailySi_allsites.csv")
