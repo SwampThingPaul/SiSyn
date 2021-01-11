@@ -37,6 +37,10 @@ site_intdat[site_intdat <= 0] = NA
 site_intdat = na.omit(site_intdat)
 site_intdat = site_intdat[!duplicated(site_intdat$Date),]
 
+site_meta = metadata(constituent="Si", flow="Q", 
+                 dates="Date", conc.units="mg L^-1", flow.units="cms", load.units="kg", 
+                 load.rate.units="kg d^-1", site.name="S65A")
+
 library(rloadest)
 site_lr = loadReg2(loadReg(Si~Q, data=site_intdat,
                            flow="Q", flow.units="cms", dates="Date", conc.units="mg/L", load.units="kg"))
@@ -56,6 +60,10 @@ for (i in 1:length(site_list)) {
   
   site_intdat = merge(site_Q,site_Si,by="Date")
   site_intdat = site_intdat[!duplicated(site_intdat$Date),]
+  
+  site_meta = metadata(constituent="Si", flow="Q", 
+                       dates="Date", conc.units="mg L^-1", flow.units="cms", load.units="kg", 
+                       load.rate.units="kg d^-1", site.name=site_list[i])
 
   #run composite model
   site_lr = loadReg2(loadReg(Si~Q, data=site_intdat,
@@ -77,5 +85,9 @@ names(data_list) = site_list
 
 library(plyr)
 dailySiLoads = ldply(data_list, data.frame)
-
 write.csv(dailySiLoads, file="Loadflex_DailySi_allsites.csv")
+
+library(ggplot2)
+ggplot(dailySiLoads, aes(x=Date, y=SiLoad_kg.d)) +
+  geom_point() +
+  facet_wrap(~Site, scales="free")
