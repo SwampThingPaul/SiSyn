@@ -113,9 +113,17 @@ ggplot(WRTDS_Loadflex_compare2, aes(x=Loadflex_DailyFlux, y=Loadflex_DailyFlux_2
   facet_wrap(~site, scales="free")
 
 #plot WRTDS v. Loadflex
+#image aspect ratio 1100x850
 ggplot(WRTDS_Loadflex_compare, aes(x=WRTDS_DailyFlux, y=Loadflex_DailyFlux_2)) +
   geom_line() +
   facet_wrap(~site, scales="free")
+ggplot(WRTDS_Loadflex_compare, aes(x=WRTDS_DailyFlux, y=Loadflex_DailyFlux_2)) +
+  geom_smooth(model=lm) +
+  geom_abline(intercept=0, slope=1, linetype="dashed", color="red")+
+  xlab("WRTDS model output")+
+  ylab("Loadflex model output")+
+  facet_wrap(~site, scales="free")+
+  theme_minimal()
 
 #subtract Loadflex-WRTDS, compare results to 0 over Q
 WRTDS_Loadflex_compare$WRTDSsubLoadflex = WRTDS_Loadflex_compare$WRTDS_DailyFlux - WRTDS_Loadflex_compare$Loadflex_DailyFlux_2
@@ -131,6 +139,30 @@ ggplot(WRTDS_Loadflex_compare, aes(x=Date, y=WRTDSsubLoadflex)) +
   geom_hline(yintercept=0, linetype="dashed", color="red") +
   xlab("Year")+
   scale_x_date(date_labels="%y")+
+  ylab("WRTDS - Loadflex: modeled Si load (kg/d)")+
+  facet_wrap(~site, scales="free")+
+  theme_minimal()
+  
+#plot difference between models by month and season
+library(lubridate)
+WRTDS_Loadflex_compare$month = month(WRTDS_Loadflex_compare$Date)
+library(hydroTSM)
+WRTDS_Loadflex_compare$season = time2season(WRTDS_Loadflex_compare$Date, out.fmt="seasons")
+
+ggplot(WRTDS_Loadflex_compare, aes(x=month, y=WRTDSsubLoadflex)) +
+  geom_point() +
+  geom_hline(yintercept=0, linetype="dashed", color="red") +
+  scale_x_continuous(name="Month",breaks=c(1:12),labels=c(1:12))+
+  ylab("WRTDS - Loadflex: modeled Si load (kg/d)")+
+  facet_wrap(~site, scales="free")+
+  theme_minimal()
+
+WRTDS_Loadflex_compare$season = factor(WRTDS_Loadflex_compare$season, ordered=T, levels=c("winter","spring","summer","autumm"))
+levels(WRTDS_Loadflex_compare$season)
+ggplot(WRTDS_Loadflex_compare, aes(x=season, y=WRTDSsubLoadflex)) +
+  geom_point() +
+  geom_hline(yintercept=0, linetype="dashed", color="red") +
+  scale_x_discrete(name="Season", labels=c("W","Sp","Su","F"))+
   ylab("WRTDS - Loadflex: modeled Si load (kg/d)")+
   facet_wrap(~site, scales="free")+
   theme_minimal()

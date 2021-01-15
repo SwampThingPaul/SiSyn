@@ -42,11 +42,19 @@ site_meta = metadata(constituent="Si", flow="Q",
                  load.rate.units="kg d^-1", site.name="S65A")
 
 library(rloadest)
-site_lr = loadReg2(loadReg(Si~Q, data=site_intdat,
+site_lr = loadReg2(loadReg(Si~Q, data=site_intdat, station="S65A",
                            flow="Q", flow.units="cms", dates="Date", conc.units="mg/L", load.units="kg"))
-site_lc = loadComp(reg.model=site_lr, interp.format="conc", interp.data=site_intdat)
 
+#evaluate model fit
+regmodelfit = list(getFittedModel(site_lr))
+print(regmodelfit)
+#pass to composite model
+site_lc = loadComp(reg.model=site_lr, interp.format="conc", interp.data=site_intdat)
+#get residuals from composite model
+compres = getResiduals(site_lc,"flux")
+#generate point predictions
 site_preds_lc = predictSolute(site_lc,"flux",site_Q,se.pred=T,date=T)
+#aggregate point predictions for daily load estimates
 site_aggs_lc = aggregateSolute(site_preds_lc,site_meta,"flux rate","day")
 
 write.csv(site_aggs_lc, file="S65A_Loadflex_DailySi.csv")
