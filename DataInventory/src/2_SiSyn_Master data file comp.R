@@ -95,14 +95,23 @@ pie.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_V1_PIEWatersheds.xlsx"),
 pie.unit$data.set="pie"
 hja.unit=read.xlsx(paste0(data.path,"HJAndrewsSiSyn.xlsx"),sheet=2,startRow=1,na.strings = "NA")
 hja.unit$data.set="hja"
-sage.unit=read.xlsx(paste0(data.path,"SagehenSiSyn.xlsx"),sheet=2,startRow=1,na.strings = "NA")
-sage.unit$data.set="sage"
+# sage.unit=read.xlsx(paste0(data.path,"SagehenSiSyn.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+# sage.unit$data.set="sage"
 umr.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_UMR.xlsx"),sheet=2,startRow=1,na.strings = "NA")
 umr.unit$data.set="umr"
 tang.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_Tanguro.xlsx"),sheet=2,startRow=1,na.strings = "NA")
 tang.unit$data.set="tanguro"
 
-unit.all=rbind(arc.unit,bczo.unit,carey.unit,coal.unit,cpcrw.unit,konza.unit,KRR.unit,MCM.unit,NWT.unit,LMP.unit,LUQ.unit,pie.unit,hja.unit,sage.unit,umr.unit,tang.unit)
+HBR.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_HBR.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+HBR.unit$data.set="HBR"
+
+sage.unit=read.xlsx(paste0(export.path,"sagehencreek_params_edited.xlsx"))
+sage.unit=subset(sage.unit,keep==1)[,c("Measurement","Unit")]
+sage.unit$data.set="sage"
+
+unit.all=rbind(arc.unit,bczo.unit,carey.unit,coal.unit,cpcrw.unit,konza.unit,
+               KRR.unit,MCM.unit,NWT.unit,LMP.unit,LUQ.unit,pie.unit,hja.unit,
+               sage.unit,umr.unit,tang.unit,HBR.unit)
 
 # https://ocean.ices.dk/tools/unitconversion.aspx
 # http://www.salinitymanagement.org/Salinity%20Management%20Guide/ls/ls_3c.html
@@ -114,13 +123,14 @@ PO4.mw=P.mw+(O.mw*4)
 unique(unit.all$Measurement)
 subset(unit.all,Measurement=="Si")
 Si.CF=data.frame(Measurement="Si",
-                 Unit=c("mg Si/L","mg SiO2/L"),
-                 CF=c((1/Si.mw)*1000,((1/SiO2.mw)*(SiO2.mw/Si.mw))*1000))
+                 Unit=c("mg Si/L","mg SiO2/L","ug Si/L"),
+                 CF=c((1/Si.mw)*1000,((1/SiO2.mw)*(SiO2.mw/Si.mw))*1000,1/Si.mw))
 N.cf=data.frame(Measurement=c("TN","DIN","DIN","TN"),Unit=c(rep("mg N/L",2),"uM N","uM N"),CF=c(rep((1/N.mw)*1000,2),1,1))
 NOX.cf=data.frame(Measurement="NOX",
                   Unit=c("uM NO3","mg NO3-N/L","ug NO3-N/L","ueq/L","uM NO3-N"),
                   CF=c(NO3.mw/N.mw,(1/N.mw)*1000,1/N.mw,NO3.mw*(NO3.mw/N.mw),1))
 NO3.cf=data.frame(Measurement="NO3",Unit=c("ug/L"),CF=c(1/N.mw))
+NO2.cf=data.frame(Measurement="NO2",Unit=c("ug/L"),CF=c(1/N.mw))
 NH4.cf=data.frame(Measurement="NH4",
                   Unit=c("ueq/L","ug NH4/L","mg NH4-N/L","ug NH4-N/L","uM NH4-N","uM NH4"),
                   CF=c(NH4.mw*(NH4.mw/N.mw),((1/NH4.mw)*(NH4.mw/N.mw)),(1/N.mw)*1000,(1/N.mw),1,1))
@@ -150,7 +160,7 @@ SO4.cf=data.frame(Measurement=c("SO4"),Unit=c("ueq/L","uM","umols SO4","umols SO
                   CF=c(1/2,1,1,1,rep((1/(S.mw+O.mw*4))*1000,3)))
 Cl.cf=data.frame(Measurement=c("Cl"),Unit=c("ueq/L","uM","mg/L"),CF=c(1/2,1,(1/Cl.mw)*1000))
 
-cf.all=rbind(Si.CF,N.cf,NOX.cf,NO3.cf,NH4.cf,other.N,TP.cf,PO4.cf,SRP.cf,C.cf,Q.cf,
+cf.all=rbind(Si.CF,N.cf,NOX.cf,NO3.cf,NO2.cf,NH4.cf,other.N,TP.cf,PO4.cf,SRP.cf,C.cf,Q.cf,
              alk.cf,Na.cf,K.cf,Ca.cf,Mg.cf,SO4.cf,Cl.cf)
 
 unit.all=merge(unit.all,cf.all,all.x=T)
@@ -349,6 +359,15 @@ NWT.dat=rename(NWT.dat,c("InstantaneoNAs.Q.(Discharge)"="Instantaneous.Q.(Discha
                          "CondNActivity"="Conductivity",
                          "TNArbidity"="Turbidity",
                          "SNAspended.Chl"="Suspended.Chl"))
+NWT2.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_NWT_Arikaree.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+NWT2.dat$Sampling.Date=convertToDate(NWT2.dat$Sampling.Date)
+names(NWT2.dat)
+NWT2.dat[,c("TDN","TDP","NO3","NO2","DON")]=as.numeric(NA);
+NWT2.dat=rename(NWT2.dat,c("InstantaneoNAs.Q.(Discharge)"="Instantaneous.Q.(Discharge)",
+                         "CondNActivity"="Conductivity",
+                         "TNArbidity"="Turbidity",
+                         "SNAspended.Chl"="Suspended.Chl"))
+NWT.dat=rbind(NWT.dat,NWT2.dat)
 # write.csv(NWT.dat[,c(idvars,param.vars)],paste0(export.path,"20200911_GD_NWT.csv"),row.names = F)
 
 NWT.dat.melt=melt(NWT.dat[,c(idvars,param.vars)],id.vars=idvars)
@@ -464,6 +483,33 @@ sage.dat.melt=merge(sage.dat.melt,subset(unit.all2,data.set=="sage"))
 sage.dat.melt$value=with(sage.dat.melt,value*CF)
 sage.dat.melt$LTER="Sagehen(Sullivan)"
 
+## Sagehen from USGS
+library(dataRetrieval)
+sage.dat=readWQPdata(siteid="USGS-10343500")
+head(sage.dat)
+
+unique(sage.dat$CharacteristicName)
+unique(sage.dat$ResultMeasure.MeasureUnitCode)
+unique(sage.dat$ResultSampleFractionText)
+sage.dat.params=ddply(sage.dat,c("CharacteristicName","ResultSampleFractionText","ResultMeasure.MeasureUnitCode"),summarise,N.val=N.obs(ResultMeasureValue))
+# write.csv(sage.dat.params,paste0(export.path,"sagehencreek_params.csv"),row.names = F)
+sage.unit=read.xlsx(paste0(export.path,"sagehencreek_params_edited.xlsx"))
+sage.unit=subset(sage.unit,keep==1)[,c("CharacteristicName","ResultSampleFractionText","Param")]
+
+sage.dat=merge(sage.dat,sage.unit,c("CharacteristicName","ResultSampleFractionText"))
+sage.dat2=data.frame(cast(data.frame(sage.dat),MonitoringLocationIdentifier+ActivityStartDate~Param,value='ResultMeasureValue',mean))
+sage.dat2$NOx=with(sage.dat2,NO2+NO3)
+sage.dat2
+
+sage.dat2[,c("Conductivity","TSS","VSS","TN","SRP","TDN","TDP","DON","ANC","TOC","Benthic.Chl")]=as.numeric(NA);
+sage.dat2$LTER="Sagehen"
+sage.dat2$'Site/Stream.Name'="Sagehen"
+sage.dat2$Sampling.Date=sage.dat2$ActivityStartDate
+sage.dat2$Treatment=NA
+sage.dat2$Time=NA
+
+
+
 # UMR
 umr.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_UMR.xlsx"),sheet=1,startRow=2,na.strings = "NA")
 umr.dat$Sampling.Date=convertToDate(umr.dat$Sampling.Date)
@@ -501,11 +547,30 @@ tango.dat.melt$value=with(tango.dat.melt, ifelse(value<0,abs(value),value))
 tango.dat.melt$value=with(tango.dat.melt,value*CF)
 tango.dat.melt$LTER="Tanguro(Jankowski)"
 
+# HBR
+hbr.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_HBR.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+hbr.dat$Sampling.Date=convertToDate(hbr.dat$Sampling.Date)
+names(hbr.dat)
+hbr.dat[,c("TDN","TDP","NO3","NO2","DON")]=as.numeric(NA);
+
+hbr.dat.melt=melt(hbr.dat[,c(idvars,param.vars)],id.vars=idvars)
+hbr.dat.melt=subset(hbr.dat.melt,is.na(value)==F)
+hbr.dat.melt$site=hbr.dat.melt$'Site/Stream.Name'
+hbr.dat.melt$variable=as.character(hbr.dat.melt$variable)
+hbr.dat.melt$value=as.numeric(hbr.dat.melt$value)
+
+hbr.dat.melt=merge(hbr.dat.melt,subset(unit.all2,data.set=="HBR"))
+subset(hbr.dat.melt,value<0)
+hbr.dat.melt$value=with(hbr.dat.melt, ifelse(value<0,abs(value),value))
+hbr.dat.melt$value=with(hbr.dat.melt,value*CF)
+hbr.dat.melt$LTER="HBR"
+
+
 # Combine all data 
 master.dat=rbind(arc.dat.melt,bczo.dat.melt,carey.dat.melt,coal.dat.melt,cpcrw.dat.melt,
                  konza.dat.melt,KRR.dat.melt,MCM.dat.melt,NWT.dat.melt,LMP.dat.melt,
                  LUQ.dat.melt,pie.dat.melt,hja.dat.melt,sage.dat.melt,umr.dat.melt,
-                 tango.dat.melt)
+                 tango.dat.melt,hbr.dat.melt)
 master.dat=master.dat[,c( "LTER", "Site/Stream.Name","site", "Sampling.Date","variable","value")]
 master.dat$value[master.dat$value==0]=NA
 master.dat=subset(master.dat,is.na(value)==F)
@@ -516,6 +581,9 @@ summary(master.dat)
 
 # Chlorophyll data should be in master data
 # write.csv(master.dat,paste0(export.path,"20201111_masterdata.csv"),row.names=F)
+
+# Added HBR and corrected Coal Creek 
+# write.csv(master.dat,paste0(export.path,"20210224_masterdata.csv"),row.names=F)
 
 boxplot(value~site,subset(master.dat,variable=="DSi"),log="y",col="grey",ylab="DSi (uM)")
 
