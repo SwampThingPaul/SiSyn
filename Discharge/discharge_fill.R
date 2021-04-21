@@ -42,9 +42,9 @@ dat$Yr=as.numeric(format(dat$Date,"%Y"))
 
 
 plot(Discharge~Date,dat)
-DOY.k=20
+DOY.k=30
 YR.k=32
-mod=gam(Discharge~Yr+
+mod=gam(Discharge~
           s(DOY,k=DOY.k,bs="cc")+
           s(Yr,k=YR.k)+
           ti(Yr,DOY,bs=c("tp","cc"),k=c(DOY.k,DOY.k)),
@@ -62,8 +62,8 @@ summary(mod)
 pdata=dat[,c("Date","DOY","Yr","Discharge")]
 pred=predict(mod,pdata)
 pdata=cbind(pdata,pred)
-pdata$pred=exp(pdata$pred)
+# pdata$pred=exp(pdata$pred)
 
 dev.off()
 plot(Discharge~Date,pdata)
-with(pdata,lines(exp(pred),Date,col="red"))
+with(pdata,lines(Date,pred,col="red"))
