@@ -95,8 +95,8 @@ pie.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_V1_PIEWatersheds.xlsx"),
 pie.unit$data.set="pie"
 hja.unit=read.xlsx(paste0(data.path,"HJAndrewsSiSyn.xlsx"),sheet=2,startRow=1,na.strings = "NA")
 hja.unit$data.set="hja"
-# sage.unit=read.xlsx(paste0(data.path,"SagehenSiSyn.xlsx"),sheet=2,startRow=1,na.strings = "NA")
-# sage.unit$data.set="sage"
+sage.unit=read.xlsx(paste0(data.path,"SagehenSiSyn_UPDATED_03032021.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+sage.unit$data.set="sage"
 umr.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_UMR.xlsx"),sheet=2,startRow=1,na.strings = "NA")
 umr.unit$data.set="umr"
 tang.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_Tanguro.xlsx"),sheet=2,startRow=1,na.strings = "NA")
@@ -105,9 +105,9 @@ tang.unit$data.set="tanguro"
 HBR.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_HBR.xlsx"),sheet=2,startRow=1,na.strings = "NA")
 HBR.unit$data.set="HBR"
 
-sage.unit=read.xlsx(paste0(export.path,"sagehencreek_params_edited.xlsx"))
-sage.unit=subset(sage.unit,keep==1)[,c("Measurement","Unit")]
-sage.unit$data.set="sage"
+# sage.unit=read.xlsx(paste0(export.path,"sagehencreek_params_edited.xlsx"))
+# sage.unit=subset(sage.unit,keep==1)[,c("Measurement","Unit")]
+# sage.unit$data.set="sage"
 
 unit.all=rbind(arc.unit,bczo.unit,carey.unit,coal.unit,cpcrw.unit,konza.unit,
                KRR.unit,MCM.unit,NWT.unit,LMP.unit,LUQ.unit,pie.unit,hja.unit,
@@ -127,8 +127,8 @@ Si.CF=data.frame(Measurement="Si",
                  CF=c((1/Si.mw)*1000,((1/SiO2.mw)*(SiO2.mw/Si.mw))*1000,1/Si.mw))
 N.cf=data.frame(Measurement=c("TN","DIN","DIN","TN"),Unit=c(rep("mg N/L",2),"uM N","uM N"),CF=c(rep((1/N.mw)*1000,2),1,1))
 NOX.cf=data.frame(Measurement="NOX",
-                  Unit=c("uM NO3","mg NO3-N/L","ug NO3-N/L","ueq/L","uM NO3-N"),
-                  CF=c(NO3.mw/N.mw,(1/N.mw)*1000,1/N.mw,NO3.mw*(NO3.mw/N.mw),1))
+                  Unit=c("uM NO3","mg NO3-N/L","ug NO3-N/L","ueq/L","uM NO3-N","mg NO3/L"),
+                  CF=c(NO3.mw/N.mw,(1/N.mw)*1000,1/N.mw,NO3.mw*(NO3.mw/N.mw),1,(1/N.mw)*1000))
 NO3.cf=data.frame(Measurement="NO3",Unit=c("ug/L"),CF=c(1/N.mw))
 NO2.cf=data.frame(Measurement="NO2",Unit=c("ug/L"),CF=c(1/N.mw))
 NH4.cf=data.frame(Measurement="NH4",
@@ -483,30 +483,30 @@ sage.dat.melt=merge(sage.dat.melt,subset(unit.all2,data.set=="sage"))
 sage.dat.melt$value=with(sage.dat.melt,value*CF)
 sage.dat.melt$LTER="Sagehen(Sullivan)"
 
-## Sagehen from USGS
-library(dataRetrieval)
-sage.dat=readWQPdata(siteid="USGS-10343500")
-head(sage.dat)
-
-unique(sage.dat$CharacteristicName)
-unique(sage.dat$ResultMeasure.MeasureUnitCode)
-unique(sage.dat$ResultSampleFractionText)
-sage.dat.params=ddply(sage.dat,c("CharacteristicName","ResultSampleFractionText","ResultMeasure.MeasureUnitCode"),summarise,N.val=N.obs(ResultMeasureValue))
-# write.csv(sage.dat.params,paste0(export.path,"sagehencreek_params.csv"),row.names = F)
-sage.unit=read.xlsx(paste0(export.path,"sagehencreek_params_edited.xlsx"))
-sage.unit=subset(sage.unit,keep==1)[,c("CharacteristicName","ResultSampleFractionText","Param")]
-
-sage.dat=merge(sage.dat,sage.unit,c("CharacteristicName","ResultSampleFractionText"))
-sage.dat2=data.frame(cast(data.frame(sage.dat),MonitoringLocationIdentifier+ActivityStartDate~Param,value='ResultMeasureValue',mean))
-sage.dat2$NOx=with(sage.dat2,NO2+NO3)
-sage.dat2
-
-sage.dat2[,c("Conductivity","TSS","VSS","TN","SRP","TDN","TDP","DON","ANC","TOC","Benthic.Chl")]=as.numeric(NA);
-sage.dat2$LTER="Sagehen"
-sage.dat2$'Site/Stream.Name'="Sagehen"
-sage.dat2$Sampling.Date=sage.dat2$ActivityStartDate
-sage.dat2$Treatment=NA
-sage.dat2$Time=NA
+# ## Sagehen from USGS
+# library(dataRetrieval)
+# sage.dat=readWQPdata(siteid="USGS-10343500")
+# head(sage.dat)
+# 
+# unique(sage.dat$CharacteristicName)
+# unique(sage.dat$ResultMeasure.MeasureUnitCode)
+# unique(sage.dat$ResultSampleFractionText)
+# sage.dat.params=ddply(sage.dat,c("CharacteristicName","ResultSampleFractionText","ResultMeasure.MeasureUnitCode"),summarise,N.val=N.obs(ResultMeasureValue))
+# # write.csv(sage.dat.params,paste0(export.path,"sagehencreek_params.csv"),row.names = F)
+# sage.unit=read.xlsx(paste0(export.path,"sagehencreek_params_edited.xlsx"))
+# sage.unit=subset(sage.unit,keep==1)[,c("CharacteristicName","ResultSampleFractionText","Param")]
+# 
+# sage.dat=merge(sage.dat,sage.unit,c("CharacteristicName","ResultSampleFractionText"))
+# sage.dat2=data.frame(cast(data.frame(sage.dat),MonitoringLocationIdentifier+ActivityStartDate~Param,value='ResultMeasureValue',mean))
+# sage.dat2$NOx=with(sage.dat2,NO2+NO3)
+# sage.dat2
+# 
+# sage.dat2[,c("Conductivity","TSS","VSS","TN","SRP","TDN","TDP","DON","ANC","TOC","Benthic.Chl")]=as.numeric(NA);
+# sage.dat2$LTER="Sagehen"
+# sage.dat2$'Site/Stream.Name'="Sagehen"
+# sage.dat2$Sampling.Date=sage.dat2$ActivityStartDate
+# sage.dat2$Treatment=NA
+# sage.dat2$Time=NA
 
 
 
@@ -584,6 +584,13 @@ summary(master.dat)
 
 # Added HBR and corrected Coal Creek 
 # write.csv(master.dat,paste0(export.path,"20210224_masterdata.csv"),row.names=F)
+
+# updated Sagehen dataset
+# write.csv(master.dat,paste0(export.path,"20210304_masterdata.csv"),row.names=F)
+
+# fixed HBR NOx data
+# write.csv(master.dat,paste0(export.path,"20210421_masterdata.csv"),row.names=F)
+
 
 boxplot(value~site,subset(master.dat,variable=="DSi"),log="y",col="grey",ylab="DSi (uM)")
 
