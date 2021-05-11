@@ -1,4 +1,7 @@
 library(loadflex)
+library(lubridate)
+library(ggplot2)
+library(dplyr)
 
 #run single ARC site (Imnavait_Weir) using WRTDS prep files
 
@@ -32,3 +35,35 @@ ggplot2::qplot(x=Date, y=Resid, data=getResiduals(Imnavait_lc, newdata=Imnavait_
 #generate point predictions from daily Q values
 preds_lc = predictSolute(Imnavait_lc,"flux",Imnavait_Weir_Q,se.pred=T,date=T)
 head(preds_lc)
+
+names(preds_lc)[names(preds_lc)=="fit"] = "Si_load_kg.day"
+
+#add month and year
+preds_lc$day.month = format(as.Date(preds_lc$date), "%m-%d")
+preds_lc$month = month(as.Date(preds_lc$date))
+preds_lc$year = year(as.Date(preds_lc$date))
+
+#merge daily flow data
+names(Imnavait_Weir_Q)[names(Imnavait_Weir_Q)=="Date"] = "date"
+Imnavait_loads = merge(preds_lc, Imnavait_Weir_Q, by=c("date"))
+head(Imnavait_loads)
+
+#plot by date, each line is year
+ggplot(preds_lc)+
+  geom_line(aes(x=day.month, y=Si_load_kg.day, color=year))
+
+#write csv
+write.csv(Imnavait_loads, file="Imnavait_dailySi_Loadflex.csv")
+
+#get monthly averages of loads
+Imnavait_avgs = 
+Imnavait_loads %>%
+  group_by(month, year) %>%
+  summarize(
+    count = n(),
+    meanSiLoad = mean(Si_load_kg.day),
+    seSiLoad = sd(Si_load_kg.day)/sqrt(count)
+  )
+
+ggplot(Imnavait_avgs, aes(x=month, y=meanSiLoad, color=year))+
+  geom_point()
