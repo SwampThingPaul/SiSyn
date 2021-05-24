@@ -120,6 +120,7 @@ SiO2.mw=(Si.mw+(O.mw*2))
 NO3.mw=(N.mw+(O.mw*3))
 NH4.mw=(N.mw+(H.mw*4))
 PO4.mw=P.mw+(O.mw*4)
+SO4.mw=(S.mw+O.mw*4)
 unique(unit.all$Measurement)
 subset(unit.all,Measurement=="Si")
 Si.CF=data.frame(Measurement="Si",
@@ -128,7 +129,7 @@ Si.CF=data.frame(Measurement="Si",
 N.cf=data.frame(Measurement=c("TN","DIN","DIN","TN"),Unit=c(rep("mg N/L",2),"uM N","uM N"),CF=c(rep((1/N.mw)*1000,2),1,1))
 NOX.cf=data.frame(Measurement="NOX",
                   Unit=c("uM NO3","mg NO3-N/L","ug NO3-N/L","ueq/L","uM NO3-N","mg NO3/L"),
-                  CF=c(NO3.mw/N.mw,(1/N.mw)*1000,1/N.mw,NO3.mw*(NO3.mw/N.mw),1,(1/N.mw)*1000))
+                  CF=c(NO3.mw/N.mw,(1/N.mw)*1000,1/N.mw,(NO3.mw/N.mw),1,(1/N.mw)*1000))
 NO3.cf=data.frame(Measurement="NO3",Unit=c("ug/L"),CF=c(1/N.mw))
 NO2.cf=data.frame(Measurement="NO2",Unit=c("ug/L"),CF=c(1/N.mw))
 NH4.cf=data.frame(Measurement="NH4",
@@ -141,7 +142,7 @@ TP.cf=data.frame(Measurement=c("TP"),Unit=c("mg P/L","uM P"),CF=c((1/P.mw)*1000,
 
 PO4.cf=data.frame(Measurement=c("PO4"),
                   Unit=c("ueq/L","ug PO4-P/L","mg PO4-P/L","mg PO4/L","uM PO4-P","uM PO4"),
-                  CF=c(PO4.mw*(PO4.mw/P.mw),(1/P.mw),(1/P.mw)*1000,((1/PO4.mw)*(PO4.mw/P.mw))*1000,1,1))
+                  CF=c((PO4.mw/P.mw),(1/P.mw),(1/P.mw)*1000,((1/PO4.mw)*(PO4.mw/P.mw))*1000,1,1))
 SRP.cf=data.frame(Measurement=c("SRP"),
                   Unit=c("ug P/L","mg P/L","uM P"),
                   CF=c(1/P.mw,(1/P.mw)*1000,1))
@@ -157,7 +158,7 @@ K.cf=data.frame(Measurement=c("K"),Unit=c("ueq/L","uM","mg/L"),CF=c(1,1,(1/K.mw)
 Ca.cf=data.frame(Measurement=c("Ca"),Unit=c("ueq/L","uM","mg/L"),CF=c(1/2,1,(1/Ca.mw)*1000))
 Mg.cf=data.frame(Measurement=c("Mg"),Unit=c("ueq/L","uM","mg/L"),CF=c(1/2,1,(1/Mg.mw)*1000))
 SO4.cf=data.frame(Measurement=c("SO4"),Unit=c("ueq/L","uM","umols SO4","umols SO4-S","mg SO4/L","mg SO4-S/L","mg/L"),
-                  CF=c(1/2,1,1,1,rep((1/(S.mw+O.mw*4))*1000,3)))
+                  CF=c(SO4.mw/(2*S.mw),1,1,1,rep((1/SO4.mw)*1000,3)))
 Cl.cf=data.frame(Measurement=c("Cl"),Unit=c("ueq/L","uM","mg/L"),CF=c(1/2,1,(1/Cl.mw)*1000))
 
 cf.all=rbind(Si.CF,N.cf,NOX.cf,NO3.cf,NO2.cf,NH4.cf,other.N,TP.cf,PO4.cf,SRP.cf,C.cf,Q.cf,
@@ -590,6 +591,9 @@ summary(master.dat)
 
 # fixed HBR NOx data
 # write.csv(master.dat,paste0(export.path,"20210421_masterdata.csv"),row.names=F)
+
+# fixed NWT NOx and SRP data
+# write.csv(master.dat,paste0(export.path,"20210524_masterdata.csv"),row.names=F)
 
 
 boxplot(value~site,subset(master.dat,variable=="DSi"),log="y",col="grey",ylab="DSi (uM)")
