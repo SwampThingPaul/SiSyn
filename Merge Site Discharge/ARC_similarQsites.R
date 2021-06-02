@@ -78,7 +78,7 @@ median_abvzero_Q =
 #Imnavait Weir median Q (during flow period) = 1.6e-2
 #subset sites with median Q with similar median Q
 median_abvzero_Q = subset(median_abvzero_Q, median_abvzero_Q$medianQ<=0.1)
-abvzero_Q_sites = c(median_abvzero_Q$site.name,"ws3","ws6","ws7","ws8","ws9")
+abvzero_Q_sites = c(median_abvzero_Q$site.name,"ws1","ws2","ws3","ws6")
 median_abvzero_sites = all_discharge_NAomit[all_discharge_NAomit$site.name %in% abvzero_Q_sites,]
 length(unique(median_abvzero_sites$site.name))
 
