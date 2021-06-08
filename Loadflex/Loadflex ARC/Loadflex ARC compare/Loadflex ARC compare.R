@@ -7,11 +7,27 @@ library(lubridate)
 library(hydroTSM)
 
 #list sites to run for WRTDS comparison
-site_list = c("ws1","ws2","ws3","ws6","GSWS09","GSWS10","ALBION", "MARTINELLI", "SADDLE STREAM 007")
+site_list = c("ws1","ws2","ws3","ws6","GSWS09","GSWS10")
 
 #subset discharge data for sites in site_list
 site_discharge = WRTDS_discharge_allsites_21Apr21[WRTDS_discharge_allsites_21Apr21$site.name %in% site_list,]
 unique(site_discharge$site.name)
+
+#create plot of all site discharge by DOY
+site_discharge$doy = yday(site_discharge$Date)
+site_meandailyQ = 
+  site_discharge %>%
+  group_by(site.name, doy)%>%
+  summarize(
+    meandailyQ=mean(Q, na.rm=T)
+  )
+  
+ggplot(site_meandailyQ, aes(x=doy, y=meandailyQ))+
+  geom_line()+
+  ylab("Mean daily discharge (cms)")+
+  xlab("Day of year")+
+  theme_bw(base_size=14)+
+  facet_wrap(~site.name, ncol=3, scales="free")
 
 #check for any negative discharge values
 length(which(site_discharge$Q < 0))
@@ -106,5 +122,5 @@ ggplot(dailySiLoads)+
   theme_bw(base_size=14)+
   facet_wrap(~site.name, scales="free")
 
-write.csv(dailySiLoads, file="Loadflex_dailySi_selectsites_19May2021.csv")
+write.csv(dailySiLoads, file="Loadflex_dailySi_selectsites_7June2021.csv")
 
