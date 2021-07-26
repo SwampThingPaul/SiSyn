@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>SiSyn: C-Q</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Paul Julian" />
+    <script src="libs/header-attrs/header-attrs.js"></script>
+    <link href="libs/remark-css/default.css" rel="stylesheet" />
+    <link href="libs/tile-view/tile-view.css" rel="stylesheet" />
+    <script src="libs/tile-view/tile-view.js"></script>
+    <link rel="stylesheet" href="libs/custom.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+
+
+
+
+layout: true
+
+&lt;div class="my-footer"&gt;
+&lt;span&gt; DRAFT &lt;/span&gt;
+&lt;/div&gt;
+
+---
+name: title
+class: left, middle
+
+### LTER: SiSyn
+
+**DRAFT** - July 22, 2021
+
+
+&lt;!-- this ends up being the title slide since seal = FALSE--&gt;
+
+
+.footnote[
+&lt;!-- Paul Julian PhD [<svg aria-hidden="true" role="img" viewBox="0 0 512 512" style="height:1em;width:1em;vertical-align:-0.125em;margin-right:0.2em;font-size:inherit;fill:currentColor;overflow:visible;position:relative;"><path d="M502.3 190.8c3.9-3.1 9.7-.2 9.7 4.7V400c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V195.6c0-5 5.7-7.8 9.7-4.7 22.4 17.4 52.1 39.5 154.1 113.6 21.1 15.4 56.7 47.8 92.2 47.6 35.7.3 72-32.8 92.3-47.6 102-74.1 131.6-96.3 154-113.7zM256 320c23.2.4 56.6-29.2 73.4-41.4 132.7-96.3 142.8-104.7 173.4-128.7 5.8-4.5 9.2-11.5 9.2-18.9v-19c0-26.5-21.5-48-48-48H48C21.5 64 0 85.5 0 112v19c0 7.4 3.4 14.3 9.2 18.9 30.6 23.9 40.7 32.4 173.4 128.7 16.8 12.2 50.2 41.8 73.4 41.4z"/></svg>](mailto: pjulian@sccf.org) .small[pjulian@sccf.org] --&gt;
+
+.small[Use cursor keys for navigation, press .red["O"] for a slide .red[O]verview]
+]
+---
+name: CQFun
+
+
+
+```r
+CQ_fun=function(logQ,logC,Q50,plot=T,models=c("log-linear","segmented","moatar"),plot.CI=T,plot.lwd=1.5,legend.pos="topleft",...){
+  
+  # Power Law
+  loglog.mod=lm(logC~logQ)
+  loglog.mod.sum=summary(loglog.mod)
+  
+  # variabled of interest
+  loglog.beta=as.numeric(coef(loglog.mod)[2])
+  loglog.alpha=as.numeric(coef(loglog.mod)[1])
+  
+  LL.rslt=data.frame(LL.R2=loglog.mod.sum$r.squared,
+                     LL.R2.adj=loglog.mod.sum$adj.r.squared,
+                     LL.RMSE=loglog.mod.sum$sigma,
+                     LL.beta=loglog.beta,
+                     LL.alpha=loglog.alpha)
+  
+  # Segmented
+  # Picks 1st breakpoint
+  loglog.mod.seg=segmented(loglog.mod,seg.Z=~logQ)
+  loglog.mod.seg.sum=summary(loglog.mod.seg)
+  
+  if(nrow(loglog.mod.seg$psi)==0){
+    seg.psi.est=NA
+    seg.psi.SE=NA
+  }else{
+    seg.psi.est=loglog.mod.seg$psi[1,c(2)]
+    seg.psi.SE=seg.psi=loglog.mod.seg$psi[1,c(3)]
+  }
+  
+  seg.rslt=data.frame(seg.bk.est=exp(seg.psi.est),
+                      seg.bk.SE=exp(seg.psi.SE),
+                      seg.R2=loglog.mod.seg.sum$r.squared,
+                      seg.R2.adj=loglog.mod.seg.sum$adj.r.squared,
+                      seg.RMSE=loglog.mod.seg.sum$sigma)
+  
+  # Moatar
+  logQ.m=logQ[logQ&lt;log(Q50)]
+  logC.m=logC[logQ&lt;log(Q50)]
+  loglog.mod.inf=lm(logC.m~logQ.m)
+  loglog.mod.inf.sum=summary(loglog.mod.inf)
+  CQ50.inf=predict(loglog.mod.inf,data.frame(logQ.m=log(Q50)))
+
+  logQ.m=logQ[logQ&gt;log(Q50)]
+  logC.m=logC[logQ&gt;log(Q50)]
+  loglog.mod.sup=lm(logC.m~logQ.m)
+  loglog.mod.sup.sum=summary(loglog.mod.sup)
+  CQ50.sup=predict(loglog.mod.sup,data.frame(logQ.m=log(Q50)))
+
+  moatar.rslt=data.frame(Q50=Q50,
+                         moatar.beta.inf=as.numeric(coef(loglog.mod.inf)[2]),
+                         moatar.R2.inf=loglog.mod.inf.sum$r.squared,
+                         moatar.R2.adj.inf=loglog.mod.inf.sum$adj.r.squared,
+                         moatar.RMSE.inf=loglog.mod.inf.sum$sigma,
+                         moatar.beta.sup=as.numeric(coef(loglog.mod.sup)[2]),
+                         moatar.R2.sup=loglog.mod.sup.sum$r.squared,
+                         moatar.R2.adj.sup=loglog.mod.sup.sum$adj.r.squared,
+                         moatar.RMSE.sup=loglog.mod.sup.sum$sigma,
+                         moatar.C_Q50=mean(c(CQ50.inf,CQ50.sup)))
+  
+  rslt.all=cbind(LL.rslt,seg.rslt,moatar.rslt)
+  
+  if(plot==T){
+    plot(dat.CQ$Si~dat.CQ$Q,log="xy",...)
+    
+    if(sum(match(models,"log-linear"),na.rm=T)==1){
+    x.val=seq(min(logQ,na.rm=T),max(logQ,na.rm=T),length.out=50)
+    LL.pred=predict(loglog.mod,data.frame(logQ=x.val),interval="confidence")
+    lines(exp(x.val),exp(LL.pred[,1]),col="red",lwd=plot.lwd)
+    if(plot.CI==T){
+    lines(exp(x.val),exp(LL.pred[,2]),col="red",lty=2)
+    lines(exp(x.val),exp(LL.pred[,3]),col="red",lty=2)
+    }
+    }
+    
+    if(sum(match(models,"segmented"),na.rm=T)==1){
+    seg.pred=predict(loglog.mod.seg,data.frame(logQ=x.val),interval="confidence")
+    lines(exp(x.val),exp(seg.pred[,1]),col="blue",lwd=plot.lwd)
+    if(plot.CI==T){
+    lines(exp(x.val),exp(seg.pred[,2]),col="blue",lty=2)
+    lines(exp(x.val),exp(seg.pred[,3]),col="blue",lty=2)
+    }
+    }
+    
+    if(sum(match(models,"moatar"),na.rm=T)==1){
+      abline(v=Q50)
+      x.val=seq(min(logQ,na.rm=T),log(Q50),length.out=50)
+      LL.inf=predict(loglog.mod.inf,data.frame(logQ.m=x.val),interval="confidence")          
+      lines(exp(x.val),exp(LL.inf[,1]),col="forestgreen",lwd=plot.lwd)
+      if(plot.CI==T){
+      lines(exp(x.val),exp(LL.inf[,2]),col="forestgreen",lty=2)
+      lines(exp(x.val),exp(LL.inf[,3]),col="forestgreen",lty=2)
+      }
+      
+      x.val=seq(log(Q50),max(logQ,na.rm=T),length.out=50)
+      LL.sup=predict(loglog.mod.sup,data.frame(logQ.m=x.val),interval="confidence")          
+      lines(exp(x.val),exp(LL.sup[,1]),col="forestgreen")
+      if(plot.CI==T){
+      lines(exp(x.val),exp(LL.sup[,2]),col="forestgreen",lty=2)
+      lines(exp(x.val),exp(LL.sup[,3]),col="forestgreen",lty=2)
+      }
+    }
+    
+    mod.col=c("red","blue","forestgreen")
+    mod.col=mod.col[match(models,c("log-linear","segmented","moatar"))]
+    legend.pos=if(is.na(legend.pos)==T){"topleft"}else(legend.pos)
+    legend(legend.pos,
+           legend=models,
+           lty=1,
+           col=mod.col,
+           ncol=1,bty="n",y.intersp=1,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,title="Model",title.adj = 0)
+  
+  }
+  return(rslt.all)
+}
+```
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"slideNumberFormat": "%current%",
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
