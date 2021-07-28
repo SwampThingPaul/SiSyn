@@ -61,12 +61,19 @@ plot(logC~logQ)
 loglog.mod=lm(logC~logQ)
 loglog.mod.sum=summary(loglog.mod)
 
+test=gvlma::gvlma(loglog.mod)
+test$GlobalTest
+
+as.character(ifelse(test$GlobalTest$GlobalStat4$pvalue<0.05,"No","Yes"))
+
 # variabled of interest
 loglog.mod.sum$r.squared
 loglog.mod.sum$adj.r.squared
 loglog.mod.sum$sigma
 loglog.beta=as.numeric(coef(loglog.mod)[2])
 loglog.alpha=as.numeric(coef(loglog.mod)[1])
+
+loglog.assumpt=
 
 LL.rslt=data.frame(LL.R2=loglog.mod.sum$r.squared,
                    LL.R2.adj=loglog.mod.sum$adj.r.squared,

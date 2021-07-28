@@ -90,6 +90,7 @@ CQ_fun=function(logQ,logC,Q50,plot=TRUE,
                      LL.R2.adj=loglog.mod.sum$adj.r.squared,
                      LL.RMSE=loglog.mod.sum$sigma,
                      LL.beta=loglog.beta,
+                     LL.beta.SE=loglog.mod.sum$coefficients[2,2],
                      LL.beta.tval=loglog.mod.sum$coefficients[2,3],
                      LL.beta.pval=loglog.mod.sum$coefficients[2,4],
                      LL.alpha=loglog.alpha,
@@ -143,7 +144,7 @@ CQ_fun=function(logQ,logC,Q50,plot=TRUE,
                          moatar.R2.sup=loglog.mod.sup.sum$r.squared,
                          moatar.R2.adj.sup=loglog.mod.sup.sum$adj.r.squared,
                          moatar.RMSE.sup=loglog.mod.sup.sum$sigma,
-                         moatar.C_Q50=mean(c(CQ50.inf,CQ50.sup)))
+                         moatar.C_Q50=exp(mean(c(CQ50.inf,CQ50.sup))))
   
   rslt.all=cbind(LL.rslt,seg.rslt,moatar.rslt)
   
@@ -218,6 +219,7 @@ Output includes measure of relative and absolute fit, slopes and intercepts and 
 * `LL.R2.adj` : Log-linear adjusted R^2^
 * `LL.RMSE` : Log-linear Root Mean Square Error
 * `LL.beta` : Log-linear slope
+* `LL.beta.SE`: Log-linear slope standard error
 * `LL.beta.tval` : Log-linear slope t-value (different from zero)
 * `LL.beta.pval` : Log-linear slope p-value (different from zero)
 * `LL.alpha` : Log-linear intercept
