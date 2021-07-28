@@ -61,6 +61,10 @@ plot(logC~logQ)
 loglog.mod=lm(logC~logQ)
 loglog.mod.sum=summary(loglog.mod)
 
+confint(loglog.mod)
+loglog.mod.sum$coefficients[2,2]
+
+
 test=gvlma::gvlma(loglog.mod)
 test$GlobalTest
 
@@ -271,3 +275,35 @@ CQ_fun=function(logQ,logC,Q50,plot=T,models=c("log-linear","segmented","moatar")
 }
 
 CQ_fun(log(dat.CQ$Q),log(dat.CQ$Si),median(dat.Q$Q,na.rm=T),plot.CI=T,pch=19,ylim=c(1,10),legend.pos = "bottomright",models="moatar")
+
+
+
+dat.Q=read.csv(paste0(data.path,"Conc_Discharge_Master/M786.2C_Q_WRTDS.csv"))
+dat.Q$Date=as.Date(dat.Q$Date)
+dat.Q$CY=as.numeric(format(dat.Q$Date,"%Y"))
+dat.C=read.csv(paste0(data.path,"Conc_Discharge_Master/M786.2C_Si_WRTDS.csv"))
+dat.C$Date=as.Date(dat.C$Date)
+dat.CQ=merge(dat.Q,dat.C,"Date")
+dat.CQ$CY=as.numeric(format(dat.CQ$Date,"%Y"))
+ddply(dat.CQ,"CY",summarise,N.val=N.obs(Q))
+
+yrs=c(seq(1997,2002,1),seq(2004,2019,1))
+rslt.CQ=data.frame()
+for(i in 1:length(yrs)){
+  tmp=subset(dat.CQ,CY==yrs[i])
+  tmp2=subset(dat.Q,CY==yrs[i])
+  rslt=CQ_fun(log(tmp$Q),log(tmp$Si),median(tmp2$Q,na.rm=T),plot=F)
+  rslt$CY=yrs[i]
+  rslt.CQ=rbind(rslt.CQ,rslt)
+  print(i)
+}
+
+plot(LL.R2~CY,rslt.CQ)
+plot(LL.beta~CY,rslt.CQ,type="b")
+abline(h=0)
+
+plot(seg.bk.est~CY,rslt.CQ,type="b")
+plot(Q50~CY,rslt.CQ,type="b")
+plot(moatar.C_Q50~CY,rslt.CQ,type="b")
+
+plot(Q50~seg.bk.est,rslt.CQ)
