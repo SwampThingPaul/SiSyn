@@ -18,7 +18,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 **Models:**
 
-  - Log-Linear (power law): $ C=\alpha Q^{\beta}$ or the linearized version of  $log(C) = \beta log(\alpha) + log(Q)$.
+  - Log-Linear (power law): $C=\alpha Q^{\beta}$ or the linearized version of  $log(C) = \beta log(\alpha) + log(Q)$.
   
   - Segmented: (with one break point)
   
@@ -28,12 +28,27 @@ knitr::opts_chunk$set(echo = TRUE)
 <br>
 Breakpoints are determined through an iterative process and identified when the linear relationship changes. The model is estimated simultaneously yielding point estimates and relevant approximate standard errors of all the model parameters, including the break-points.
 
-  - *"Moatar"*: Similar to segmented regression with a pre-defined breakpoint. Based on analyses presented by [Moatar et al. (2017)](https://agupubs.onlinelibrary.wiley.com/doi/10.1002/2016WR019635){target="_blank"}. Individual slopes were estimated for discharges below and above the median daily discharge ($\beta_{50inf}$ and $\beta_{50sup}$, respectively where *"inf"* = inferior (below) and *"sup"* = superior (above)). The predicted concentrations for both models were averaged. 
+  - *"Moatar"*: <mark><u>Similar to segmented regression with a pre-defined breakpoint</u></mark>. Based on analyses presented by [Moatar et al. (2017)](https://agupubs.onlinelibrary.wiley.com/doi/10.1002/2016WR019635){target="_blank"}. Individual slopes were estimated for discharges below and above the median daily discharge ($\beta_{50inf}$ and $\beta_{50sup}$, respectively where *"inf"* = inferior (below) and *"sup"* = superior (above)). The predicted concentrations for both models were averaged. 
 
 ## Function
 
+```{r, include=T,eval=F}
+# To check and install if needed packages
+check.packages <- function(pkg){
+  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+  if (length(new.pkg)) 
+    install.packages(new.pkg, dependencies = TRUE)
+  sapply(pkg, require, character.only = TRUE)
+}
+
+pkg=c("segmented","gvlma")
+check.packages(pkg)
+
+```
+
 ```{r, include=T}
 library(segmented)
+library(gvlma)
 #' Fitting models to Concentration-Discharge data using several different 
 #' models/methods and extracting relevat information
 
@@ -63,6 +78,10 @@ CQ_fun=function(logQ,logC,Q50,plot=TRUE,
   loglog.mod=lm(logC~logQ)
   loglog.mod.sum=summary(loglog.mod)
   
+  # Check assumptions
+  LL.assump=gvlma(loglog.mod)
+  asumpt.rslt=as.character(ifelse(LL.assump$GlobalTest$GlobalStat4$pvalue<0.05,"No","Yes"))
+  
   # variabled of interest
   loglog.beta=as.numeric(coef(loglog.mod)[2])
   loglog.alpha=as.numeric(coef(loglog.mod)[1])
@@ -71,7 +90,11 @@ CQ_fun=function(logQ,logC,Q50,plot=TRUE,
                      LL.R2.adj=loglog.mod.sum$adj.r.squared,
                      LL.RMSE=loglog.mod.sum$sigma,
                      LL.beta=loglog.beta,
-                     LL.alpha=loglog.alpha)
+                     LL.alpha=loglog.alpha,
+                     LL.AIC=AIC(loglog.mod),
+                     LL.BIC=BIC(loglog.mod),
+                     LL.LogLik=as.numeric(logLik(loglog.mod)),
+                     LL.assumpt.pass=asumpt.rslt)
   
   # Segmented
   # Picks 1st breakpoint
@@ -91,7 +114,10 @@ CQ_fun=function(logQ,logC,Q50,plot=TRUE,
                       seg.bk.SE=exp(seg.psi.SE),
                       seg.R2=loglog.mod.seg.sum$r.squared,
                       seg.R2.adj=loglog.mod.seg.sum$adj.r.squared,
-                      seg.RMSE=loglog.mod.seg.sum$sigma)
+                      seg.RMSE=loglog.mod.seg.sum$sigma,
+                      seg.AIC=AIC(loglog.mod.seg),
+                      seg.BIC=BIC(loglog.mod.seg),
+                      seg.LogLik=as.numeric(logLik(loglog.mod.seg)))
   
   # Moatar
   logQ.m=logQ[logQ<log(Q50)]
@@ -191,11 +217,18 @@ Output includes measure of relative and absolute fit, slopes and intercepts and 
 * `LL.RMSE` : Log-linear Root Mean Square Error
 * `LL.beta` : Log-linear slope
 * `LL.alpha` : Log-linear intercept
+* `LL.AIC`: Log-Linear AIC
+* `LL.BIC`: Log-Linear BIC
+* `LL.LogLik`: Log-Linear log-likelihood (used to calculate AIC and BIC)
+* `LL.assumpt.pass`: uses `gvlma` package to test linear model assumptions, extracts global test decision.
 * `seg.bk.est` : Segmented regression break point (if one is detected). Only reports first break point if more than one is detected (back-transformed)
 * `seg.bk.SE` : Segmented regression break point standard error (back-transformed)
 * `seg.R2` : Segmented R^2^
 * `seg.R2.adj` : Segmented adjusted R^2^
 * `seg.RMSE` : Segmented Root Mean Square Error
+* `seg.AIC`: Segmented AIC
+* `seg.BIC`: Segmented BIC
+* `seg.LogLik`: Segmented log-likelihood (used to calculate AIC and BIC)
 * `Q50` : Median discharge value used in function input
 * `moatar.beta.inf` : Slope of C-Q below the median discharge value
 * `moatar.R2.inf` : R^2^ of C-Q below the median discharge value
