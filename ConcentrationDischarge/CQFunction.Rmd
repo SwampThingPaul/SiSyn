@@ -90,6 +90,8 @@ CQ_fun=function(logQ,logC,Q50,plot=TRUE,
                      LL.R2.adj=loglog.mod.sum$adj.r.squared,
                      LL.RMSE=loglog.mod.sum$sigma,
                      LL.beta=loglog.beta,
+                     LL.beta.tval=loglog.mod.sum$coefficients[2,3],
+                     LL.beta.pval=loglog.mod.sum$coefficients[2,4],
                      LL.alpha=loglog.alpha,
                      LL.AIC=AIC(loglog.mod),
                      LL.BIC=BIC(loglog.mod),
@@ -216,6 +218,8 @@ Output includes measure of relative and absolute fit, slopes and intercepts and 
 * `LL.R2.adj` : Log-linear adjusted R^2^
 * `LL.RMSE` : Log-linear Root Mean Square Error
 * `LL.beta` : Log-linear slope
+* `LL.beta.tval` : Log-linear slope t-value (different from zero)
+* `LL.beta.pval` : Log-linear slope p-value (different from zero)
 * `LL.alpha` : Log-linear intercept
 * `LL.AIC`: Log-Linear AIC
 * `LL.BIC`: Log-Linear BIC

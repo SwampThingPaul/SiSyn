@@ -257,6 +257,8 @@ CQ_fun=function(logQ,logC,Q50,plot=TRUE,
                      LL.R2.adj=loglog.mod.sum$adj.r.squared,
                      LL.RMSE=loglog.mod.sum$sigma,
                      LL.beta=loglog.beta,
+                     LL.beta.tval=loglog.mod.sum$coefficients[2,3],
+                     LL.beta.pval=loglog.mod.sum$coefficients[2,4],
                      LL.alpha=loglog.alpha,
                      LL.AIC=AIC(loglog.mod),
                      LL.BIC=BIC(loglog.mod),
@@ -378,6 +380,8 @@ CQ_fun=function(logQ,logC,Q50,plot=TRUE,
 <li><code>LL.R2.adj</code> : Log-linear adjusted R<sup>2</sup></li>
 <li><code>LL.RMSE</code> : Log-linear Root Mean Square Error</li>
 <li><code>LL.beta</code> : Log-linear slope</li>
+<li><code>LL.beta.tval</code> : Log-linear slope t-value (different from zero)</li>
+<li><code>LL.beta.pval</code> : Log-linear slope p-value (different from zero)</li>
 <li><code>LL.alpha</code> : Log-linear intercept</li>
 <li><code>LL.AIC</code>: Log-Linear AIC</li>
 <li><code>LL.BIC</code>: Log-Linear BIC</li>
@@ -430,16 +434,16 @@ CQ_fun(log(dat.CQ$Q),log(dat.CQ$Si),Q50,plot.CI=T,pch=19,ylim=c(1,10),
 C-Q relationship of M786.2 (UMR; all data) and all models
 </p>
 </div>
-<pre><code>##          LL.R2    LL.R2.adj   LL.RMSE    LL.beta LL.alpha   LL.AIC   LL.BIC
-## 1 0.0009164036 -0.001813333 0.3739276 0.01538679 1.560551 324.3351 336.0594
-##   LL.LogLik LL.assumpt.pass seg.bk.est seg.bk.SE     seg.R2 seg.R2.adj
-## 1 -159.1676              No   14900.55  1.334313 0.01539102 0.00727611
-##    seg.RMSE  seg.AIC seg.BIC seg.LogLik   Q50 moatar.beta.inf moatar.R2.inf
-## 1 0.3722274 322.9646 342.505  -156.4823 18000      -0.2480301    0.03492981
-##   moatar.R2.adj.inf moatar.RMSE.inf moatar.beta.sup moatar.R2.sup
-## 1        0.02831974       0.4274229      0.02826071     0.0017157
-##   moatar.R2.adj.sup moatar.RMSE.sup moatar.C_Q50
-## 1      -0.002884689       0.3277656     1.635139</code></pre>
+<pre><code>##          LL.R2    LL.R2.adj   LL.RMSE    LL.beta LL.beta.tval LL.beta.pval
+## 1 0.0009164036 -0.001813333 0.3739276 0.01538679     0.579406    0.5626717
+##   LL.alpha   LL.AIC   LL.BIC LL.LogLik LL.assumpt.pass seg.bk.est seg.bk.SE
+## 1 1.560551 324.3351 336.0594 -159.1676              No   14900.55  1.334313
+##       seg.R2 seg.R2.adj  seg.RMSE  seg.AIC seg.BIC seg.LogLik   Q50
+## 1 0.01539102 0.00727611 0.3722274 322.9646 342.505  -156.4823 18000
+##   moatar.beta.inf moatar.R2.inf moatar.R2.adj.inf moatar.RMSE.inf
+## 1      -0.2480301    0.03492981        0.02831974       0.4274229
+##   moatar.beta.sup moatar.R2.sup moatar.R2.adj.sup moatar.RMSE.sup moatar.C_Q50
+## 1      0.02826071     0.0017157      -0.002884689       0.3277656     1.635139</code></pre>
 <p>Here is an example of plotting each individual model without individual data points, and output suppressed.</p>
 <pre class="r"><code>par(mar=c(2,4,1,1),oma=c(3,1,1,1),mgp=c(2,1,0))
 layout(matrix(1:3,3,1))
@@ -497,16 +501,16 @@ CQ_fun(log(dat.CQ$Q),log(dat.CQ$Si),Q50,plot.CI=T,pch=19,ylim=c(1,50),
 C-Q relationship of MPR (LUQ; all data) and all models
 </p>
 </div>
-<pre><code>##       LL.R2 LL.R2.adj   LL.RMSE    LL.beta LL.alpha   LL.AIC  LL.BIC LL.LogLik
-## 1 0.2607266 0.2601216 0.3397364 -0.2674487 3.928898 834.7354 850.065 -414.3677
-##   LL.assumpt.pass seg.bk.est seg.bk.SE    seg.R2 seg.R2.adj  seg.RMSE  seg.AIC
-## 1              No   56.92265  1.222207 0.2709456  0.2691529 0.3376566 821.6979
-##    seg.BIC seg.LogLik Q50 moatar.beta.inf moatar.R2.inf moatar.R2.adj.inf
-## 1 847.2473   -405.849  35      -0.2005908    0.03263879        0.03102652
-##   moatar.RMSE.inf moatar.beta.sup moatar.R2.sup moatar.R2.adj.sup
-## 1       0.3482593      -0.3427692     0.2892829         0.2881159
-##   moatar.RMSE.sup moatar.C_Q50
-## 1       0.3179681     3.022872</code></pre>
+<pre><code>##       LL.R2 LL.R2.adj   LL.RMSE    LL.beta LL.beta.tval LL.beta.pval LL.alpha
+## 1 0.2607266 0.2601216 0.3397364 -0.2674487    -20.75992 3.084079e-82 3.928898
+##     LL.AIC  LL.BIC LL.LogLik LL.assumpt.pass seg.bk.est seg.bk.SE    seg.R2
+## 1 834.7354 850.065 -414.3677              No   56.92265  1.222207 0.2709456
+##   seg.R2.adj  seg.RMSE  seg.AIC  seg.BIC seg.LogLik Q50 moatar.beta.inf
+## 1  0.2691529 0.3376566 821.6979 847.2473   -405.849  35      -0.2005908
+##   moatar.R2.inf moatar.R2.adj.inf moatar.RMSE.inf moatar.beta.sup moatar.R2.sup
+## 1    0.03263879        0.03102652       0.3482593      -0.3427692     0.2892829
+##   moatar.R2.adj.sup moatar.RMSE.sup moatar.C_Q50
+## 1         0.2881159       0.3179681     3.022872</code></pre>
 <pre class="r"><code>par(mar=c(2,4,1,1),oma=c(3,1,1,1),mgp=c(2,1,0))
 layout(matrix(1:3,3,1))
 CQ_fun(log(dat.CQ$Q),log(dat.CQ$Si),Q50,plot.CI=T,ylim=c(1,50),
