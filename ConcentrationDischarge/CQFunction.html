@@ -268,7 +268,7 @@ CQ_fun=function(logQ,logC,Q50,plot=TRUE,
   
   # Segmented
   # Picks 1st breakpoint
-  loglog.mod.seg=segmented(loglog.mod,seg.Z=~logQ)
+  loglog.mod.seg=segmented(loglog.mod,seg.Z=~logQ,npsi=1)
   loglog.mod.seg.sum=summary(loglog.mod.seg)
   
   # is there a breakpoint?
