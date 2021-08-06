@@ -1,0 +1,794 @@
+---
+
+title: "DSi and Si:N:P stoich over time"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    collapsed: false
+    
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(broom)
+library(ggridges)
+library(ggpubr)
+library(knitr)
+library(PerformanceAnalytics)
+library(car)
+library(MASS)
+library(lubridate)
+library(scales)
+library(lme4)
+library(nlme)
+
+theme_set(theme_bw()+
+            theme(axis.text=element_text(size=8),
+  axis.title.x = element_text(size = 16),
+  axis.title.y = element_text(size = 16)))
+
+select <- dplyr::select
+```
+
+
+
+# Setup for concentrations + ratios vs time
+
+Read in data and check out how many observations of each variable we have to play with
+
+> For now, treating SRP as PO4! But this is probably wrong
+
+```{r}
+sisyn <- read_csv("20201111_masterdata_RAW.csv") 
+
+sisyn <- sisyn %>%
+  mutate(variable=ifelse(variable=="SRP", "PO4", variable))
+
+unique(sisyn$variable)
+
+sisyn %>% count(variable, sort = TRUE) %>% kable()
+```
+
+Spread the data into wide format, make year column, and summarize annual averages into a data table
+
+```{r}
+# Spreading data to give each variable a column, averaging values by date/site
+
+
+sisyn_wide <- sisyn %>% 
+  mutate(sample=paste(LTER, site, Sampling.Date, sep="_")) %>%
+  pivot_wider(names_from = variable,
+              values_from = value,
+              values_fn = mean)
+
+# making year into its own column
+
+sisyn_wide <- sisyn_wide %>% 
+  mutate(sample.date=date(Sampling.Date)) %>%  
+  mutate(year=year(sample.date))
+
+# making the ratios at each sampling point into their own columns
+
+sisyn_wide <- sisyn_wide %>%
+  mutate(Si_N = DSi/NOx,
+         Si_P = DSi/PO4,
+         N_P = NOx/PO4)
+
+# making another dataset of just annual averages for DSi, NOx, and PO4
+
+sisyn_annual <- sisyn_wide %>% 
+  group_by(year, LTER, site) %>% 
+  summarize(meanDSi = mean(DSi, na.rm=TRUE),
+            meanNOx = mean(NOx, na.rm=TRUE),
+            meanPO4 = mean(PO4, na.rm=TRUE),
+            sd_DSi = sd(DSi, na.rm=TRUE),
+            sd_NOx = sd(NOx, na.rm=TRUE),
+            sd_PO4 = sd(PO4, na.rm=TRUE),
+            meanSi_N = mean(Si_N, na.rm=TRUE),
+            meanSi_P = mean(Si_P, na.rm=TRUE),
+            meanN_P = mean(N_P)) %>% 
+  mutate(site = str_replace_all(site, " ", "_"),
+         CV_DSi = sd_DSi/meanDSi,
+         CV_NOx = sd_NOx/meanNOx,
+         CV_PO4 = sd_PO4/meanPO4)
+```
+
+> making an object containing all the sites with >10 years of data
+
+```{r}
+si_annual_longterm <- sisyn_annual %>%
+  group_by(LTER, site) %>% 
+  summarize(first_year=min(year), last_year=max(year)) %>% 
+  mutate(time_range = last_year-first_year) %>%
+  filter(time_range>10)
+
+
+longtermsites <- unique(si_annual_longterm$site)
+```
+
+
+# Concentrations, ratios, and CVs by year and site
+
+## Mean annual DSi
+
+```{r}
+
+ggplot(sisyn_annual, aes(year, meanDSi, group=site))+
+  geom_line(stat="smooth", method="lm", se=FALSE, alpha=.5)+
+  facet_wrap(~LTER, scales = "free_y")+
+  scale_x_continuous(breaks=c(1980, 2000, 2020))+
+  theme(strip.text.x = element_text(size = 6))
+
+
+ggplot(sisyn_annual, aes(year, meanDSi, group=site))+
+  #geom_point(alpha=0.2)+
+  geom_line(alpha=0.2)+
+  facet_wrap(~LTER, scales = "free_y")+
+  scale_x_continuous(breaks=c(1980, 2000, 2020))+
+  theme(strip.text.x = element_text(size = 6))
+
+ggplot(sisyn_annual, aes(year, meanDSi))+
+  geom_point(alpha=0.2)+
+  stat_smooth(geom='line', method = 'lm', se=FALSE, alpha=0.5, aes(group = site, color = LTER))+
+  geom_smooth(se=FALSE, col="red", method = "lm")+
+  #stat_smooth(geom='line', se=FALSE, alpha=2, aes(group=LTER, color = LTER))+
+  scale_x_continuous(breaks=c(1980, 2000, 2020))+
+  scale_y_log10()+
+  theme(strip.text.x = element_text(size = 6))+
+  geom_hline(yintercept = 1)
+
+ggplot(sisyn_annual, aes(year, meanDSi, group = LTER))+
+  geom_point(alpha=0.2)+
+  geom_smooth(method = 'lm', se=FALSE, aes(color = LTER))+
+  scale_x_continuous(breaks=c(1980, 2000, 2020))+
+  scale_y_log10()+
+  theme(strip.text.x = element_text(size = 6))+
+  geom_hline(yintercept = 1)
+
+```
+
+
+
+## CV annual DSi
+
+```{r}
+ggplot(sisyn_annual, aes(year, CV_DSi, group=site))+
+  geom_line(stat="smooth", method="lm", se=FALSE, alpha=.5)+
+  facet_wrap(~LTER, scales = "free_y")+
+  scale_x_continuous(breaks=c(1980, 2000, 2020))+
+  theme(strip.text.x = element_text(size = 6))
+
+ggplot(sisyn_annual, aes(year, CV_DSi, group=site))+
+  #geom_point(alpha=0.2)+
+  geom_line(alpha=0.2)+
+  facet_wrap(~LTER, scales = "free_y")+
+  scale_x_continuous(breaks=c(1980, 2000, 2020))+
+  theme(strip.text.x = element_text(size = 6))
+```
+
+## Si:N over time
+
+```{r}
+ggplot(sisyn_annual, aes(year, meanSi_N, group=site))+
+  geom_line(stat="smooth", method="lm", se=FALSE, alpha=.5)+
+  facet_wrap(~LTER, scales = "free_y")+
+  scale_x_continuous(breaks=c(1980, 2000, 2020))+
+  theme(strip.text.x = element_text(size = 6))
+
+ggplot(sisyn_annual, aes(year, meanSi_N, group=site))+
+  #geom_point(alpha=0.2)+
+  geom_line(alpha=0.2)+
+  facet_wrap(~LTER, scales = "free_y")+
+  scale_x_continuous(breaks=c(1980, 2000, 2020))+
+  theme(strip.text.x = element_text(size = 6))+
+  geom_hline(yintercept = 1)
+
+ggplot(sisyn_annual, aes(year, meanSi_N, group = LTER))+
+  geom_point(alpha=0.2)+
+  geom_smooth(method = 'lm', se=FALSE, aes(color = LTER))+
+  scale_x_continuous(breaks=c(1980, 2000, 2020))+
+  scale_y_log10()+
+  theme(strip.text.x = element_text(size = 6))+
+  geom_hline(yintercept = 1)
+
+ggplot(sisyn_annual, aes(year, meanSi_N, group = site))+
+  geom_point(alpha=0.2)+
+  geom_smooth(method = 'lm', se=FALSE, aes(color = LTER))+
+  scale_x_continuous(breaks=c(1980, 2000, 2020))+
+  scale_y_log10()+
+  theme(strip.text.x = element_text(size = 6))+
+  geom_hline(yintercept = 1)
+```
+
+## Si:P over time
+
+```{r}
+ggplot(sisyn_annual, aes(year, meanSi_P, group=site))+
+  geom_line(stat="smooth", method="lm", se=FALSE, alpha=.5)+
+  facet_wrap(~LTER, scales = "free_y")+
+  scale_x_continuous(breaks=c(1980, 2000, 2020))+
+  theme(strip.text.x = element_text(size = 6))
+
+ggplot(sisyn_annual, aes(year, meanSi_P, group=site))+
+  #geom_point(alpha=0.2)+
+  geom_line(alpha=0.2)+
+  facet_wrap(~LTER, scales = "free_y")+
+  scale_x_continuous(breaks=c(1980, 2000, 2020))+
+  theme(strip.text.x = element_text(size = 6))
+```
+
+# lapply for extracting lots of slopes 
+
+
+## DSi slopes over time
+
+```{r}
+#making each column contain DSi conc for each site, since this is the only way I could figure out how to do >400 regressions at once - AND selecting only long term sites
+
+sisyn_annual_wide_Si <- sisyn_annual %>% 
+  filter(site %in% longtermsites) %>%        # ONLY >10 YEAR SITES!
+  select(year, LTER, site, meanDSi) %>% 
+  filter(!is.na(meanDSi)) %>% 
+  pivot_wider(names_from = site, values_from = meanDSi)
+
+#set number of columns (i.e., sites)
+
+n <- 433
+
+
+#apply a linear regression for DSi vs year for all sites. the 'as.matrix' part was necessary to make it work, but I am still not totally sure why
+
+my_lms <- lapply(3:length(sisyn_annual_wide_Si), function(x) lm(as.matrix(sisyn_annual_wide_Si[,x]) ~ year, data=sisyn_annual_wide_Si))
+
+
+#extracting the slope and intercept from my_lms and turning it into a data frame
+                   
+coefs <- sapply(my_lms, coef)
+coefs <- data.frame(coefs)
+#rownames(coef)[1:435] <- myvars #FIGURE OUT HOW TO DO THIS!!!!
+
+#making the coefs data more usable 
+
+coefs <- rownames_to_column(coefs)
+
+coefs_long <- coefs %>% 
+  pivot_longer(!rowname,
+               names_to = "coeftype",
+               values_to="value")
+# now we have slopes in long format and can play with those!
+
+
+coefs_long %>% filter(rowname=="year") %>% 
+  ggplot(aes(value))+
+  geom_density()+
+  #scale_x_log10(labels=comma)+
+  #geom_vline(xintercept = 1, linetype='dashed')+
+  xlab('Slope of year vs DSi')+
+  xlim(-50, 50)
+
+
+A<- coefs_long %>% 
+  filter(rowname=="year", value<0) %>% 
+  count()
+
+B <- coefs_long %>% 
+  filter(rowname=="year", value>0) %>% 
+  count()
+
+pct_pos <- (B/(B+A))*100
+
+pct_pos
+
+```
+
+> so `r pct_pos` of sites have a positive slope for Si:N over time
+
+Use this in case we also want to look at *\R^2* values
+
+```{r}
+#same as above but gets list with rsquare values
+
+summaries <- lapply(my_lms, summary)
+rquares <- sapply(summaries, function(x) c(r_sq = x$r.squared, 
+                                adj_r_sq = x$adj.r.squared))
+
+#same as above but gives p values
+
+pvals <- lapply(summaries, function(x) x$coefficients[, c(1,4)])
+
+```
+
+
+## CV of DSi slopes over time
+
+```{r}
+#making each column contain DSi conc for each site, since this is the only way I could figure out how to do >400 regressions at once
+
+sisyn_annual_wide_CVSi <- sisyn_annual %>% 
+  select(year, LTER, site, CV_DSi) %>% 
+  filter(!is.na(CV_DSi)) %>% 
+  pivot_wider(names_from = site, values_from = CV_DSi)
+
+#set number of columns (i.e., sites)
+
+n <- 384
+
+#list of the columns (sites) which may or may not be useful
+#myvars <- as.list(colnames(sisyn_annual_wide[3:435]))
+
+#apply a linear regression for DSi vs year for all sites. the 'as.matrix' part was necessary to make it work, but I am still not totally sure why
+
+my_lms <- lapply(3:n, function(x) lm(as.matrix(sisyn_annual_wide_CVSi[,x]) ~ year, data=sisyn_annual_wide_CVSi))
+
+
+#extracting the slope and intercept from my_lms and turning it into a data frame
+                   
+coefs <- sapply(my_lms, coef)
+coefs <- data.frame(coefs)
+#rownames(coef)[1:435] <- myvars #FIGURE OUT HOW TO DO THIS!!!!
+
+#making the coefs data more usable 
+
+coefs <- rownames_to_column(coefs)
+
+coefs_long <- coefs %>% 
+  pivot_longer(!rowname,
+               names_to = "coeftype",
+               values_to="value")
+# now we have slopes in long format and can play with those!
+
+
+coefs_long %>% filter(rowname=="year") %>% 
+  ggplot(aes(value))+
+  geom_density()+
+  #scale_x_log10(labels=comma)+
+  #geom_vline(xintercept = 1, linetype='dashed')+
+  xlab('Slope of year vs CV_DSi')+
+  xlim(-10, 10)
+
+
+A<- coefs_long %>% 
+  filter(rowname=="year", value<0) %>% 
+  count()
+
+B <- coefs_long %>% 
+  filter(rowname=="year", value>0) %>% 
+  count()
+
+pct_pos <- (B/(B+A))*100
+
+pct_pos
+
+```
+
+> so `r pct_pos` of sites have a positive slope for CV(Si) over time
+
+
+## DSi:N slopes over time
+
+```{r}
+#making each column contain DSi conc for each site, since this is the only way I could figure out how to do >400 regressions at once
+
+sisyn_annual_wide_Si_N <- sisyn_annual %>% 
+  select(year, LTER, site, meanSi_N) %>% 
+  filter(!is.na(meanSi_N)) %>% 
+  pivot_wider(names_from = site, values_from = meanSi_N)
+
+#set number of columns (i.e., sites)
+
+n <- 411
+
+#list of the columns (sites) which may or may not be useful
+#myvars <- as.list(colnames(sisyn_annual_wide[3:435]))
+
+#apply a linear regression for DSi vs year for all sites. the 'as.matrix' part was necessary to make it work, but I am still not totally sure why
+
+my_lms <- lapply(3:n, function(x) lm(as.matrix(sisyn_annual_wide_Si_N[,x]) ~ year, data=sisyn_annual_wide_Si_N))
+```
+
+
+```{r}
+
+#extracting the slope and intercept from my_lms and turning it into a data frame
+                   
+coefs <- sapply(my_lms, coef)
+coefs <- data.frame(coefs)
+#rownames(coef)[1:435] <- myvars #FIGURE OUT HOW TO DO THIS!!!!
+
+#making the coefs data more usable 
+
+coefs <- rownames_to_column(coefs)
+
+coefs_long <- coefs %>% 
+  pivot_longer(!rowname,
+               names_to = "coeftype",
+               values_to="value")
+# now we have slopes in long format and can play with those!
+```
+
+
+
+Using lapply to get regression coefficients for each site (finally)
+
+found here https://stackoverflow.com/questions/27952653/how-to-loop-repeat-a-linear-regression-in-r
+
+```{r}
+coefs_long %>% filter(rowname=="year") %>% 
+  ggplot(aes(value))+
+  geom_density()+
+  #scale_x_log10(labels=comma)+
+  #geom_vline(xintercept = 1, linetype='dashed')+
+  xlab('Slope of year vs DSi:N')+
+  xlim(-50, 50)
+
+
+coefs_long %>% 
+  filter(rowname=="year", value<0) %>% 
+  count()
+
+
+
+```
+
+> so 61% of sites have a positive slope for Si:N over time
+
+Use this in case we also want to look at *\R^2* values
+
+```{r eval=FALSE, include=FALSE}
+#same as above but gets list with rsquare values
+
+summaries <- lapply(my_lms, summary)
+rquares <- sapply(summaries, function(x) c(r_sq = x$r.squared, 
+                                adj_r_sq = x$adj.r.squared))
+
+#same as above but gives p values
+
+pvals <- lapply(summaries, function(x) x$coefficients[, c(1,4)])
+
+```
+
+# Loops for extracting correlations
+
+```{r}
+cols <- ncol(sisyn_annual_wide_Si)-2
+
+Correlations <- data.frame(site=character(length=cols), 
+                 correlation=numeric(length=cols), 
+                 stringsAsFactors=F) 
+
+for (i in 1:cols) {
+  temp1 <- colnames(sisyn_annual_wide_Si[i+2])       # retrieves the name of predictor variable
+  temp2 <- cor(sisyn_annual_wide_Si[,1], sisyn_annual_wide_Si[,i+2],
+               method="pearson", #change this to spearman???
+               use = "pairwise.complete.obs") # calculates the correlation between activity and predictor variable --> need to use "use" 
+  Correlations[i,1] <- temp1               # places the variable name into row i, column 1
+  Correlations[i,2] <- temp2                # places the correlation into row i, column 2
+}
+
+```
+
+
+
+```{r}
+
+si_corr <- left_join(Correlations, si_annual_longterm)
+
+```
+
+
+> plotting correlations as effect sizes
+
+```{r}
+# function to give sample sizes (here, number of sites per LTER)
+give.n <- function(x){
+  return(c(y = mean(x), label = length(x)))
+}
+
+
+A <- ggplot(si_corr, aes(LTER, correlation)) + 
+    stat_summary(fun = mean, geom = "point") + 
+    stat_summary(fun.data = mean_cl_normal, geom = "pointrange", fun.args = list(mult = 1))+
+  geom_hline(yintercept = 0)+
+  xlab("LTER")+
+  ylab("correlation of DSi ~ year")+
+  stat_summary(fun.data = give.n, geom = "text", size=3, fontface="italic", position = position_nudge(x = 0.4, y=.1))+
+  coord_flip()+
+  scale_x_discrete(limits = rev)
+A  
+  #stat_summary(data=grandmean, fun.data = mean, geom = "point")
+  
+
+#geom_polygon(aes())+
+  
+mean_corr <- mean(si_corr$correlation)
+
+me <- qt(.975, 86)*sd(si_corr$correlation)/87
+
+mean_cl_normal(si_corr$correlation)
+
+mean_corr-me
+
+
+meanCI <- si_corr %>% 
+  group_by(LTER) %>% 
+  summarize(poop=mean_cl_normal(correlation))
+
+grandmean <- si_corr %>% 
+  summarize(poop=mean_cl_normal(correlation))
+grandmean$LTER="Grand mean"
+
+meanCI <- bind_rows(grandmean, meanCI)
+
+ggplot(data=meanCI, mapping = aes(x=LTER, y = poop$y, ymax = poop$ymax, ymin = poop$ymin))+
+  geom_pointrange()+
+  coord_flip()+
+  geom_hline(yintercept = 0)+
+  ggtitle('why are these values different from the ones above????')
+
+```
+
+
+```{r}
+B <- sisyn_annual %>% filter(site %in% longtermsites) %>% 
+ggplot(aes(year, meanDSi, group=site))+
+  geom_line(stat="smooth", method="lm", se=FALSE, alpha=.5)+
+  facet_wrap(~LTER, scales = "free_y")+
+  scale_x_continuous(breaks=c(1980, 2000, 2020))+
+  theme(strip.text.x = element_text(size = 6))
+B
+ggarrange(A,B)
+A
+```
+
+
+# dplyr instead of loops
+
+> FIX SHITTY ANDREWS DATA BEFORE 1983
+
+```{r}
+
+sisyn_annual_longterm_wide <- sisyn_annual %>% 
+  filter(site %in% longtermsites)
+
+
+sisyn_annual_long <- sisyn_annual_longterm_wide %>% 
+  pivot_longer(cols = c(meanDSi:CV_PO4),
+               names_to = "analyte",
+               values_to = "conc")
+
+
+gp <- sisyn_annual_long %>% group_by(site, LTER, analyte)
+sisyn_corr_dplyr <- summarize(gp, ri=cor(year, conc, use = "pairwise.complete.obs"),
+                             ni=n())
+# sisyn_corr_dplyr2 <- summarize(gp, ri=cor(year, conc, use = "complete.obs"),
+#                              ni=n())
+# 
+# #there is no difference between pairwise.complete obs and complete.obs.......
+# poop <- bind_cols(sisyn_corr_dplyr, sisyn_corr_dplyr2)
+# ggplot(poop, aes(ri...3, ri...7))+
+#   geom_point()
+
+C <-sisyn_corr_dplyr %>% 
+  filter(analyte =="meanDSi") %>% 
+  ggplot(aes(LTER, ri)) + 
+    stat_summary(fun = mean, geom = "point") + 
+    stat_summary(fun.data = mean_cl_normal, geom = "pointrange", fun.args = list(mult = 1))+
+  geom_hline(yintercept = 0)+
+  xlab("LTER")+
+  ylab("correlation of DSi ~ year")+
+  stat_summary(fun.data = give.n, geom = "text", size=3, fontface="italic", position = position_nudge(x = 0.4, y=.1))+
+  coord_flip()+
+  scale_x_discrete(limits = rev)
+C
+
+ggplot(sisyn_corr_dplyr, aes(LTER, ri)) + 
+    stat_summary(fun = mean, geom = "point") + 
+    stat_summary(fun.data = mean_cl_normal, geom = "pointrange", fun.args = list(mult = 1))+
+  geom_hline(yintercept = 0)+
+  xlab("LTER")+
+  ylab("correlation of analyte or ratio ~ year")+
+  stat_summary(fun.data = give.n, geom = "text", size=3, fontface="italic", position = position_nudge(x = 0.4, y=.1))+
+  coord_flip()+
+  scale_x_discrete(limits = rev)+
+  facet_wrap(~analyte)
+
+
+
+ggplot(sisyn_corr_dplyr, aes(analyte, ri)) + 
+    stat_summary(fun = mean, geom = "point") + 
+    stat_summary(fun.data = mean_cl_normal, geom = "pointrange", fun.args = list(mult = 1))+
+  geom_hline(yintercept = 0)+
+  xlab("LTER")+
+  ylab("correlation of analyte or ratio ~ year")+
+  stat_summary(fun.data = give.n, geom = "text", size=3, fontface="italic", position = position_nudge(x = 0.4, y=.1))+
+  coord_flip()+
+  scale_x_discrete(limits = rev)+
+  facet_wrap(~LTER)
+
+
+
+ggplot(sisyn_corr_dplyr, aes(LTER, ri)) +
+  geom_point()+
+  geom_hline(yintercept = 0)+
+  xlab("LTER")+
+  ylab("correlation of analyte or ratio ~ year")+
+  stat_summary(fun.data = give.n, geom = "text", size=3, fontface="italic", position = position_nudge(x = 0.4, y=.1))+
+  coord_flip()+
+  scale_x_discrete(limits = rev)+
+  facet_wrap(~analyte)
+
+```
+
+
+> Also checking the approaches here for using lms and also the suggestion for how to use nlme to deal with autocorrelation
+
+https://stackoverflow.com/questions/1169539/linear-regression-and-group-by-in-r
+
+> also here with updated info on using broom since they screwed that up recently
+
+https://stackoverflow.com/questions/22713325/fitting-several-regression-models-with-dplyr
+
+> and this seems to work, although some slope are totally nuts:
+
+```{r}
+
+fitted_models <-  sisyn_annual_long %>%
+  filter(!is.na(conc)) %>% 
+  group_by(site, LTER, analyte) %>%
+  do(model = tidy(lm(conc ~ year, data = .))) %>% # only works if you include the broom::tidy in here
+  unnest(model)
+
+# lm slopes for just DSi
+
+D <- fitted_models %>% 
+  filter(term=="year", analyte == "meanDSi") %>% 
+  ggplot(aes(LTER, estimate)) + 
+    stat_summary(fun = mean, geom = "point") + 
+    stat_summary(fun.data = mean_cl_normal, geom = "pointrange", fun.args = list(mult = 1))+
+  geom_hline(yintercept = 0)+
+  xlab("LTER")+
+  ylab("lm slope of DSi ~ year")+
+  stat_summary(fun.data = give.n, geom = "text", size=3, fontface="italic", position = position_nudge(x = 0.4, y=.1))+
+  coord_flip()+
+  scale_x_discrete(limits = rev)
+D
+
+# compare correlations 
+ggarrange(A, C)
+ggarrange(C,D)
+
+fitted_models %>% 
+  filter(term=="year") %>% 
+  ggplot(aes(LTER, estimate)) + 
+    stat_summary(fun = mean, geom = "point") + 
+    stat_summary(fun.data = mean_cl_normal, geom = "pointrange", fun.args = list(mult = 1))+
+  geom_hline(yintercept = 0)+
+  xlab("LTER")+
+  ylab("lm of analyte or ratio ~ year")+
+  stat_summary(fun.data = give.n, geom = "text", size=3, fontface="italic", position = position_nudge(x = 0.4, y=.1))+
+  coord_flip()+
+  scale_x_discrete(limits = rev)+
+  facet_wrap(~analyte, scales = 'free')
+
+```
+
+> nlme thing needs work, but maybe add autocorrelation to above iteration?
+
+```{r eval=FALSE, include=FALSE}
+library(nlme)
+fit <- nlme(data=sisyn_annual_longterm_wide, meanDSi ~ year, random = ~year|site, correlation = corAR1(~year))
+```
+
+
+# TO DO
+
+- check Dornelas 2014 methods for slope of diversity over time for many sites
+- plot slopes by biome in forest plots
+- meta-regression for what would explain slopes (latitude, land cover, etc)
+
+
+```{r}
+knitr::knit_exit()
+```
+
+
+
+# junk and tests
+
+
+> code copied from here which is actually super useful about doing forest plots in ggplot
+
+[link][https://ecologyforacrowdedplanet.wordpress.com/2013/05/10/using-metafor-and-ggplot-togetherpart-1/]
+
+```{r eval=FALSE, include=FALSE}
+theme_set(theme_bw(base_size=10))
+
+forrest_data<-rbind(data.frame(ES=ROM.ma$yi,SE=sqrt(ROM.ma$vi),Type="Study",Study=logging$Study),data.frame(ES=ROM.ma$b,SE=ROM.ma$se,Type="Summary",Study="Summary"))
+forrest_data$Study2<-factor(forrest_data$Study, levels=rev(levels(forrest_data$Study)) )
+levels(forrest_data$Study2)
+plot1<-ggplot(data=forrest_data,aes(x=Study2,y=ES,ymax=ES+(1.96*SE),ymin=ES-(1.96*SE),size=factor(Type),colour=factor(Type)))+geom_pointrange()
+plot2<-plot1+coord_flip()+geom_hline(aes(x=0), lty=2,size=1)+scale_size_manual(values=c(0.5,1))
+plot3<-plot2+xlab("Study")+ylab("log response ratio")+scale_colour_manual(values=c("grey","black"))
+plot3+theme(legend.position="none")
+```
+
+>this actually worked! example with just UMR
+
+```{r}
+rows <- ncol(UMR_wide)-2
+
+Correlations <- data.frame(site=character(length=rows), 
+                 correlation=numeric(length=rows), 
+                 stringsAsFactors=F) 
+
+for (i in 1:rows) {
+  temp1 <- colnames(UMR_wide[i+2])       # retrieves the name of predictor variable
+  temp2 <- cor(UMR_wide[,1], UMR_wide[,i+2], method="spearman", use = "complete.obs")
+  temp3 <- UMR_wide[i,2]
+                                           # calculates the correlation between activity and predictor variable
+  Correlations[i,1] <- temp1               # places the variable name into row i, column 1
+  Correlations[i,2] <- temp2   
+  Correlations[i,3] <- temp3# places the correlation into row i, column 2
+}
+
+# a few of them (7 total) have NAs for 1996 so have to change the 'use' function in cor, e.g. to use = "complete.obs" or "pairwise.complete.obs" but these both seem to do exactly the same thing
+
+```
+
+
+```{r}
+# test with just UMR for now
+UMR <- filter(sisyn_annual, LTER=="UMR(Jankowski)")
+
+ggplot(UMR, aes(year, meanDSi))+
+  geom_point()+
+  geom_smooth(method = "lm", se = FALSE, aes(group = site))
+
+UMR_wide <- UMR %>% 
+  select(year, LTER, site, meanDSi) %>% 
+  filter(!is.na(meanDSi)) %>% 
+  pivot_wider(names_from = site, values_from = meanDSi)
+
+summary(UMR_wide)
+
+UMRsites <- unique(UMR$site)
+
+for(site in unique(UMR$site)){
+    print(site)
+}
+
+# just doing a play cor test to see what the components are called, I think in the end I would want estimate and conf.int
+a <- cor.test(UMR_wide$year, UMR_wide$CN00.1M)
+a
+summary(a)  
+  
+UMR_wide$year
+
+
+#UMR_wide <- UMR_wide[-1,]
+```
+
+ 
+>this didn't work
+
+```{r}
+#i is each site now
+for(i in unique(UMR$site)){
+  a <- cor.test(UMR$year, UMR$meanDSi)
+  print(paste(site, a$estimate))
+}
+
+#i is each site now
+for(i in 3:length(UMR_wide)){
+  a <- cor.test(UMR_wide$year, UMR_wide[,i])
+  print(paste(site, a$estimate))
+}
+
+
+```
+
+
+

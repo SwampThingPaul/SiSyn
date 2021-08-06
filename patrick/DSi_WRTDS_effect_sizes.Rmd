@@ -1,0 +1,758 @@
+---
+title: "DSi fluxes, FN concentrations, etc from WRTDS over time"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    collapsed: false
+---
+
+
+# Setup and data wrangling
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(broom)
+library(ggridges)
+library(ggpubr)
+library(knitr)
+library(PerformanceAnalytics)
+library(car)
+library(MASS)
+library(lubridate)
+library(scales)
+library(lme4)
+library(nlme)
+library(metafor)
+library(psych)
+library(metaviz)
+library(leaflet)
+
+theme_set(theme_bw()+
+            theme(axis.text=element_text(size=8),
+  axis.title.x = element_text(size = 16),
+  axis.title.y = element_text(size = 16)))
+
+knitr::opts_chunk$set(fig.width=12, fig.height=8, 
+                      fig.path='Figs/Effect sizes and forest plots/', 
+                      echo=TRUE, warning=FALSE, message=FALSE)
+
+
+select <- dplyr::select
+
+# function to give sample sizes (here, number of sites per LTER)
+give.n <- function(x){
+  return(c(y = mean(x), label = length(x)))
+}
+
+
+```
+
+> reading files and adding/checking LTER names
+
+```{r}
+
+sisyn <- read_csv("20201111_masterdata_RAW.csv") 
+
+wrtds_annual <- read_csv("WRTDS_AnnualResults_AllSites_052621.csv") %>% 
+  rename(site=Site)
+
+wrtds_trends <- read_csv("Si_EGRETCi_Trends_AllSites.csv") %>% 
+  rename(site=Site)
+
+
+
+sisyn_sites <- sisyn %>%  select(site, LTER) %>% unique()
+
+wrtds_annual <- left_join(wrtds_annual, sisyn_sites)
+
+wrtds_trends <- left_join(wrtds_trends, sisyn_sites) %>% 
+  mutate(LTER_site=paste(LTER, site, sep = "------"))
+
+x <- wrtds_annual %>% filter(is.na(LTER))
+unique(x$site)
+
+wrtds_annual <- wrtds_annual %>% 
+  mutate(LTER=ifelse(is.na(LTER), "HBR", LTER))
+
+wrtds_trends <- wrtds_trends %>% 
+  mutate(LTER=ifelse(is.na(LTER), "HBR", LTER))
+
+z <- wrtds_annual %>% count(LTER,site)
+z
+
+```
+
+> pivoting the annual discharge/flux/conc/FNconc data and then calculating correlations and regressions across time
+
+```{r}
+wrtds_long <- wrtds_annual %>%
+  pivot_longer(cols = c(Discharge_cms:FNFlux_106_kg_y),
+               names_to = "variable",
+               values_to = "value")
+
+#correlations:
+wrtds_corr <- wrtds_long %>% 
+  group_by(site, LTER, variable) %>% 
+  summarize(ri=cor(Year, value, use = "pairwise.complete.obs"), ni=n())
+
+
+#regressions:
+wrtds_slopes <-  wrtds_long %>%
+  filter(!is.na(value)) %>% 
+  group_by(site, LTER, variable) %>%
+  do(model = tidy(lm(value ~ Year, data = .))) %>% # only works if you include the broom::tidy in here
+  unnest(model)
+
+
+
+```
+
+# Correlations/slopes from annual estimates
+
+```{r}
+
+ggplot(wrtds_corr, aes(LTER, ri)) + 
+    stat_summary(fun = mean, geom = "point") + 
+    stat_summary(fun.data = mean_cl_normal, geom = "pointrange", fun.args = list(mult = 1))+
+  geom_hline(yintercept = 0)+
+  xlab("LTER")+
+  ylab("correlation of DSi ~ year")+
+  stat_summary(fun.data = give.n, geom = "text", size=3, fontface="italic", position = position_nudge(x = 0.4, y=.1))+
+  coord_flip()+
+  scale_x_discrete(limits = rev)+
+  facet_wrap(~variable)
+
+
+ggplot(wrtds_corr, aes(site, ri)) + 
+    stat_summary(fun = mean, geom = "point") + 
+    stat_summary(fun.data = mean_cl_normal, geom = "pointrange", fun.args = list(mult = 1))+
+  geom_hline(yintercept = 0)+
+  xlab("LTER")+
+  ylab("correlation of DSi ~ year")+
+  stat_summary(fun.data = give.n, geom = "text", size=3, fontface="italic", position = position_nudge(x = 0.4, y=.1))+
+  coord_flip()+
+  scale_x_discrete(limits = rev)+
+  facet_wrap(~variable)
+
+```
+
+> discharge is super correlated to flux but not conc across sites and years? does this make sense?
+
+```{r}
+pairs.panels(wrtds_annual)
+
+```
+
+> models using correlation data
+
+```{r}
+
+ES_wrtds <- escalc(measure="ZCOR", ri=ri, ni=ni, data=wrtds_corr)
+
+mod1<-rma(yi=yi,vi=vi,data=filter(ES_wrtds, variable=='Discharge_cms'))
+summary(mod1)
+
+mod2<-rma(yi=yi,vi=vi,data=filter(ES_wrtds, variable=='Conc_mgL'))
+summary(mod2)
+
+mod3<-rma(yi=yi,vi=vi,data=filter(ES_wrtds, variable=='FNConc_mgL'))
+summary(mod3)
+
+mod3.1<-rma(yi=yi,vi=vi,data=filter(ES_wrtds, variable=='FNConc_mgL'),
+            mods = ~LTER)
+summary(mod3.1)
+```
+
+
+## meta-regression models
+
+```{r}
+wrtds_slopes <- left_join(wrtds_slopes, wrtds_corr) %>% 
+  mutate(mi=1) %>% 
+  filter(term=='Year')
+
+wrtds_slopes <- wrtds_slopes %>% 
+  arrange(LTER)
+
+wrtds_slopes_ES_Si <- escalc(measure='ZPCOR',
+                          ti=statistic,
+                          ni=ni,
+                          mi=mi,
+                          data=filter(wrtds_slopes, variable=='Conc_mgL'))
+
+wrtds_slopes_ES_discharge <- escalc(measure='ZPCOR',
+                          ti=statistic,
+                          ni=ni,
+                          mi=mi,
+                          data=filter(wrtds_slopes, variable=='Discharge_cms'))
+
+wrtds_slopes_ES_flux <- escalc(measure='ZPCOR',
+                          ti=statistic,
+                          ni=ni,
+                          mi=mi,
+                          data=filter(wrtds_slopes, variable=='Flux_106_kg_y'))
+
+
+mod_Si1<-rma.mv(yi,vi,
+          data=filter(wrtds_slopes_ES_Si),
+          random = ~1|site)
+summary(mod_Si1)
+forest(mod_Si1)
+
+mod_Si2<-rma.mv(yi,vi,
+          data=filter(wrtds_slopes_ES_Si))
+summary(mod_Si2)
+forest(mod_Si2)
+
+mod_discharge1<-rma.mv(yi,vi,
+          data=filter(wrtds_slopes_ES_discharge),
+          random = ~1|site)
+summary(mod_discharge1)
+forest(mod_discharge1)
+
+
+mod_flux1<-rma.mv(yi,vi,
+          data=filter(wrtds_slopes_ES_flux),
+          random = ~1|site)
+summary(mod_flux1)
+forest(mod_flux1)
+
+viz_forest(x = wrtds_slopes_ES_Si[, c("yi", "vi")], 
+           study_labels = wrtds_slopes_ES_Si[, "site"],
+           xlab = "Slope of Si by year (Z-transformed)",
+           variant = "thick",
+           group=wrtds_slopes_ES_Si[, "LTER"],
+           method = "REML",
+           annotate_CI = TRUE,
+           summary_label = c("Summary(LTER = AND)",
+                  "Summary(LTER = ARC)",
+                  "Summary(LTER = KRR(Julian))",
+                  "Summary(LTER = HBR)",
+                  "Summary(LTER = LMP(Wymore))",
+                  "Summary(LTER = LUQ)",
+                  "Summary (LTER = MCM)",
+                  "Summary (LTER = NWT)",
+                   "Summary(LTER = Sagehen(Sullivan))",
+                   "Summary(LTER = UMR(Jankowski))"))
+```
+
+## forest plots for modeled DSi conc by LTER
+
+```{r}
+
+a <- viz_forest(x = filter(wrtds_slopes_ES_Si, LTER=="AND")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_Si, LTER=="AND")[, "site"],
+           xlab = "ANDREWS: Slope of DSi by year (Z-transf.)",
+           variant = "rain")
+a     
+
+b <- viz_forest(x = filter(wrtds_slopes_ES_Si, LTER=="ARC")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_Si, LTER=="ARC")[, "site"],
+           xlab = "ARCTIC: Slope of DSi by year (Z-transf.)",
+           variant = "rain")
+b    
+c <- viz_forest(x = filter(wrtds_slopes_ES_Si, LTER=="HBR")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_Si, LTER=="HBR")[, "site"],
+           xlab = "HUBBARD BROOK: Slope of DSi by year (Z-transf.)",
+           variant = "rain")
+c
+d <- viz_forest(x = filter(wrtds_slopes_ES_Si, LTER=="KRR(Julian)")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_Si, LTER=="KRR(Julian)")[, "site"],
+           xlab = "KISSIMMEE: Slope of DSi by year (Z-transf.)",
+           variant = "rain")
+d
+
+e <- viz_forest(x = filter(wrtds_slopes_ES_Si, LTER=="LMP(Wymore)")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_Si, LTER=="LMP(Wymore)")[, "site"],
+           xlab = "LAMPREY: Slope of DSi by year (Z-transf.)",
+           variant = "rain")
+e
+
+f <- viz_forest(x = filter(wrtds_slopes_ES_Si, LTER=="LUQ")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_Si, LTER=="LUQ")[, "site"],
+           xlab = "LUQUILLO: Slope of DSi by year (Z-transf.)",
+           variant = "rain")
+f
+
+g <- viz_forest(x = filter(wrtds_slopes_ES_Si, LTER=="MCM")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_Si, LTER=="MCM")[, "site"],
+           xlab = "MCMURDO: Slope of DSi by year (Z-transf.)",
+           variant = "rain")
+g
+
+h <- viz_forest(x = filter(wrtds_slopes_ES_Si, LTER=="NWT")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_Si, LTER=="NWT")[, "site"],
+           xlab = "NIWOT: Slope of DSi by year (Z-transf.)",
+           variant = "rain")
+h
+
+i <- viz_forest(x = filter(wrtds_slopes_ES_Si, LTER=="Sagehen(Sullivan)")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_Si, LTER=="Sagehen(Sullivan)")[, "site"],
+           xlab = "Sagehen: Slope of DSi by year (Z-transf.)",
+           variant = "rain")
+i
+
+j <- viz_forest(x = filter(wrtds_slopes_ES_Si, LTER=="UMR(Jankowski)")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_Si, LTER=="UMR(Jankowski)")[, "site"],
+           xlab = "Sagehen: Slope of DSi by year (Z-transf.)",
+           variant = "rain")
+j
+
+ggarrange(a,b,c,d,e,f,g,h,i,j, ncol=5, nrow=2)
+
+
+viz_forest(x = wrtds_slopes_ES_Si[, c("yi", "vi")], 
+           xlab = "Slope of DSi by year (Z-transformed)",
+           group=wrtds_slopes_ES_Si[, "LTER"],
+           variant = "rain",
+           study_labels = wrtds_slopes_ES_Si[, "site"],
+           summary_label = c("Summary(LTER = AND)",
+                  "Summary(LTER = ARC)",
+                  "Summary(LTER = KRR(Julian))",
+                  "Summary(LTER = HBR)",
+                  "Summary(LTER = LMP(Wymore))",
+                  "Summary(LTER = LUQ)",
+                  "Summary (LTER = MCM)",
+                  "Summary (LTER = NWT)",
+                   "Summary(LTER = Sagehen(Sullivan))",
+                   "Summary(LTER = UMR(Jankowski))"))
+
+```
+
+## forest plots for discharge
+
+```{r}
+
+a <- viz_forest(x = filter(wrtds_slopes_ES_discharge, LTER=="AND")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_discharge, LTER=="AND")[, "site"],
+           xlab = "ANDREWS: Slope of discharge by year (Z-transf.)",
+           variant = "rain")
+a     
+
+b <- viz_forest(x = filter(wrtds_slopes_ES_discharge, LTER=="ARC")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_discharge, LTER=="ARC")[, "site"],
+           xlab = "ARCTIC: Slope of discharge by year (Z-transf.)",
+           variant = "rain")
+b    
+c <- viz_forest(x = filter(wrtds_slopes_ES_discharge, LTER=="HBR")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_discharge, LTER=="HBR")[, "site"],
+           xlab = "HUBBARD BROOK: Slope of discharge by year (Z-transf.)",
+           variant = "rain")
+c
+d <- viz_forest(x = filter(wrtds_slopes_ES_discharge, LTER=="KRR(Julian)")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_discharge, LTER=="KRR(Julian)")[, "site"],
+           xlab = "KISSIMMEE: Slope of discharge by year (Z-transf.)",
+           variant = "rain")
+d
+
+e <- viz_forest(x = filter(wrtds_slopes_ES_discharge, LTER=="LMP(Wymore)")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_discharge, LTER=="LMP(Wymore)")[, "site"],
+           xlab = "LAMPREY: Slope of discharge by year (Z-transf.)",
+           variant = "rain")
+e
+
+f <- viz_forest(x = filter(wrtds_slopes_ES_discharge, LTER=="LUQ")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_discharge, LTER=="LUQ")[, "site"],
+           xlab = "LUQUILLO: Slope of discharge by year (Z-transf.)",
+           variant = "rain")
+f
+
+g <- viz_forest(x = filter(wrtds_slopes_ES_discharge, LTER=="MCM")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_discharge, LTER=="MCM")[, "site"],
+           xlab = "MCMURDO: Slope of discharge by year (Z-transf.)",
+           variant = "rain")
+g
+
+h <- viz_forest(x = filter(wrtds_slopes_ES_discharge, LTER=="NWT")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_discharge, LTER=="NWT")[, "site"],
+           xlab = "NIWOT: Slope of discharge by year (Z-transf.)",
+           variant = "rain")
+h
+
+i <- viz_forest(x = filter(wrtds_slopes_ES_discharge, LTER=="Sagehen(Sullivan)")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_discharge, LTER=="Sagehen(Sullivan)")[, "site"],
+           xlab = "Sagehen: Slope of discharge by year (Z-transf.)",
+           variant = "rain")
+i
+
+j <- viz_forest(x = filter(wrtds_slopes_ES_discharge, LTER=="UMR(Jankowski)")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_discharge, LTER=="UMR(Jankowski)")[, "site"],
+           xlab = "Sagehen: Slope of discharge by year (Z-transf.)",
+           variant = "rain")
+j
+
+ggarrange(a,b,c,d,e,f,g,h,i,j, ncol=5, nrow=2)
+
+
+
+viz_forest(x = wrtds_slopes_ES_discharge[, c("yi", "vi")], 
+           xlab = "Slope of discharge by year (Z-transformed)",
+           group=wrtds_slopes_ES_discharge[, "LTER"],
+           study_labels = wrtds_slopes_ES_discharge[, "site"],
+           variant = "rain",
+           summary_label = c("Summary(LTER = AND)",
+                  "Summary(LTER = ARC)",
+                  "Summary(LTER = KRR(Julian))",
+                  "Summary(LTER = HBR)",
+                  "Summary(LTER = LMP(Wymore))",
+                  "Summary(LTER = LUQ)",
+                  "Summary (LTER = MCM)",
+                  "Summary (LTER = NWT)",
+                   "Summary(LTER = Sagehen(Sullivan))",
+                   "Summary(LTER = UMR(Jankowski))"))
+
+```
+
+## forest plots for flux
+
+```{r}
+
+a <- viz_forest(x = filter(wrtds_slopes_ES_flux, LTER=="AND")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_flux, LTER=="AND")[, "site"],
+           xlab = "ANDREWS: slope of DSi flux by year (Z-transf.)",
+           variant = "rain")
+a     
+
+b <- viz_forest(x = filter(wrtds_slopes_ES_flux, LTER=="ARC")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_flux, LTER=="ARC")[, "site"],
+           xlab = "ARCTIC: slope of DSi flux by year (Z-transf.)",
+           variant = "rain")
+b    
+c <- viz_forest(x = filter(wrtds_slopes_ES_flux, LTER=="HBR")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_flux, LTER=="HBR")[, "site"],
+           xlab = "HUBBARD BROOK: slope of DSi flux by year (Z-transf.)",
+           variant = "rain")
+c
+d <- viz_forest(x = filter(wrtds_slopes_ES_flux, LTER=="KRR(Julian)")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_flux, LTER=="KRR(Julian)")[, "site"],
+           xlab = "KISSIMMEE: slope of DSi flux by year (Z-transf.)",
+           variant = "rain")
+d
+
+e <- viz_forest(x = filter(wrtds_slopes_ES_flux, LTER=="LMP(Wymore)")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_flux, LTER=="LMP(Wymore)")[, "site"],
+           xlab = "LAMPREY: slope of DSi flux by year (Z-transf.)",
+           variant = "rain")
+e
+
+f <- viz_forest(x = filter(wrtds_slopes_ES_flux, LTER=="LUQ")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_flux, LTER=="LUQ")[, "site"],
+           xlab = "LUQUILLO: slope of DSi flux by year (Z-transf.)",
+           variant = "rain")
+f
+
+g <- viz_forest(x = filter(wrtds_slopes_ES_flux, LTER=="MCM")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_flux, LTER=="MCM")[, "site"],
+           xlab = "MCMURDO: slope of DSi flux by year (Z-transf.)",
+           variant = "rain")
+g
+
+h <- viz_forest(x = filter(wrtds_slopes_ES_flux, LTER=="NWT")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_flux, LTER=="NWT")[, "site"],
+           xlab = "NIWOT: slope of DSi flux by year (Z-transf.)",
+           variant = "rain")
+h
+
+i <- viz_forest(x = filter(wrtds_slopes_ES_flux, LTER=="Sagehen(Sullivan)")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_flux, LTER=="Sagehen(Sullivan)")[, "site"],
+           xlab = "Sagehen: slope of DSi flux by year (Z-transf.)",
+           variant = "rain")
+i
+
+j <- viz_forest(x = filter(wrtds_slopes_ES_flux, LTER=="UMR(Jankowski)")[, c("yi", "vi")], 
+           study_labels = filter(wrtds_slopes_ES_flux, LTER=="UMR(Jankowski)")[, "site"],
+           xlab = "Sagehen: slope of DSi flux by year",
+           variant = "rain")
+j
+
+ggarrange(a,b,c,d,e,f,g,h,i,j, ncol=5, nrow=2)
+
+
+
+viz_forest(x = wrtds_slopes_ES_flux[, c("yi", "vi")], 
+           xlab = "slope of DSi flux by year (Z-transformed)",
+           group=wrtds_slopes_ES_flux[, "LTER"],
+           study_labels = wrtds_slopes_ES_flux[, "site"],
+           variant = "rain",
+           summary_label = c("Summary(LTER = AND)",
+                  "Summary(LTER = ARC)",
+                  "Summary(LTER = KRR(Julian))",
+                  "Summary(LTER = HBR)",
+                  "Summary(LTER = LMP(Wymore))",
+                  "Summary(LTER = LUQ)",
+                  "Summary (LTER = MCM)",
+                  "Summary (LTER = NWT)",
+                   "Summary(LTER = Sagehen(Sullivan))",
+                   "Summary(LTER = UMR(Jankowski))"))
+
+```
+
+
+
+
+```{r}
+
+# fit <- nlme(data=wrtds, FNConc_mgL ~ Year, random = ~LTER)
+# 
+# fit <- lmer(data=wrtds2, FNConc_mgL ~ Year +1|LTER)
+# summary(fit)
+
+```
+
+# Using WRTDS trend estimates
+
+> hmm some have 95% CIs in the 90 million-ish range so let's scrap those for now
+
+```{r}
+
+ggplot(wrtds_trends, aes(LTER_site, estC)) +
+  geom_point()+
+  geom_linerange(aes(ymin = lowC95, ymax = upC95))+
+  coord_flip()+
+  geom_hline(yintercept = 0)+
+  scale_x_discrete(limits = rev)
+
+```
+
+
+```{r}
+wrtds_trends %>% 
+  arrange(lowC95)
+
+wrtds_trends %>% 
+  arrange(desc(upC95))
+
+
+ggplot(wrtds_trends, aes(estC))+
+  geom_histogram()
+
+ggplot(wrtds_trends, aes(lowC95))+
+  geom_histogram()
+
+ggplot(wrtds_trends, aes(upC95))+
+  geom_histogram()
+
+wrtds_trends %>% 
+  filter(lowC95 < -2e7)
+
+wrtds_trends %>% 
+  filter(upC95 > 2e7)
+
+wrtds_trends_trimmed <- wrtds_trends %>% 
+  filter(lowC95>-50) %>% 
+  filter(upC95<50)
+
+```
+
+
+```{r}
+summary(wrtds_trends_trimmed)
+
+ggplot(wrtds_trends_trimmed, aes(site, estC)) +
+  geom_point()+
+  geom_linerange(aes(ymin = lowC95, ymax = upC95))+
+  coord_flip()+
+  geom_hline(yintercept = 0)+
+  scale_x_discrete(limits = rev)+
+  facet_wrap(~LTER, scales='free')
+
+
+#trying to make summary points per LTER didn't work this way
+
+# ggplot(wrtds_trends_trimmed) +
+#   geom_point(aes(site, estC))+
+#   geom_linerange(aes(site, ymin = lowC95, ymax = upC95))+
+#   coord_flip()+
+#   geom_hline(yintercept = 0)+
+#   scale_x_discrete(limits = rev)+
+#   stat_summary(aes(LTER, fun = mean, geom = "point")) + 
+#   stat_summary(aes(LTER, fun.data = mean_cl_normal,
+#                geom = "pointrange", fun.args = list(mult = 1)))+
+#   facet_wrap(~LTER, scales='free')
+
+```
+
+> calculating a rough estimate of standard error from the 95% CIs for now, but need to make sure this is ok to do (should still give a relatively good weighting for meta-regression stuff for now/makes sense when compared to the CIs)
+
+```{r}
+wrtds_trends_trimmed <- wrtds_trends_trimmed %>% 
+  mutate(SE_est = ((upC95-lowC95)/2)/sqrt(duration))
+
+ggplot(wrtds_trends_trimmed, aes(site, SE_est))+
+  geom_point()+
+  coord_flip()
+```
+
+> trying to do a meta-regression model for each LTER because that's the only way I know how to get overall weighted effect sizes for each LTER, but metafor doesn't like whatever I'm doing
+
+```{r eval=FALSE, include=FALSE}
+
+
+wrtds_trends_ES <- escalc(measure="GEN", ri=estC, vi=SE_est,
+                          data=wrtds_trends_trimmed)
+
+mod1<-rma.mv(yi=estC,
+          vi=SE_est,
+          data=filter(wrtds_trends_trimmed, LTER=="AND"),
+          random = ~site)
+
+summary(mod1)
+
+filter(wrtds_trends_trimmed, LTER=="AND")
+
+
+
+ggplot(filter(wrtds_corr, variable=='Conc_mgL'), aes(site, ri)) +
+  geom_point()+
+  #geom_linerange(aes(ymin = lowC95, ymax = upC95))+
+  coord_flip()+
+  geom_hline(yintercept = 0)+
+  scale_x_discrete(limits = rev)+
+  facet_wrap(~LTER, scales='free')
+
+```
+
+>likelihood vs pval stuff to check out how those are all related
+
+```{r}
+
+wrtds_trends %>% count(rejectC)
+
+ggplot(wrtds_trends, aes(pValC, rejectC))+
+  geom_point()+
+  geom_vline(xintercept=.05)
+
+ggplot(wrtds_trends, aes(likeCDown, rejectC))+
+  geom_point()+
+  geom_vline(xintercept=.05)
+
+ggplot(wrtds_trends, aes(likeCUp, rejectC))+
+  geom_point()+
+  geom_vline(xintercept=.95)
+
+```
+
+
+# maps and latitude (non)effects
+
+> importing lat-long data and having a quick look- looks like Sagehen needs to swap hemispheres
+
+```{r}
+latlongs <- read_csv("LongTermWatersheds_LatLong.csv") %>% 
+  rename(site=Stream.Site)
+
+leaflet(latlongs) %>%
+  addTiles() %>% 
+  addMarkers(lng = ~Longitude, lat = ~Latitude, popup = ~ LTER)
+
+latlongs <- latlongs %>% 
+  mutate(Longitude = ifelse(LTER=='Sagehen', -Longitude, Longitude))
+
+leaflet(latlongs) %>%
+  addTiles() %>% 
+  addMarkers(lng = ~Longitude, lat = ~Latitude, popup = ~ LTER)
+
+
+
+a <- unique(wrtds_trends$site) #usi this to check where there are differences in the colnames
+b <- unique(latlongs$site)
+setdiff(b,a)
+b %in% a
+which(a %in% b)
+
+```
+
+
+```{r}
+wrtds_trends2 <- left_join(wrtds_trends, latlongs, by='site')
+wrtds_slopes_ES_Si2 <- left_join(wrtds_slopes_ES_Si, latlongs, by="site")
+wrtds_slopes_ES_discharge2 <- left_join(wrtds_slopes_ES_discharge, latlongs, by="site")
+wrtds_slopes_ES_flux2 <- left_join(wrtds_slopes_ES_flux, latlongs, by="site")
+
+```
+
+
+> joining with slope data- here these represent untransformed values of the slopes ("real" slope units of change per time from WRTDS trend estimates I think) where all above forest plots were Z-transformed
+
+```{r}
+
+pal <- colorBin(palette = "RdBu", bins = c(-6,-3,-2,-1,0,1,2,3,6), domain = wrtds_trends$estC, reverse = TRUE)
+
+#pal <- colorNumeric("RdBu", wrtds_trends$estC)
+
+leaflet(wrtds_trends2) %>%
+  addTiles() %>% 
+  addCircleMarkers(lng = ~Longitude,
+             lat = ~Latitude,
+             #popup = ~ LTER.x,
+             color="black",
+             stroke=TRUE,
+             fillColor = ~pal(estC),
+             fillOpacity = 10,
+             opacity = .5,
+             label = ~paste0(wrtds_trends2$LTER.x,"::", wrtds_trends2$site, ", slope: ", estC),
+             radius = 10) 
+
+# I don't think the legend is super helpful..
+
+  # addLegend(position = "bottomleft",
+  #                 pal = pal,
+  #                 values = range(wrtds_trends$estC),
+  #                 title = "WRTDS slope estimate (DSi~year)")
+
+
+```
+
+## meta-regression including absolute latitude as variable
+
+>plotting absolute lat vs slopes for DSi/discharge/flux
+
+```{r}
+ggplot(wrtds_trends2, aes(abs(Latitude), estC))+
+  geom_point()+
+  geom_smooth(method='lm')
+
+ggplot(wrtds_slopes_ES_Si2, aes(abs(Latitude), estimate))+
+  geom_point()+
+  geom_smooth(method='lm')+
+  ylab('slope DSi from annual estimates')
+
+ggplot(wrtds_slopes_ES_discharge2, aes(abs(Latitude), estimate))+
+  geom_point()+
+  geom_smooth(method='lm')+
+  ylab('slope discharge from annual estimates')
+
+ggplot(wrtds_slopes_ES_flux2, aes(abs(Latitude), estimate))+
+  geom_point()+
+  geom_smooth(method='lm')+
+  ylab('slope DSi flux from annual estimates')
+
+```
+
+> meta-regression stuff also shows no effect of lat, but here's where we could also plug in additional variables to see if anything modifies slopes
+
+```{r}
+mod_Si3<-rma.mv(yi,vi,
+          data=wrtds_slopes_ES_Si2,
+          random = ~1|site,
+          mods = ~abs(Latitude))
+summary(mod_Si3)
+
+
+mod_discharge2<-rma.mv(yi,vi,
+          data=wrtds_slopes_ES_discharge2,
+          random = ~1|site,
+          mods = ~abs(Latitude))
+summary(mod_discharge2)
+
+mod_flux2<-rma.mv(yi,vi,
+          data=wrtds_slopes_ES_flux2,
+          random = ~1|site,
+          mods = ~abs(Latitude))
+summary(mod_flux2)
+
+```
+
