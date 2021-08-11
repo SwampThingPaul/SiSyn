@@ -66,9 +66,19 @@ for (i in 1:length(discharge_files)) {
 all_discharge = ldply(data_list, data.frame)
 
 #which sites are included in master discharge file? Different from input files?
-discharge_sites = data.frame("site"=unique(all_discharge$site.name))
+discharge_sites = data.frame("site.name"=unique(all_discharge$site.name))
 WRTDS_sites = data.frame("site"=unique(WRTDS_discharge$site))
+
+#long term sites
+Data_years_streams_WRTDS = read_csv("L:/GitHub/SiSyn/Merge Site Discharge/Data_years_streams_WRTDS.csv") #download directly from "https://drive.google.com/drive/folders/1q92ee9nKct_nCJ3NVD2-tm8KCuRBfm2U"
+longterm_list = data.frame(LTER=Data_years_streams_WRTDS$LTER,
+                           site.name=Data_years_streams_WRTDS$Stream.Site)
+#are all sites in long term site list in all_discharge?
+longterm_check = merge(discharge_sites,longterm_list, by="site.name", all=T)
+
+#merge long-term list with all_discharge to add LTER name
+all_discharge_longterm = merge(all_discharge, longterm_list, all=T)
 
 #write master discharge file to .csv
 setwd("L:/GitHub/SiSyn/Merge Site Discharge")
-write.csv(all_discharge, file="WRTDS_discharge_allsites_21Apr21.csv")
+write.csv(all_discharge_longterm, file="WRTDS_discharge_allsites_9Aug21.csv")

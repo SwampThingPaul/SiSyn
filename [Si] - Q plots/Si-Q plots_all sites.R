@@ -3,10 +3,13 @@ library(scales)
 library(lubridate)
 
 #merge all site Q and Si data
-Si_Q_allsites = merge(WRTDS_discharge_allsites, WRTDS_DSi_allsites, by=c("Date", "site.name"))
+Si_Q_allsites = merge(WRTDS_discharge_allsites, WRTDS_DSi_mergedsites, by=c("site.name","Date"))
+write.csv(Si_Q_allsites,file="Si_Q_WRTDS_sites.csv")
 
-#plot Si v Q; facet by site; color by date
-ggplot(Si_Q_allsites, aes(x=Q, y=Si, color=Date)) +
+#plot Si v Q; facet by site; color by year
+Si_Q_allsites$year = year(Si_Q_allsites$Date)
+
+ggplot(Si_Q_allsites, aes(x=Q, y=Si, color=year)) +
   geom_point(alpha=0.25)+
   scale_color_gradientn(colors=rainbow(7))+
   scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x),
