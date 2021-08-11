@@ -276,8 +276,6 @@ CQ_fun=function(logQ,logC,Q50,plot=T,models=c("log-linear","segmented","moatar")
 
 CQ_fun(log(dat.CQ$Q),log(dat.CQ$Si),median(dat.Q$Q,na.rm=T),plot.CI=T,pch=19,ylim=c(1,10),legend.pos = "bottomright",models="moatar")
 
-
-
 dat.Q=read.csv(paste0(data.path,"Conc_Discharge_Master/M786.2C_Q_WRTDS.csv"))
 dat.Q$Date=as.Date(dat.Q$Date)
 dat.Q$CY=as.numeric(format(dat.Q$Date,"%Y"))
@@ -307,3 +305,169 @@ plot(Q50~CY,rslt.CQ,type="b")
 plot(moatar.C_Q50~CY,rslt.CQ,type="b")
 
 plot(Q50~seg.bk.est,rslt.CQ)
+
+
+
+# -------------------------------------------------------------------------
+# From CQFunction.RMD
+
+library(segmented)
+library(gvlma)
+CQ_fun=function(logQ,logC,Q50,plot=TRUE,
+                models=c("log-linear","segmented","moatar"),
+                plot.CI=TRUE,
+                CI.level=0.95,
+                plot.lwd=1.5,
+                legend.pos="topleft",
+                print.rslt=TRUE,...){
+  
+  # Power Law
+  loglog.mod=lm(logC~logQ)
+  loglog.mod.sum=summary(loglog.mod)
+  
+  # Check assumptions
+  LL.assump=gvlma(loglog.mod)
+  asumpt.rslt=as.character(ifelse(LL.assump$GlobalTest$GlobalStat4$pvalue<0.05,"No","Yes"))
+  
+  # variabled of interest
+  loglog.beta=as.numeric(coef(loglog.mod)[2])
+  loglog.alpha=as.numeric(coef(loglog.mod)[1])
+  
+  LL.rslt=data.frame(LL.R2=loglog.mod.sum$r.squared,
+                     LL.R2.adj=loglog.mod.sum$adj.r.squared,
+                     LL.RMSE=loglog.mod.sum$sigma,
+                     LL.beta=loglog.beta,
+                     LL.beta.SE=loglog.mod.sum$coefficients[2,2],
+                     LL.beta.tval=loglog.mod.sum$coefficients[2,3],
+                     LL.beta.pval=loglog.mod.sum$coefficients[2,4],
+                     LL.alpha=loglog.alpha,
+                     LL.AIC=AIC(loglog.mod),
+                     LL.BIC=BIC(loglog.mod),
+                     LL.LogLik=as.numeric(logLik(loglog.mod)),
+                     LL.assumpt.pass=asumpt.rslt)
+  
+  # Segmented
+  # Picks 1st breakpoint
+  loglog.mod.seg=segmented(loglog.mod,seg.Z=~logQ,npsi=1)
+  loglog.mod.seg.sum=summary(loglog.mod.seg)
+  
+  # is there a breakpoint?
+  if(nrow(loglog.mod.seg$psi)==0){
+    seg.psi.est=NA
+    seg.psi.SE=NA
+  }else{
+    seg.psi.est=loglog.mod.seg$psi[1,c(2)]
+    seg.psi.SE=seg.psi=loglog.mod.seg$psi[1,c(3)]
+  }
+  
+  seg.rslt=data.frame(seg.bk.est=exp(seg.psi.est),
+                      seg.bk.SE=exp(seg.psi.SE),
+                      seg.R2=loglog.mod.seg.sum$r.squared,
+                      seg.R2.adj=loglog.mod.seg.sum$adj.r.squared,
+                      seg.RMSE=loglog.mod.seg.sum$sigma,
+                      seg.AIC=AIC(loglog.mod.seg),
+                      seg.BIC=BIC(loglog.mod.seg),
+                      seg.LogLik=as.numeric(logLik(loglog.mod.seg)))
+  
+  # Moatar
+  logQ.m=logQ[logQ<log(Q50)]
+  logC.m=logC[logQ<log(Q50)]
+  loglog.mod.inf=lm(logC.m~logQ.m)
+  loglog.mod.inf.sum=summary(loglog.mod.inf)
+  CQ50.inf=predict(loglog.mod.inf,data.frame(logQ.m=log(Q50)))
+  
+  logQ.m=logQ[logQ>log(Q50)]
+  logC.m=logC[logQ>log(Q50)]
+  loglog.mod.sup=lm(logC.m~logQ.m)
+  loglog.mod.sup.sum=summary(loglog.mod.sup)
+  CQ50.sup=predict(loglog.mod.sup,data.frame(logQ.m=log(Q50)))
+  
+  moatar.rslt=data.frame(Q50=Q50,
+                         moatar.beta.inf=as.numeric(coef(loglog.mod.inf)[2]),
+                         moatar.R2.inf=loglog.mod.inf.sum$r.squared,
+                         moatar.R2.adj.inf=loglog.mod.inf.sum$adj.r.squared,
+                         moatar.RMSE.inf=loglog.mod.inf.sum$sigma,
+                         moatar.beta.sup=as.numeric(coef(loglog.mod.sup)[2]),
+                         moatar.R2.sup=loglog.mod.sup.sum$r.squared,
+                         moatar.R2.adj.sup=loglog.mod.sup.sum$adj.r.squared,
+                         moatar.RMSE.sup=loglog.mod.sup.sum$sigma,
+                         moatar.C_Q50=exp(mean(c(CQ50.inf,CQ50.sup))))
+  
+  rslt.all=cbind(LL.rslt,seg.rslt,moatar.rslt)
+  
+  # Plotting
+  if(plot==T){
+    plot(exp(logC)~exp(logQ),log="xy",...)
+    
+    if(sum(match(models,"log-linear"),na.rm=T)==1){
+      x.val=seq(min(logQ,na.rm=T),max(logQ,na.rm=T),length.out=70)
+      LL.pred=predict(loglog.mod,data.frame(logQ=x.val),interval="confidence",
+                      level=CI.level)
+      lines(exp(x.val),exp(LL.pred[,1]),col="red",lwd=plot.lwd)
+      if(plot.CI==T){
+        lines(exp(x.val),exp(LL.pred[,2]),col="red",lty=2)
+        lines(exp(x.val),exp(LL.pred[,3]),col="red",lty=2)
+      }
+    }
+    
+    if(sum(match(models,"segmented"),na.rm=T)==1){
+      x.val=seq(min(logQ,na.rm=T),max(logQ,na.rm=T),length.out=70)
+      seg.pred=predict(loglog.mod.seg,data.frame(logQ=x.val),
+                       interval="confidence",level=CI.level)
+      lines(exp(x.val),exp(seg.pred[,1]),col="blue",lwd=plot.lwd)
+      if(plot.CI==T){
+        lines(exp(x.val),exp(seg.pred[,2]),col="blue",lty=2)
+        lines(exp(x.val),exp(seg.pred[,3]),col="blue",lty=2)
+      }
+    }
+    
+    if(sum(match(models,"moatar"),na.rm=T)==1){
+      abline(v=Q50)
+      x.val=seq(min(logQ,na.rm=T),log(Q50),length.out=50)
+      LL.inf=predict(loglog.mod.inf,data.frame(logQ.m=x.val),
+                     interval="confidence",level=CI.level)          
+      lines(exp(x.val),exp(LL.inf[,1]),col="forestgreen",lwd=plot.lwd)
+      if(plot.CI==T){
+        lines(exp(x.val),exp(LL.inf[,2]),col="forestgreen",lty=2)
+        lines(exp(x.val),exp(LL.inf[,3]),col="forestgreen",lty=2)
+      }
+      
+      x.val=seq(log(Q50),max(logQ,na.rm=T),length.out=50)
+      LL.sup=predict(loglog.mod.sup,data.frame(logQ.m=x.val),
+                     interval="confidence",level=CI.level)          
+      lines(exp(x.val),exp(LL.sup[,1]),col="forestgreen")
+      if(plot.CI==T){
+        lines(exp(x.val),exp(LL.sup[,2]),col="forestgreen",lty=2)
+        lines(exp(x.val),exp(LL.sup[,3]),col="forestgreen",lty=2)
+      }
+    }
+    
+    mod.col=c("red","blue","forestgreen")
+    mod.col=mod.col[match(models,c("log-linear","segmented","moatar"))]
+    legend.pos=if(is.na(legend.pos)==T){"topleft"}else(legend.pos)
+    legend(legend.pos,
+           legend=models,
+           lty=1,
+           col=mod.col,
+           ncol=1,bty="n",y.intersp=1,x.intersp=0.75,
+           xpd=NA,xjust=0.5,yjust=0.5,title="Model",title.adj = 0)
+    
+  }
+  if(print.rslt==TRUE){return(rslt.all)}
+}
+
+
+### 
+dat=read.csv(paste0(data.path,"Conc_Discharge_Master/Si_Q_WRTDS_sites_20210811.csv"))
+head(dat)
+
+site.vals=unique(dat$site.name)
+
+tmp=subset(dat,site.name==site.vals[1])
+tmp$logQ=log(tmp$Q)
+tmp$logC=log(tmp$Si)
+median(tmp$Q)
+
+CQ_fun
+
+with(tmp,CQ_fun(logQ,logC,median(Q,na.rm=T)))

@@ -105,13 +105,18 @@ tang.unit$data.set="tanguro"
 HBR.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_HBR.xlsx"),sheet=2,startRow=1,na.strings = "NA")
 HBR.unit$data.set="HBR"
 
+gro.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_GRO.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+gro.unit=gro.unit[,1:2]
+gro.unit$data.set="GRO"
+gro.unit[gro.unit$Measurement=="Alkalinity","Unit"]="mg CaCO3/L"
+
 # sage.unit=read.xlsx(paste0(export.path,"sagehencreek_params_edited.xlsx"))
 # sage.unit=subset(sage.unit,keep==1)[,c("Measurement","Unit")]
 # sage.unit$data.set="sage"
 
 unit.all=rbind(arc.unit,bczo.unit,carey.unit,coal.unit,cpcrw.unit,konza.unit,
                KRR.unit,MCM.unit,NWT.unit,LMP.unit,LUQ.unit,pie.unit,hja.unit,
-               sage.unit,umr.unit,tang.unit,HBR.unit)
+               sage.unit,umr.unit,tang.unit,HBR.unit,gro.unit)
 
 # https://ocean.ices.dk/tools/unitconversion.aspx
 # http://www.salinitymanagement.org/Salinity%20Management%20Guide/ls/ls_3c.html
@@ -152,7 +157,8 @@ Q.cf=data.frame(Measurement=c("Instantaneous Q","Daily Avg Q"),
                   CF=0.0283168)
 
 subset(unit.all,Measurement=="Cl")
-alk.cf=data.frame(Measurement=c("Alkalinity"),Unit=c("ueq/L","meq/L","mg HCO3-C"),CF=c(1,1000,(1/(H.mw+C.mw+(O.mw*3)))*1000))
+subset(unit.all,Measurement=="Alkalinity")
+alk.cf=data.frame(Measurement=c("Alkalinity"),Unit=c("ueq/L","meq/L","mg HCO3-C","mg CaCO3/L"),CF=c(1,1000,(1/(H.mw+C.mw+(O.mw*3)))*1000,(1/(Ca.mw+C.mw+(O.mw*3)))*1000))
 Na.cf=data.frame(Measurement=c("Na"),Unit=c("ueq/L","uM","mg/L"),CF=c(1,1,(1/Na.mw)*1000))
 K.cf=data.frame(Measurement=c("K"),Unit=c("ueq/L","uM","mg/L"),CF=c(1,1,(1/K.mw)*1000))
 Ca.cf=data.frame(Measurement=c("Ca"),Unit=c("ueq/L","uM","mg/L"),CF=c(1/2,1,(1/Ca.mw)*1000))
@@ -197,6 +203,8 @@ unit.all$CF=with(unit.all,ifelse(Measurement%in%other.vars,1,CF))
 
 subset(unit.all,Measurement=="Instantaneous Q")
 subset(unit.all,Measurement=="Daily Avg Q")
+
+subset(unit.all,Measurement=="Alkalinity")
 
 unit.all2=unit.all[,c("variable","data.set","CF")]
 ##
@@ -566,12 +574,44 @@ hbr.dat.melt$value=with(hbr.dat.melt, ifelse(value<0,abs(value),value))
 hbr.dat.melt$value=with(hbr.dat.melt,value*CF)
 hbr.dat.melt$LTER="HBR"
 
+# GRO
+GRO.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_GRO.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+GRO.dat$Sampling.Date=convertToDate(GRO.dat$Sampling.Date)
+names(GRO.dat)
+names(hbr.dat)%in%names(GRO.dat)
+ncol(GRO.dat)
+ncol(hbr.dat)
+GRO.dat[,c("TDN","TDP","NO3","NO2","DON")]=as.numeric(NA);
+
+GRO.dat.melt=melt(GRO.dat[,c(idvars,param.vars)],id.vars=idvars)
+GRO.dat.melt=subset(GRO.dat.melt,is.na(value)==F)
+GRO.dat.melt$site=GRO.dat.melt$'Site/Stream.Name'
+GRO.dat.melt$variable=as.character(GRO.dat.melt$variable)
+
+head(sort(unique(GRO.dat.melt$value)))
+tail(sort(unique(GRO.dat.melt$value)))
+subset(GRO.dat.melt,value=="-0.1")
+subset(GRO.dat.melt,value=="-0.2")
+subset(GRO.dat.melt,value=="-0.3")
+subset(GRO.dat.melt,value=="-0.46650000000000003")
+subset(GRO.dat.melt,value=="-0.5")
+subset(GRO.dat.melt,value=="-1")
+subset(GRO.dat.melt,value=="BD")
+GRO.dat.melt$value=as.numeric(GRO.dat.melt$value)
+
+GRO.dat.melt=merge(GRO.dat.melt,subset(unit.all2,data.set=="GRO"))
+subset(GRO.dat.melt,value<0)
+head(subset(GRO.dat.melt,variable=="alkalinity"))
+subset(GRO.dat.melt,value<0)
+GRO.dat.melt$value=with(GRO.dat.melt, ifelse(variable!="Temp.C"&value<0,abs(value),value))
+GRO.dat.melt$value=with(GRO.dat.melt,value*CF)
+GRO.dat.melt$LTER="GRO"
 
 # Combine all data 
 master.dat=rbind(arc.dat.melt,bczo.dat.melt,carey.dat.melt,coal.dat.melt,cpcrw.dat.melt,
                  konza.dat.melt,KRR.dat.melt,MCM.dat.melt,NWT.dat.melt,LMP.dat.melt,
                  LUQ.dat.melt,pie.dat.melt,hja.dat.melt,sage.dat.melt,umr.dat.melt,
-                 tango.dat.melt,hbr.dat.melt)
+                 tango.dat.melt,hbr.dat.melt,GRO.dat.melt)
 master.dat=master.dat[,c( "LTER", "Site/Stream.Name","site", "Sampling.Date","variable","value")]
 master.dat$value[master.dat$value==0]=NA
 master.dat=subset(master.dat,is.na(value)==F)
@@ -595,10 +635,14 @@ summary(master.dat)
 # fixed NWT NOx and SRP data
 # write.csv(master.dat,paste0(export.path,"20210524_masterdata.csv"),row.names=F)
 
+# Added GRO
+# write.csv(master.dat,paste0(export.path,"20210804_masterdata.csv"),row.names=F)
+
 
 boxplot(value~site,subset(master.dat,variable=="DSi"),log="y",col="grey",ylab="DSi (uM)")
 
 # tiff(filename=paste0(plot.path,"site_DSi_boxplot.tiff"),width=7,height=4,units="in",res=200,type="windows",compression=c("lzw"),bg="white")
+# png(filename=paste0(plot.path,"site_DSi_boxplot.png"),width=7,height=4,units="in",res=200,type="windows",bg="white")
 par(family="serif",mar=c(6,4,0.75,0.5),oma=c(2,1,0.5,0.5));
 ylim.val=c(0.01,2e5);ymaj=log.scale.fun(ylim.val,"major");ymin=log.scale.fun(ylim.val,"minor")
 x=boxplot(value~LTER,subset(master.dat,variable=="DSi"),log="y",col="grey",pch=21,cex=0.5,bg=adjustcolor("grey",0.25),axes=F,ann=F,ylim=ylim.val)
@@ -614,6 +658,7 @@ subset(master.dat,variable=="DSi"&site==1)
 
 
 # tiff(filename=paste0(plot.path,"site_Chla_boxplot.tiff"),width=5,height=4.5,units="in",res=200,type="windows",compression=c("lzw"),bg="white")
+# png(filename=paste0(plot.path,"site_Chla_boxplot.png"),width=5,height=4.5,units="in",res=200,type="windows",bg="white")
 par(family="serif",mar=c(6,4,0.75,0.5),oma=c(2,1,0.5,0.5));
 ylim.val=c(0.01,400);ymaj=log.scale.fun(ylim.val,"major");ymin=log.scale.fun(ylim.val,"minor")
 x=boxplot(value~LTER,subset(master.dat,variable%in%c("Suspended.Chl","Benthic.Chl")),log="y",col="grey",pch=21,cex=0.5,bg=adjustcolor("grey",0.25),axes=F,ann=F,ylim=ylim.val)
