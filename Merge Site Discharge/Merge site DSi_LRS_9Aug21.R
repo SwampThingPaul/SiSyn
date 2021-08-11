@@ -26,8 +26,6 @@ csv_files = drive_ls(folder, type="csv")
 
 #extract only WRTDS DSi files
 WRTDS_DSi = csv_files[csv_files$name %like% "Si_WRTDS",]
-#some don't get included in this?
-#manually downloaded some sites from HBR and AND
 
 #check working directory where files will be stored locally; separate folder within project folder
 getwd()
@@ -68,4 +66,4 @@ DSi_sites = data.frame("site"=unique(all_DSi$site.name))
 
 #write master discharge file to .csv
 setwd("L:/GitHub/SiSyn/Merge Site Discharge")
-write.csv(all_DSi, file="WRTDS_DSi_mergedsites_9Aug21.csv")
+write.csv(all_DSi, file="WRTDS_DSi_mergedsites_11Aug21.csv")
