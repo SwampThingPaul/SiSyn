@@ -1,6 +1,5 @@
 ---
 title: "LTER: SiSyn"
-date: "7/26/2021"
 output: 
   html_document: 
     toc: yes
@@ -12,6 +11,8 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE)
 
 ```
+
+`r paste("Updated",as.POSIXct(Sys.time(),"%Y-%m-%d %H:%M",tz=""))`
 
 ## Objective
 

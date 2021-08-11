@@ -352,22 +352,29 @@ CQ_fun=function(logQ,logC,Q50,plot=TRUE,
   loglog.mod.seg.sum=summary(loglog.mod.seg)
   
   # is there a breakpoint?
-  if(nrow(loglog.mod.seg$psi)==0){
-    seg.psi.est=NA
-    seg.psi.SE=NA
+  if(is.null(loglog.mod.seg$psi)){
+    seg.rslt=data.frame(seg.bk.est=NA,
+                        seg.bk.SE=NA,
+                        seg.R2=NA,
+                        seg.R2.adj=NA,
+                        seg.RMSE=NA,
+                        seg.AIC=NA,
+                        seg.BIC=NA,
+                        seg.LogLik=NA)
   }else{
     seg.psi.est=loglog.mod.seg$psi[1,c(2)]
     seg.psi.SE=seg.psi=loglog.mod.seg$psi[1,c(3)]
+    seg.rslt=data.frame(seg.bk.est=exp(seg.psi.est),
+                        seg.bk.SE=exp(seg.psi.SE),
+                        seg.R2=loglog.mod.seg.sum$r.squared,
+                        seg.R2.adj=loglog.mod.seg.sum$adj.r.squared,
+                        seg.RMSE=loglog.mod.seg.sum$sigma,
+                        seg.AIC=AIC(loglog.mod.seg),
+                        seg.BIC=BIC(loglog.mod.seg),
+                        seg.LogLik=as.numeric(logLik(loglog.mod.seg)))
   }
   
-  seg.rslt=data.frame(seg.bk.est=exp(seg.psi.est),
-                      seg.bk.SE=exp(seg.psi.SE),
-                      seg.R2=loglog.mod.seg.sum$r.squared,
-                      seg.R2.adj=loglog.mod.seg.sum$adj.r.squared,
-                      seg.RMSE=loglog.mod.seg.sum$sigma,
-                      seg.AIC=AIC(loglog.mod.seg),
-                      seg.BIC=BIC(loglog.mod.seg),
-                      seg.LogLik=as.numeric(logLik(loglog.mod.seg)))
+ 
   
   # Moatar
   logQ.m=logQ[logQ<log(Q50)]
@@ -396,8 +403,10 @@ CQ_fun=function(logQ,logC,Q50,plot=TRUE,
   rslt.all=cbind(LL.rslt,seg.rslt,moatar.rslt)
   
   # Plotting
+  c.val=exp(logC)
+  q.val=exp(logQ)
   if(plot==T){
-    plot(exp(logC)~exp(logQ),log="xy",...)
+    plot(c.val~q.val,log="xy",xlab="Discharge",ylab="Concentration",...)
     
     if(sum(match(models,"log-linear"),na.rm=T)==1){
       x.val=seq(min(logQ,na.rm=T),max(logQ,na.rm=T),length.out=70)
@@ -410,6 +419,7 @@ CQ_fun=function(logQ,logC,Q50,plot=TRUE,
       }
     }
     
+    if(is.null(loglog.mod.seg$psi)==F){
     if(sum(match(models,"segmented"),na.rm=T)==1){
       x.val=seq(min(logQ,na.rm=T),max(logQ,na.rm=T),length.out=70)
       seg.pred=predict(loglog.mod.seg,data.frame(logQ=x.val),
@@ -419,6 +429,7 @@ CQ_fun=function(logQ,logC,Q50,plot=TRUE,
         lines(exp(x.val),exp(seg.pred[,2]),col="blue",lty=2)
         lines(exp(x.val),exp(seg.pred[,3]),col="blue",lty=2)
       }
+    }
     }
     
     if(sum(match(models,"moatar"),na.rm=T)==1){
@@ -463,11 +474,37 @@ head(dat)
 
 site.vals=unique(dat$site.name)
 
-tmp=subset(dat,site.name==site.vals[1])
-tmp$logQ=log(tmp$Q)
+CQ.rslt=data.frame()
+for(i in 1:length(site.vals)){
+  tmp=subset(dat,site.name==site.vals[i])
+  tmp$logQ=log(tmp$Q+1)
+  tmp$logC=log(tmp$Si)
+ 
+  rslt=with(tmp,CQ_fun(logQ,logC,median(Q+1,na.rm=T),plot=F))
+  rslt$SITE=site.vals[i]
+  rslt$LTER=unique(tmp$LTER)
+  CQ.rslt=rbind(CQ.rslt,rslt)
+print(i)
+}
+
+
+tmp=subset(dat,site.name==site.vals[63])
+tmp$logQ=log(tmp$Q+1)
 tmp$logC=log(tmp$Si)
-median(tmp$Q)
 
-CQ_fun
+# Power Law
+loglog.mod=lm(logC~logQ,tmp)
 
-with(tmp,CQ_fun(logQ,logC,median(Q,na.rm=T)))
+# Segmented
+# Picks 1st breakpoint
+loglog.mod.seg=segmented(loglog.mod,seg.Z=~logQ,npsi=1)
+loglog.mod.seg.sum=summary(loglog.mod.seg)
+
+# is there a breakpoint?
+if(is.null(loglog.mod.seg$psi)){
+  seg.psi.est=NA
+  seg.psi.SE=NA
+}else{
+  seg.psi.est=loglog.mod.seg$psi[1,c(2)]
+  seg.psi.SE=seg.psi=loglog.mod.seg$psi[1,c(3)]
+}
