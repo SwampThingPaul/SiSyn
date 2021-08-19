@@ -1,12 +1,12 @@
 #merge all site discharge and DSi dataframes by site and date
-#remove NA dates from WRTDS_discharge file
-WRTDS_discharge_allsites_NArm = na.omit(WRTDS_discharge_allsites_21Apr21)
+WRTDS_DSi_Q = merge(WRTDS_discharge_allsites,WRTDS_DSi_mergedsites, by=c("site.name","Date"), all=T)
+length(unique(WRTDS_DSi_Q$site.name))
 
-WRTDS_DSi_Q = merge(WRTDS_discharge_allsites_NArm,WRTDS_DSi_mergedsites_19May21, by=c("site.name","Date"), all=T)
+write.csv(WRTDS_DSi_Q, file="merged_DSi_Q_WRTDSlongterm_11Aug21.csv")
 
 #filter merged file by sites run in WRTDS
-WRTDS_site_list = Data_years_streams_LongTerm$Stream.Site
-WRTDS_site_list = sort(WRTDS_site_list)
+WRTDS_longterm_site_list = Data_years_streams_WRTDS$Stream.Site
+View(WRTDS_longterm_site_list)
 
 library(dplyr)
 WRTDS_data = 

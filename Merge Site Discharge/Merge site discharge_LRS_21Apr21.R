@@ -81,4 +81,4 @@ all_discharge_longterm = merge(all_discharge, longterm_list, all=T)
 
 #write master discharge file to .csv
 setwd("L:/GitHub/SiSyn/Merge Site Discharge")
-write.csv(all_discharge_longterm, file="WRTDS_discharge_allsites_9Aug21.csv")
+write.csv(all_discharge_longterm, file="WRTDS_discharge_allsites_11Aug21.csv")
