@@ -94,6 +94,8 @@ CQ_fun=function(logQ,logC,Q50,plot=TRUE,
                      LL.R2.adj=loglog.mod.sum$adj.r.squared,
                      LL.RMSE=loglog.mod.sum$sigma,
                      LL.beta=loglog.beta,
+                     LL.beta.LCI=as.numeric(confint(loglog.mod)[2,1]),
+                     LL.beta.UCI=as.numeric(confint(loglog.mod)[2,2]),
                      LL.beta.SE=loglog.mod.sum$coefficients[2,2],
                      LL.beta.tval=loglog.mod.sum$coefficients[2,3],
                      LL.beta.pval=loglog.mod.sum$coefficients[2,4],
@@ -148,16 +150,25 @@ CQ_fun=function(logQ,logC,Q50,plot=TRUE,
   
   moatar.rslt=data.frame(Q50=Q50,
                          moatar.beta.inf=as.numeric(coef(loglog.mod.inf)[2]),
+                         moatar.beta.inf.tval=loglog.mod.inf.sum$coefficients[2,3],
+                         moatar.beta.inf.pval=loglog.mod.inf.sum$coefficients[2,4],
                          moatar.R2.inf=loglog.mod.inf.sum$r.squared,
                          moatar.R2.adj.inf=loglog.mod.inf.sum$adj.r.squared,
                          moatar.RMSE.inf=loglog.mod.inf.sum$sigma,
                          moatar.beta.sup=as.numeric(coef(loglog.mod.sup)[2]),
+                         moatar.beta.sup.tval=loglog.mod.sup.sum$coefficients[2,3],
+                         moatar.beta.sup.pval=loglog.mod.sup.sum$coefficients[2,4],
                          moatar.R2.sup=loglog.mod.sup.sum$r.squared,
                          moatar.R2.adj.sup=loglog.mod.sup.sum$adj.r.squared,
                          moatar.RMSE.sup=loglog.mod.sup.sum$sigma,
                          moatar.C_Q50=exp(mean(c(CQ50.inf,CQ50.sup))))
   
-  rslt.all=cbind(LL.rslt,seg.rslt,moatar.rslt)
+  # ratio of CV Conc and CV Discharge
+  Cvc=(sd(exp(logC),na.rm=T)/mean(exp(logC),na.rm=T))*100
+  Cvq=(sd(exp(logQ),na.rm=T)/mean(exp(logQ),na.rm=T))*100
+  CVcq=data.frame(CVc_CVq=Cvc/Cvq)
+  
+  rslt.all=cbind(LL.rslt,seg.rslt,moatar.rslt,CVcq)
   
   # Plotting
   c.val=exp(logC)
@@ -377,7 +388,9 @@ dat=read.csv(paste0("./Data/Si_Q_WRTDS_sites.csv"))
 library(ggplot2)
 library(scales)
 dat=read.csv(paste0("C:/Julian_LaCie/_GitHub/SiSyn/Data/Conc_Discharge_Master/Si_Q_WRTDS_sites_20210811.csv"))
+# dat=read.csv(paste0("C:/Julian_LaCie/_GitHub/SiSyn/Data/Conc_Discharge_Master/merged_DSi_Q_WRTDSlongterm_11Aug21.csv"))
 dat$Date=as.Date(dat$Date)
+#dat$Date=as.Date(dat$Date,format="%m/%d/%Y")
 dat$year=as.numeric(format(dat$Date,"%Y"))
 
 plain <- function(x,...) {
@@ -393,7 +406,7 @@ ggplot(dat, aes(x=Q+1, y=Si, color=year)) +
   # scale_x_log10(breaks = scales::trans_breaks("log10", function(x) 10^x),
   #              labels = scales::trans_format("log10", math_format(.x)))+
   labs(x=expression("Q"))+
-  facet_wrap(~LTER+site.name, scales="free")+
+  facet_wrap(~LTER+site.name, scales="free",ncol=8)+
   theme_bw() +
   theme(
     #legend.position = 'none',
@@ -444,5 +457,41 @@ CQ.rslt%>%
 
 
 <br>
+
+***
+
+### Exploratory Plots
+
+
+```{r,echo=F,warning=F,message=F,out.width = '100%', out.height='650px',fig.align='center',fig.cap="Log-Linear Slope for each site."}
+CQ.rslt=CQ.rslt[order(CQ.rslt$LTER,CQ.rslt$SITE),]
+
+
+library(plotly)
+
+plot_ly(data=CQ.rslt,x=~LL.beta,y=~1:nrow(CQ.rslt),name=paste(CQ.rslt$LTER,CQ.rslt$SITE),
+        color=~SITE,marker = list(size = 10))%>%
+    layout(yaxis=list(title="Site",
+                    titlefont=list(size=12)),
+         xaxis=list(title="Log-Linear Slope",
+                    titlefont=list(size=12),
+                    range=c(-20,1)))
+        # marker = list(size = 10,
+        #                      color = 'rgba(255, 182, 193, .9)',
+        #                      line = list(color = 'rgba(152, 0, 0, .8)',
+        #                                  width = 2)))
+
+```
+
+
+```{r,echo=F,warning=F,message=F,out.width = '100%', out.height='650px',fig.align='center',fig.cap="The ratio CV concentration and CV discharge volume for each site."}
+plot_ly(data=CQ.rslt,x=~CVc_CVq,y=~1:nrow(CQ.rslt),name=paste(CQ.rslt$LTER,CQ.rslt$SITE),
+        color=~SITE,marker = list(size = 10))%>%
+    layout(yaxis=list(title="Site",
+                    titlefont=list(size=12)),
+         xaxis=list(title="CVc : CVq",
+                    titlefont=list(size=12)))
+```
+
 
 ***

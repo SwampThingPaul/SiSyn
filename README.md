@@ -30,7 +30,40 @@ Jankowski, US Geological Survey
 > data-driven predictive framework of how riverine Si exports will
 > respond to global change.
 
------
-## Git/GitHub workflow resources:
--  [A successful Git branching model](https://nvie.com/posts/a-successful-git-branching-model/) by [Vincent Driessen](https://nvie.com/about/)
------
+------------------------------------------------------------------------
+
+Participants:
+
+-   William Bowden - ARC
+
+-   Joanna Carey (Babson College)
+
+-   John Crawford - NWT
+
+-   Linda Deegan - ARC
+
+-   KathiJo Jankowski (USGS)
+
+-   Ruth Heindel - MCM
+
+-   Jeremy Jones - BNZ
+
+-   Paul Julian
+
+-   William McDowell - LUQ
+
+-   Diane McKnight - MCM
+
+-   Pamela Sullivan - KNZ
+
+-   Wilfred Wollheim - PIE
+
+-   Adam Wymore - LUQ
+
+------------------------------------------------------------------------
+
+### Analysis and Work Products
+
+Concentration Discharge Evalution \|
+[Link](https://swampthingecology.org/SiSyn/ConcentrationDischarge/CQFunction.html)
+\|
