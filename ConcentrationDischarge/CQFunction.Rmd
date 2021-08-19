@@ -494,4 +494,23 @@ plot_ly(data=CQ.rslt,x=~CVc_CVq,y=~1:nrow(CQ.rslt),name=paste(CQ.rslt$LTER,CQ.rs
 ```
 
 
+```{r,echo=FALSE,fig.width=6.5,fig.height=3,fig.align='center',fig.cap="Comparison of median discharge volume (Q50) compared to segmented regression breakpoint for all sites."}
+library(AnalystHelper)
+cols=wesanderson::wes_palette("Zissou1",nrow(CQ.rslt),"continuous")
+ylim.val=c(1,100000);ymaj=log.scale.fun(ylim.val,"major");ymin=log.scale.fun(ylim.val,"minor")
+
+par(family="serif",mar=c(1.5,3,0.5,0.25),oma=c(2,2,0.75,1),lwd=0.5);
+
+plot(Q50~seg.bk.est,CQ.rslt,log="xy",ylab="Q50",xlab="Segmented regression break-point",ylim=ylim.val,xlim=ylim.val,type="n",axes=F,ann=F);
+abline(h=ymaj,v=ymaj,lty=1,col=adjustcolor("grey",0.5))
+abline(0,1)
+points(Q50~seg.bk.est,CQ.rslt,pch=21,bg=adjustcolor(cols,0.5),col=adjustcolor("grey",0.5))
+axis_fun(1,ymaj,ymin,format(ymaj,scientific = F))
+axis_fun(2,ymaj,ymin,format(ymaj,scientific = F))
+box(lwd=1)
+mtext(side=1,line=2,"Segmented Regression Break-Point (cfs)")
+mtext(side=2,line=3.5,"Median Discharge (cfs; Q50)")
+
+```
+
 ***
