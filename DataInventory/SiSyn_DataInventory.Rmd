@@ -1,0 +1,324 @@
+---
+title: "SiSyn - Data Inventory"
+output: 
+  html_document: 
+    toc: no
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE,echo=FALSE,message=FALSE,warning=FALSE}
+## Code was compiled by Paul Julian
+## contact info: pjulian@ufl.edu
+## contact info: pauljulianphd@gmail.com
+
+knitr::opts_chunk$set(echo = TRUE)
+library(kableExtra)
+
+#Libraries
+library(AnalystHelper);
+#devtools::install_github("SwampThingPaul/AnalystHelper")
+library(plyr)
+library(reshape)
+library(openxlsx)
+library(lubridate)
+
+#GIS Libraries
+library(sp)
+library(rgdal)
+library(rgeos)
+library(tmap)
+library(raster)
+
+#Paths
+wd="C:/Julian_LaCie/_GitHub/SiSyn/DataInventory"
+
+#https://www.r-bloggers.com/structuring-r-projects/
+#https://nicercode.github.io/blog/2013-04-05-projects/
+
+paths=paste0(wd,c("/Plots/","/Export/","/Data/","/src/"))
+#Folder.Maker(paths);#One and done. Creates folders in working directory.
+plot.path=paths[1]
+export.path=paths[2]
+data.path=paste0(dirname(wd),"/Data/")
+
+# Extra functions 
+dms2dec <- function(dms, separators = c("º", "°", "\'", "\"")) {
+  # version 1.0 (25 Sep 3013)
+  # dms: a vector (or column) of latitude or longitude in degrees-minutes-seconds-hemisfere, e.g. 41° 34' 10.956" N (with or without spaces)
+  # separators: the characters that are separating degrees, minutes and seconds in dms
+  
+  dms <- as.character(dms)
+  dms <- gsub(pattern = " ", replacement = "", x = dms)
+  for (s in separators) dms <- gsub(pattern = s, replacement = "_splitHere_", x = dms)
+  
+  splits <- strsplit(dms, split = "_splitHere_")
+  n <- length(dms)
+  deg <- min <- sec <- hem <- vector("character", n)
+  
+  for (i in 1:n) {
+    deg[i] <- splits[[i]][1]
+    min[i] <- splits[[i]][2]
+    sec[i] <- splits[[i]][3]
+    hem[i] <- splits[[i]][4]
+  }
+  
+  dec <- as.numeric(deg) + (as.numeric(min) / 60) + (as.numeric(sec) / 3600)
+  sign <- ifelse (hem %in% c("N", "E"), 1, -1)
+  dec <- sign * dec
+  return(dec)
+}
+
+# Helper variables 
+wgs84=CRS("+init=epsg:4326")
+# wgs84=CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
+
+N.mw=14.0067
+P.mw=30.973762
+C.mw=12.0107
+Si.mw=28.0855
+H.mw=1.00784
+O.mw=15.999
+
+12/Si.mw
+12*1/Si.mw
+
+# Data --------------------------------------------------------------------
+param.list=data.frame(variable=c("Daily.Avg.Q.(Discharge)", "Instantaneous.Q.(Discharge)", "Stage.Height", 
+                                 "Temp.C", "Conductivity", "Spec.Cond", "Turbidity", "TSS", "VSS", 
+                                 "DSi", "TN","TDN", "DIN", "NOx","NO3","NO2", "NH4","DON", "TP","TDP", "PO4", "SRP", "DOC", 
+                                 "TOC", "alkalinity", "ANC", "pH", "DIC", "Suspended.Chl", "Benthic.Chl", 
+                                 "Na", "K", "Ca", "Mg", "SO4", "Cl"),
+                      plot.val=1:36)
+idvars=c("LTER","Site/Stream.Name","Sampling.Date")
+param.vars=c("Daily.Avg.Q.(Discharge)", "Instantaneous.Q.(Discharge)", "Stage.Height", 
+             "Temp.C", "Conductivity", "Spec.Cond", "Turbidity", "TSS", "VSS", 
+             "DSi", "TN","TDN", "DIN", "NOx","NO3","NO2", "NH4","DON", "TP","TDP", "PO4", "SRP", "DOC", 
+             "TOC", "alkalinity", "ANC", "pH", "DIC", "Suspended.Chl", "Benthic.Chl", 
+             "Na", "K", "Ca", "Mg", "SO4", "Cl")
+basin.vars=c("LTER","Site/Stream","Unique.ID","Latitude","Longitude")
+
+##
+data.filelist=list.files(data.path)
+
+## Master dataset
+dat=read.csv(paste0(export.path,"20210907_masterdata.csv"))
+dat$Sampling.Date=as.Date(dat$Sampling.Date)
+dat$dec.date=decimal_date(dat$Sampling.Date)
+
+## ARCLTER
+arc.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_ARCLTER_05012020.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+arc.basin=arc.basin[,basin.vars]
+
+## BcZO
+bczo.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_BcCZO.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+bczo.basin=bczo.basin[,basin.vars]
+
+## Carey
+carey.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_Carey_6.12.20.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+carey.basin=carey.basin[,basin.vars]
+carey.basin$Longitude=carey.basin$Longitude*-1
+
+## Coal Creek
+coal.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_Coal_Creek.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+coal.basin=coal.basin[,basin.vars]
+coal.basin$Latitude=dms2dec(coal.basin$Latitude)
+coal.basin$Latitude=coal.basin$Latitude*-1
+coal.basin$Longitude=dms2dec(coal.basin$Longitude)
+
+## CPCRW
+cpcrw.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_CPCRW.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+cpcrw.basin=cpcrw.basin[,basin.vars]
+cpcrw.basin$Latitude=dms2dec(cpcrw.basin$Latitude)
+cpcrw.basin$Longitude=dms2dec(cpcrw.basin$Longitude)
+
+#Knonza
+konza.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_Konza.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+konza.basin=konza.basin[,basin.vars]
+konza.basin$Latitude=dms2dec(konza.basin$Latitude)
+konza.basin$Longitude=dms2dec(konza.basin$Longitude)
+konza.basin[4,4]=konza.basin[4,4]*-1
+
+## KRR
+KRR.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_KRR.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+KRR.basin=KRR.basin[,basin.vars]
+
+## MCM
+MCM.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_MCM.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+MCM.basin=MCM.basin[,basin.vars]
+
+## NWT
+NWT.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_NWT.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+NWT.basin=NWT.basin[,basin.vars]
+
+## LMP
+LMP.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_V1_LMP.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+LMP.basin=LMP.basin[,basin.vars]
+
+## LUQ
+LUQ.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_V1_LUQ.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+LUQ.basin=LUQ.basin[,basin.vars]
+LUQ.basin=subset(LUQ.basin,is.na(Latitude)==F)
+
+## PIE
+pie.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_V1_PIEWatersheds.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+pie.basin=pie.basin[,basin.vars]
+
+#lat long got flipped
+pie.basin$long=pie.basin$Latitude
+pie.basin$lat=pie.basin$Longitude
+pie.basin$Longitude=pie.basin$long
+pie.basin$Latitude=pie.basin$lat
+
+pie.basin=pie.basin[,basin.vars]
+
+# HJ Andrews
+hja.basin=read.xlsx(paste0(data.path,"HJAndrewsSiSyn.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+hja.basin=hja.basin[,basin.vars]
+
+# Sagehen
+sage.basin=read.xlsx(paste0(data.path,"SagehenSiSyn.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+sage.basin=sage.basin[,basin.vars]
+sage.basin$Longitude=sage.basin$Longitude*-1
+
+# UMR
+umr.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_UMR.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+umr.basin=umr.basin[,basin.vars]
+
+# Tanguro
+tango.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_Tanguro.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+tango.basin=tango.basin[,basin.vars]
+
+# HBR
+HBR.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_HBR.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+HBR.basin=HBR.basin[,basin.vars]
+
+HBR.extent=data.frame(site=paste0("WS",1:9),
+           west=c(-71.730,-71.728,-71.725,-71.737,-71.739,-71.743,-71.773,-71.762,-71.758),
+           east=c(-71.725,-71.723,-71.717,-71.725,-71.731,-71.735,-71.758,-71.752,-71.742),
+           noth=c(43.952,43.953,43.955,43.949,43.950,43.950,43.916,43.918,43.916),
+           soth=c(43.959,43.960,43.962,43.958,43.957,43.957,43.928,43.930,43.926))
+
+tmp=apply(HBR.extent[,2:5], 1, FUN = function(x) as(extent(x), "SpatialPolygons"))
+
+for(i in 1:9){
+  tmp2=coordinates(gCentroid(tmp[[i]]))
+  HBR.basin$Longitude[i]=tmp2[1]
+  HBR.basin$Latitude[i]=tmp2[2]
+}
+
+# GRO
+GRO.basin=data.frame(LTER="GRO",
+                     Site.Stream=c("Kolyma", "Lena", "Mackenzie", "Yenisey", "Yukon", "Ob'"),
+                     Unique.ID=NA,
+                     Latitude=c(68.75,66.77,67.45,69.38,61.93,66.63),
+                     Longitude=c(161.30,127.37,-133.74,86.15,-162.88,66.60))
+
+##
+sites=rbind(cpcrw.basin,KRR.basin)
+sites=rbind(sites,arc.basin)
+sites=rbind(sites,LMP.basin)
+sites=rbind(sites,LUQ.basin)
+sites=rbind(sites,pie.basin)
+sites=rbind(sites,carey.basin)
+sites=rbind(sites,coal.basin)
+sites=rbind(sites,konza.basin)
+sites=rbind(sites,MCM.basin)
+sites=rbind(sites,NWT.basin)
+sites=rbind(sites,bczo.basin)
+sites=rbind(sites,hja.basin)
+sites=rbind(sites,sage.basin)
+sites=rbind(sites,umr.basin)
+sites=rbind(sites,tango.basin)
+sites=rbind(sites,HBR.basin)
+colnames(sites)<-c("LTER","Site.Stream","Unique.ID","Latitude","Longitude")
+sites=rbind(sites,GRO.basin)
+
+sites$Longitude=as.numeric(sites$Longitude)
+# subset(sites,is.na(Longitude)==T)
+sites=subset(sites,is.na(Longitude)==F)
+
+
+sites=SpatialPointsDataFrame(coords=sites[,c("Longitude","Latitude")],
+                                   data=sites,
+                                   proj4string = wgs84)
+tmap_mode("view")
+```
+
+
+**FROM POLES TO TROPICS: A MULTI-BIOME SYNTHESIS INVESTIGATING THE CONTROLS ON RIVER SI EXPORTS**
+
+[Project Overview](https://lternet.edu/working-groups/river-si-exports/){target="_blank"}
+
+## Spatial Distribution of Sites 
+
+```{r map, out.width="100%",fig.align='center', echo=FALSE,warning=FALSE, message=FALSE}
+tm_basemap(leaflet::providers$Esri.WorldImagery,alpha=0.9)+
+  tm_shape(sites,name="Available Data")+tm_dots(col="red",popup.vars=c("LTER","Site.Stream","Unique.ID","Latitude","Longitude"),size=0.075)
+
+```
+
+<center>Monitoring locations of available data to date `r Sys.Date()`. </center>
+
+## Period of Record Data Inventory
+
+The following plots provide a graphical depiction of data on the Data set level (i.e. Bonanza LTER, Lamprey River, etc.). 
+
+```{r, include=F}
+LTER.sites=c("GRO","ARC","BNZ","AND","Sagehen(Sullivan)", "BcCZO","NWT", "DOE SFA East River", "KNZ","LMP(Wymore)", "PIE","HBR","Ipswitch(Carey)","UMR(Jankowski)","KRR(Julian)",   "LUQ",   "Tanguro(Jankowski)", "MCM")
+
+LTER.sites.labs=c("Arctic Great Rivers","Arctic LTER","Bonanza LTER","H.J. Andrews LTER", "Sagehen Creek", "Boulder CZO","Niwot Ridge LTER","East River SFA","Konza Prairie LTER","Lamprey River","Plum Island Estuary LTER","Hubbard Brook LTER","Ispwich","Upper Mississippi River","Kissimmee River","Luquillo LTER","Tanguro","MCM")
+
+xlim.val=as.Date(c("1983-01-01","2020-01-01"));xmaj=seq(xlim.val[1],xlim.val[2],"10 years");xmin=seq(xlim.val[1],xlim.val[2],"1 years")
+
+```
+
+# {.tabset .tabset-fade}
+
+```{r,echo=FALSE,warning=FALSE, message=FALSE}
+dat=merge(dat,param.list,"variable")
+dat$CY=as.numeric(format(dat$Sampling.Date,"%Y"))
+```
+
+```{r,results='asis',fig.width=7,fig.height=5.5,fig.align='center',echo=FALSE,warning=FALSE, message=FALSE}
+for(i in 1:length(LTER.sites)){
+  
+site.dat=subset(dat,LTER==LTER.sites[i])
+dat.inv=ddply(site.dat,c("Sampling.Date","variable","plot.val"),summarise,N.val=N.obs(site))
+# site.inv=ddply(subset(site.dat,variable=="DSi"),c("Sampling.Date","site"),summarise,N.val=N.obs(value))
+# site.inv=merge(site.inv,data.frame(site=unique(site.inv$site),plot.val=1:length(unique(GRO.site.inv$site))))
+# site.yrs=ddply(subset(site.dat,variable=="DSi"),c("site","CY"),summarise,n.val=N.obs(value))
+
+
+  
+  cat('\n')
+  cat("##",LTER.sites.labs[i],"\n")
+
+par(family="serif",mar=c(1,3,0.75,0.5),oma=c(2,6.5,0.5,0.5));
+
+ylim.val=c(1,nrow(param.list));ymaj=seq(ylim.val[1],ylim.val[2],1)
+plot(xlim.val,0:1,type="n",ylim=ylim.val,xlim=xlim.val,axes=F,ylab=NA,xlab=NA)
+abline(v=xmin,h=ymaj,lty=2,col="grey80")
+with(dat.inv,points(Sampling.Date,plot.val,pch="|",col=adjustcolor("red",0.5)))
+axis_fun(1,line=-0.5,xmaj,xmin,format(xmaj,"%m-%Y"))
+axis_fun(2,ymaj,ymaj,param.list$variable,cex=0.8)
+box(lwd=1)
+mtext(side=3,LTER.sites.labs[i],cex=0.8,adj=0)
+mtext(side=1,line=1.75,"Date (Month-Year)")
+
+cat("<br>")
+cat(paste("<center> ",LTER.sites.labs[i],"period of record parameter inventory for all sites.</center>"))
+cat("<br>")
+
+# cat(paste0("**Number of sites:**",length(unique(site.inv$site))))
+
+  cat('\n')    
+}
+
+```
+
+***
+
+Updated `r format(Sys.Date(),"%d %b %Y")`
+
+Code hosted at [GitHub](https://github.com/SwampThingPaul/SiSyn)

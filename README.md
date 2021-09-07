@@ -32,38 +32,51 @@ Jankowski, US Geological Survey
 
 ------------------------------------------------------------------------
 
-Participants:
+### Data Updates/Versions
 
--   William Bowden - ARC
+Data associated with this project is kept in a project specific
+GoogleDrive folder. Contact PIs for more details.
 
--   Joanna Carey (Babson College)
+This section is to document changes and/or updates to the “Master” data
+file from which all working group participants will use for data
+analyses.
 
--   John Crawford - NWT
+#### Biogeochemical Dataset
 
--   Linda Deegan - ARC
+-   2020-10-15: initial file (filename: `20201015_masterdata.csv`)
+-   2020-11-11: File updated to fix error in merging Chlorophyll Data
+    (filename: `20201111_masterdata.csv`)
+-   2021-02-24: Added HBR and corrected Coal Creek data (filename:
+    `20210224_masterdata.csv`)
+-   2021-03-04: Updated and combined Sagehen dataset (filename:
+    `20210304_masterdata.csv`)
+-   2021-04-21: Fixed error in converting HBR NOx data (filename:
+    `20210421_masterdata.csv`)
+-   2021-05-24: Fixed error in converting NWT NOx and SRP data
+    (filename: `20210524_masterdata.csv`)
+-   2021-08-04: Added GRO dataset (filename: `2020804_masterdata.csv`)
+-   2021-09-07: updated and added GRO high frequency sampling (filename:
+    `20210907_masterdata.csv`)
 
--   KathiJo Jankowski (USGS)
+<div class="figure" style="text-align: center">
 
--   Ruth Heindel - MCM
+<img src="./DataInventory/Plots/site_DSi_boxplot.png" alt="Boxplot of DSi for all sites within a given 'LTER'." width="1400" />
+<p class="caption">
+Boxplot of DSi for all sites within a given ‘LTER’.
+</p>
 
--   Jeremy Jones - BNZ
-
--   Paul Julian
-
--   William McDowell - LUQ
-
--   Diane McKnight - MCM
-
--   Pamela Sullivan - KNZ
-
--   Wilfred Wollheim - PIE
-
--   Adam Wymore - LUQ
+</div>
 
 ------------------------------------------------------------------------
 
 ### Analysis and Work Products
 
+Data Inventory \|
+[Link](https://swampthingecology.org/SiSyn/DataInventory/SiSyn_DataInventory.html)
+\|
+
 Concentration Discharge Evalution \|
 [Link](https://swampthingecology.org/SiSyn/ConcentrationDischarge/CQFunction.html)
 \|
+
+------------------------------------------------------------------------
