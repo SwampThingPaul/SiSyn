@@ -173,16 +173,16 @@ monthly_results<-list.files(path = "/Users/keirajohnson/Box Sync/Keira_Johnson/S
                             pattern = "ResultsTable_WRTDS.csv")
 
 #remove kolyma and mackenzie from WRTDS_files and monthly_results lists
-kolyma<-grep("Kolyma", monthly_results)
-mackenzie<-grep("Mackenzie", monthly_results)
-
-kolymaWRTDS<-grep("Kolyma", WRTDS_files)
-
-mackenzieWRTDS<-grep("Mackenzie", WRTDS_files)
-
-WRTDS_files<-WRTDS_files[-c(kolymaWRTDS, mackenzieWRTDS)]
-
-monthly_results<-monthly_results[-c(kolyma, mackenzie)]
+# kolyma<-grep("Kolyma", monthly_results)
+# mackenzie<-grep("Mackenzie", monthly_results)
+# 
+# kolymaWRTDS<-grep("Kolyma", WRTDS_files)
+# 
+# mackenzieWRTDS<-grep("Mackenzie", WRTDS_files)
+# 
+# WRTDS_files<-WRTDS_files[-c(kolymaWRTDS, mackenzieWRTDS)]
+# 
+# monthly_results<-monthly_results[-c(kolyma, mackenzie)]
 
 #read in sites used for WRTDS
 setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
@@ -190,7 +190,7 @@ setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
 sites<-read.csv("Data_years_streams_WRTDS.csv")
 
 #remove sites that did not get run through WRTDS
-LTER_remove_these<-grep("Toolik Inlet|TW Weir|Mackenzie|Kolyma", sites$Stream.Site)
+LTER_remove_these<-grep("Toolik Inlet|TW Weir", sites$Stream.Site)
 
 sites<-sites[-c(LTER_remove_these),]
 
