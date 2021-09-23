@@ -75,8 +75,18 @@ Data Inventory \|
 [Link](https://swampthingecology.org/SiSyn/DataInventory/SiSyn_DataInventory.html)
 \|
 
-Concentration Discharge Evalution \|
+Concentration Discharge Evaluation \|
 [Link](https://swampthingecology.org/SiSyn/ConcentrationDischarge/CQFunction.html)
 \|
+
+<div class="figure" style="text-align: center">
+
+<img src="./DataInventory/Plots/Map_biome_all.png" alt="Map of 'LTER' sites and where they align on the Whittaker biome 'map' based on annual mean air temperature and annual precipitation." width="1050" />
+<p class="caption">
+Map of ‘LTER’ sites and where they align on the Whittaker biome ‘map’
+based on annual mean air temperature and annual precipitation.
+</p>
+
+</div>
 
 ------------------------------------------------------------------------
