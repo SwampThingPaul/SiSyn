@@ -90,5 +90,6 @@ based on annual mean air temperature and annual precipitation.
 </div>
 
 Source Code:
-[“/DataInventory/src/3\_BiomeMap.R”](%22./DataInventory/src/3_BiomeMap.R%22)
-\*\*\*
+[/DataInventory/src/3\_BiomeMap.R](./DataInventory/src/3_BiomeMap.R)
+
+------------------------------------------------------------------------
