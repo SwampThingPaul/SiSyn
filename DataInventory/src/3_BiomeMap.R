@@ -224,7 +224,7 @@ site.all=rbind(site.all,sage.site)
 # UMR
 umr.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_UMR.xlsx"),sheet=4,startRow=4,na.strings = "NA")
 umr.basin=umr.basin[,basin.vars]
-umr.basin$LTER="WMR"
+umr.basin$LTER="UMR"
 
 umr.site=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_UMR.xlsx"),sheet=5,startRow=1,na.strings = "NA")
 umr.site$LTER="UMR"
@@ -327,7 +327,7 @@ sort.LTERs=ddply(sites@data,"LTER",summarise,mean.lat=mean(Latitude))
 sort.LTERs=sort.LTERs[order(-sort.LTERs$mean.lat),]
 sort.LTERs$LTER=factor(sort.LTERs$LTER,levels=sort.LTERs$LTER)
 sort.LTERs=c("ARC", "GRO", "BNZ", "AND", "HBR", 
-             "LMP", "PIE", "Ipswich", "WMR", "NWT", "BcCZO", "Sagehen", "KNZ", 
+             "LMP", "PIE", "Ipswich", "UMR", "NWT", "BcCZO", "Sagehen", "KNZ", 
              "Coal Crk", "KRR", "LUQ", "Tanguro", "MCM")
 
 sites$LTER=as.factor(sites$LTER)
@@ -394,3 +394,186 @@ legend(0.1,0.5,legend=biome.lab,
        pt.cex=1.5,ncol=1,cex=0.75,bty="n",y.intersp=1.5,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
        title.adj=0,title = " Biome")
 dev.off()
+
+
+
+# WRTDS -------------------------------------------------------------------
+## WRTDS percent change files from KJ
+
+pctchge=read.csv(paste0(data.path,"WRTDS/WRTDS_pctchange_map.csv"))
+unique(pctchge$likeC)
+range(pctchge$pConc,na.rm=T)
+
+unique(pctchge$LTER)
+# Edits to fit site file
+# subset(pctchge,SITE=="Toolik Inlet")
+# pctchge[pctchge$SITE=='Toolik Inlet',]$LTER="ARC"
+## Removed Toolik Inlet due to NAs
+pctchge=subset(pctchge,SITE!="Toolik Inlet")
+
+subset(pctchge,LTER=="NWT")
+pctchge[pctchge$SITE=='ALBION',]$SITE="Albion"
+pctchge[pctchge$SITE=='MARTINELLI',]$SITE="Martinelli"
+pctchge[pctchge$SITE=='SADDLE STREAM 007',]$SITE="Saddle"
+
+subset(pctchge,LTER=="GRO")
+pctchge[pctchge$SITE=='Ob',]$SITE="Ob'"
+
+subset(pctchge,LTER=="Sagehen")
+pctchge[pctchge$SITE=='Sagehen',]$SITE="Sagehen Creek"
+
+# library(ceramic)
+# source("./DataInventory/src/0_ceramictoken.R")
+# public.token
+# Sys.setenv(MAPBOX_API_KEY=public.token)
+# roi=raster::extent(subset(tmp,is.na(pConc)==F))
+# im <- cc_location(roi,zoom=12)
+# im=projectRaster(im,crs=wgs84)
+# setValues(im,scales::rescale(values(im), c(0,255)))
+# plotRGB(im)
+
+# Polar plots
+# https://khufkens.com/2017/01/18/r-polar-plots/
+library(maps)
+maps2sp = function(xlim, ylim, l.out = 100, clip = TRUE) {
+  stopifnot(require(maps))
+  m = map(xlim = xlim, ylim = ylim, plot = FALSE, fill = TRUE)
+  p = rbind(cbind(xlim[1], seq(ylim[1],ylim[2],length.out = l.out)),
+            cbind(seq(xlim[1],xlim[2],length.out = l.out),ylim[2]),
+            cbind(xlim[2],seq(ylim[2],ylim[1],length.out = l.out)),
+            cbind(seq(xlim[2],xlim[1],length.out = l.out),ylim[1]))
+  LL = CRS("+init=epsg:4326")
+  bb = SpatialPolygons(list(Polygons(list(Polygon(list(p))),"bb")), proj4string = LL)
+  IDs <- sapply(strsplit(m$names, ":"), function(x) x[1])
+  stopifnot(require(maptools))
+  m <- map2SpatialPolygons(m, IDs=IDs, proj4string = LL)
+  if (!clip)
+    m
+  else {
+    stopifnot(require(rgeos))
+    gIntersection(m, bb) # cut map slice in WGS84
+  }
+}
+pol.clip=function(dat,xlim, ylim,l.out = 100,CRS.in = CRS("+init=epsg:4326")){
+  m = map(xlim = xlim, ylim = ylim, plot = FALSE, fill = TRUE)
+  p = rbind(cbind(xlim[1], seq(ylim[1],ylim[2],length.out = l.out)),
+            cbind(seq(xlim[1],xlim[2],length.out = l.out),ylim[2]),
+            cbind(xlim[2],seq(ylim[2],ylim[1],length.out = l.out)),
+            cbind(seq(xlim[2],xlim[1],length.out = l.out),ylim[1]))
+  LL = CRS.in
+  bb = SpatialPolygons(list(Polygons(list(Polygon(list(p))),"bb")), proj4string = LL)
+  gIntersection(dat, bb)
+}
+
+Npolar = CRS("+init=epsg:3995")
+Spolar = CRS("+init=epsg:3031")
+
+ice.shelf=readOGR("C:/Julian_LaCie/_GISData/NaturalEarthData/50m","ne_50m_antarctic_ice_shelves_polys")
+glac.dat=readOGR("C:/Julian_LaCie/_GISData/NaturalEarthData/50m","ne_50m_glaciated_areas")
+lake.dat=readOGR("C:/Julian_LaCie/_GISData/NaturalEarthData/50m","ne_50m_lakes")
+rivers.dat=readOGR("C:/Julian_LaCie/_GISData/NaturalEarthData/10m","ne_10m_rivers_lake_centerlines")
+world <- ne_countries(scale = 50, returnclass = "sp")
+
+canal=spTransform(readOGR("C:/Julian_LaCie/_GISData/SFER_GIS_Geodatabase.gdb","SFWMD_Canals"),wgs84)
+
+cols=wesanderson::wes_palette("Zissou1",length(unique(pctchge$LTER)),"continuous")
+sites2=subset(sites,LTER%in%unique(pctchge$LTER))
+sites2$Site.Stream=with(sites2@data,ifelse(LTER=="UMR",Unique.ID,Site.Stream))
+
+sort.LTERs=sort.LTERs[sort.LTERs%in%unique(pctchge$LTER)]
+sites2$LTER=factor(sites2$LTER,levels=sort.LTERs)
+
+site.cols=cols[sites2$LTER]
+
+bks=c(-50,-40,-30,-20,-10,0,25,50,100,200,300) # seq(-50,300,10)
+bks.int=findInterval(pctchge$pConc,bks)
+pal=colorRampPalette(c("blue","grey","red"))
+cols2=adjustcolor(pal(length(bks)),0.75)
+pctchge$pConc.cols=cols2[bks.int]#viridis::magma(length(bks))[bks.int]
+
+# png(filename=paste0(plot.path,"WRTDS_PchangeMap.png"),width=8,height=5,units="in",res=200,type="windows",bg="white")
+par(family="serif",oma=c(0.25,0.25,0.25,0.25),mar=c(0.1,0.1,0.1,0.1),xpd=F)
+# layout(matrix(c(1:2,2:5,rep(7,6)),2,6,byrow=T))
+layout(matrix(c(1:6,rep(7,6),8:13),3,6,byrow=T),heights=c(0.8,1,0.8))
+
+for(i in 1:6){
+tmp=merge(subset(sites2,LTER==sort.LTERs[i]),
+          subset(pctchge,LTER==sort.LTERs[i]),by.x="Site.Stream",by.y="SITE",all.x=T)
+if(sort.LTERs[i]=="GRO"){
+m=maps2sp(xlim=c(-180,180),ylim=c(60,120))
+pts=SpatialPoints(rbind(c(-180,-70),c(0,-70),c(180,-89),c(180,-70)), CRS("+init=epsg:4326"))
+gl = gridlines(m, easts = seq(-180,180,20))
+plot(spTransform(m,Npolar),lwd=0.01,col="grey90",border="grey",bg="skyblue")
+plot(spTransform(pol.clip(glac.dat,xlim=c(-180,180),ylim=c(60,120)),Npolar),col="white",border=NA,add=T)
+plot(spTransform(pol.clip(lake.dat,xlim=c(-180,180),ylim=c(60,120)),Npolar),col="lightblue",border="dodgerblue1",lwd=0.1,add=T)
+plot(spTransform(pol.clip(rivers.dat,xlim=c(-180,180),ylim=c(60,120)),Npolar),col="skyblue",add=T,lwd=0.8)
+plot(spTransform(ice.shelf,Npolar),col="skyblue",border="blue",add=T,lty=2)
+gl.polar = spTransform(gl, Npolar)
+lines(gl.polar,lty=2,lwd=0.25)
+plot(spTransform(tmp,Npolar),pch=21,bg=subset(tmp,is.na(pConc)==F)$pConc.cols,cex=1.5,lwd=0.1,add=T)
+mtext(side=1,adj=0,line=-1.25,sort.LTERs[i],cex=0.8)
+box(lwd=1)
+# }else if(sort.LTERs[i]=="MCM"){
+#   m=maps2sp(xlim=c(-180,180), ylim = c(-90,-70), clip = FALSE)
+#   plot(spTransform(m,Spolar),col="grey")
+#   plot(spTransform(tmp,Spolar),pch=21,bg=subset(tmp,is.na(pConc)==F)$pConc.cols,cex=1.25,add=T)
+#   mtext(side=3,adj=0,line=-1.25,sort.LTERs[i])
+# }
+}else{
+bbox.lims=bbox(gBuffer(tmp,width=0.05))
+plot(world,col="grey90",border="grey",ylim=bbox.lims[c(2,4)],xlim=bbox.lims[c(1,3)],lwd=0.01,bg="skyblue")
+plot(glac.dat,col="white",border=NA,add=T)
+if(sort.LTERs[i]!="MCM"){
+plot(lake.dat,col="lightblue",border="dodgerblue1",add=T,lwd=0.75)
+plot(rivers.dat,col="skyblue",add=T)
+plot(ice.shelf,col="skyblue",border="blue",add=T,lty=2)
+}
+plot(tmp,pch=21,bg=adjustcolor("grey",0.5),col=adjustcolor("white",0.5),lwd=0.1,cex=0.8,add=T)
+plot(subset(tmp,is.na(pConc)==F),pch=21,bg=subset(tmp,is.na(pConc)==F)$pConc.cols,cex=1.5,lwd=0.1,add=T)
+mtext(side=1,adj=0,line=-1.25,sort.LTERs[i],cex=0.8)
+box(lwd=1)
+}
+}
+
+bbox.lims=bbox(sites2)
+plot(world,col="grey90",border="grey",ylim=bbox.lims[c(2,4)],xlim=bbox.lims[c(1,3)],lwd=0.01)
+plot(sites2,add=T,pch=21,bg=site.cols,col="white",lwd=0.1,cex=1.25)
+box(lwd=1)
+mapmisc::scaleBar(wgs84,"bottom",bty="n",cex=1,seg.len=4,outer=F)
+legend("bottomleft",legend=sort.LTERs,
+       pt.bg=cols,pch=21,lty=0,lwd=0.1,col="white",
+       pt.cex=1.5,ncol=2,cex=0.75,bty="n",y.intersp=1,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
+       title.adj=0,title = " LTER")
+
+for(i in 7:11){
+  tmp=merge(subset(sites2,LTER==sort.LTERs[i]),
+            subset(pctchge,LTER==sort.LTERs[i]),by.x="Site.Stream",by.y="SITE",all.x=T)
+  
+    bbox.lims=bbox(gBuffer(tmp,width=0.05))
+    plot(world,col="grey90",border="grey",ylim=bbox.lims[c(2,4)],xlim=bbox.lims[c(1,3)],lwd=0.01,bg="skyblue")
+    plot(glac.dat,col="white",border=NA,add=T)
+    if(sort.LTERs[i]!="MCM"){
+      plot(lake.dat,col="lightblue",border="dodgerblue1",add=T,lwd=0.75)
+      plot(rivers.dat,col="skyblue",add=T)
+      plot(ice.shelf,col="skyblue",border="blue",add=T,lty=2)
+      # for SF
+      plot(canal,col="skyblue",add=T)
+      
+    }
+    plot(tmp,pch=21,bg=adjustcolor("grey",0.5),col=adjustcolor("white",0.5),lwd=0.1,cex=0.8,add=T)
+    plot(subset(tmp,is.na(pConc)==F),pch=21,bg=subset(tmp,is.na(pConc)==F)$pConc.cols,cex=1.5,lwd=0.1,add=T)
+    mtext(side=1,adj=0,line=-1.25,sort.LTERs[i],cex=0.8)
+    box(lwd=1)
+}
+
+plot(0:1,0:1,ann=F,axes=F,type="n")
+
+int.bks.vals=bks
+labs=c(paste0("< ",int.bks.vals[2]),paste(int.bks.vals[2:9],int.bks.vals[3:10],sep=" - "),paste(paste0(">",int.bks.vals[11])))
+n.bks=length(bks)-1
+bx.val= seq(0.1,0.8,(0.8-0.1)/n.bks)
+rect(0.15,bx.val[1:n.bks],0.25,bx.val[2:(n.bks+1)],col=rev(cols2),lty=0)
+text(x=0.25, y = bx.val[2:(n.bks+1)]-c(mean(diff(bx.val[2:(n.bks+1)]))/2), labels = rev(labs),cex=0.85,adj=0,pos=4)
+text(x=0.15,y=0.95,"Percent Change\nConcentration",adj=0,cex=1)
+dev.off()
+
