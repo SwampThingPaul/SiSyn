@@ -314,6 +314,7 @@ site.climate$mean.temp=with(site.climate,ifelse(LTER=="Ipswich",10,mean.temp))# 
 site.climate$mean.precip=with(site.climate,ifelse(LTER=="Ipswich",1188,mean.precip))# based on notes, Near PIE
 site.climate$LTER=with(site.climate,ifelse(LTER=="DOE SFA East River","Coal Crk",LTER))
 site.climate$LTER=as.factor(site.climate$LTER)
+# write.csv(site.climate,paste0(export.path,"site_climate.csv"),row.names = F)
 
 site.climate$mean.precip=site.climate$mean.precip*0.1
 
