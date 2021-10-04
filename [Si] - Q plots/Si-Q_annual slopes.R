@@ -63,7 +63,54 @@ annual_site_slopes$sig = ifelse(annual_site_slopes$pvalue<=0.05, "sig","not sig"
 
 #plot slopes by year, facet by site
 library(ggplot2)
-ggplot(annual_site_slopes, aes(x=year, y=slope, color=sig))+
+ggplot(annual_site_slopes, aes(x=year, y=slope))+
   geom_abline(intercept=0,slope=0, lty="dashed", color="black")+
+  geom_point(aes(color=sig))+
+  geom_smooth(color="black")+
+  facet_wrap(~site.name, scales="free")
+
+#merge site stats with lm output; write to csv
+annual_site_slopes_stats = merge(annual_site_slopes, Si_Q_WRTDS_sites_stats)
+
+#plot by LTER?
+ggplot(annual_site_slopes_stats, aes(x=year, y=slope))+
+  geom_abline(intercept=0,slope=0, lty="dashed", color="black")+
+  geom_point(aes(shape=sig))+
+  geom_smooth(aes(color=site.name),se=F)+
+  facet_wrap(~LTER, scales="free")+
+  theme(legend.position="none")
+#aspect ratio 950x700
+
+#stats on slope trends
+library(mblm) #median-based linear model? Suggested by Paul
+summary(mblm(slope~year, annual_site_slopes_stats[annual_site_slopes_stats$site.name=="ALBION",]))
+as.numeric(mblm(slope~year, annual_site_slopes_stats[annual_site_slopes_stats$site.name=="ALBION",])$coefficients[2]) #slope
+summary(mblm(slope~year, annual_site_slopes_stats[annual_site_slopes_stats$site.name=="ALBION",]))$coefficients[1,1] #intercept
+summary(mblm(slope~year, annual_site_slopes_stats[annual_site_slopes_stats$site.name=="ALBION",]))$coefficients[2,4] #pvalue
+
+annual_site_slopes_mblm = list()
+for (i in 1:length(site_list)){
+  annual_site_slope = subset(annual_site_slopes, annual_site_slopes$site.name==site_list[i])
+  
+  mblm_slope=as.numeric(mblm(slope~year, annual_site_slope)$coefficients[2])
+  mblm_intercept=summary(mblm(slope~year, annual_site_slope))$coefficients[1,1]
+  mblm_pvalue=summary(mblm(slope~year, annual_site_slope))$coefficients[2,4]
+  
+  d = data.frame(site.name=site_list[i],
+                 mblm_slope=mblm_slope,
+                 mblm_intercept=mblm_intercept,
+                 mblm_pvalue=mblm_pvalue)
+  
+  annual_site_slopes_mblm[[i]] = d
+}
+
+annual_site_slopes_mblm = ldply(annual_site_slopes_mblm, data.frame)
+annual_site_slopes_mblm$mblm_sig = ifelse(annual_site_slopes_mblm$mblm_pvalue<=0.05, "sig","not sig")
+
+annual_site_slopes_mblm_stats = merge(annual_site_slopes_stats, annual_site_slopes_mblm,all=T)
+
+#plot mblm slopes by site/LTER
+ggplot(annual_site_slopes_mblm_stats, aes(x=year, y=slope))+
   geom_point()+
+  geom_abline(aes(slope=mblm_slope, intercept=mblm_intercept, color=mblm_sig))+
   facet_wrap(~site.name, scales="free")
