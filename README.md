@@ -98,10 +98,20 @@ Source Code:
 
 <div class="figure" style="text-align: center">
 
-<img src="./DataInventory/Plots/WRTDS_PchangeMap_Conc.png" alt="Percent Change of Si Concentration for each LTER site with sufficient data." width="1600" />
+<img src="./DataInventory/Plots/WRTDS_PchangeMap_Conc.png" alt="Percent Change of Si concentration for each LTER site with sufficient data." width="1600" />
 <p class="caption">
-Percent Change of Si Concentration for each LTER site with sufficient
+Percent Change of Si concentration for each LTER site with sufficient
 data.
+</p>
+
+</div>
+
+<div class="figure" style="text-align: center">
+
+<img src="./DataInventory/Plots/WRTDS_PchangeMap_Conc_overall.png" alt="Overall Map (all sites) percent Change of Si concentration for each LTER site with sufficient data." width="1600" />
+<p class="caption">
+Overall Map (all sites) percent Change of Si concentration for each LTER
+site with sufficient data.
 </p>
 
 </div>
@@ -113,6 +123,16 @@ data.
 <img src="./DataInventory/Plots/WRTDS_PchangeMap_Flux.png" alt="Percent Change of Si flux for each LTER site with sufficient data." width="1600" />
 <p class="caption">
 Percent Change of Si flux for each LTER site with sufficient data.
+</p>
+
+</div>
+
+<div class="figure" style="text-align: center">
+
+<img src="./DataInventory/Plots/WRTDS_PchangeMap_Flux_overall.png" alt="Overall Map (all sites) percent Change of Si flux for each LTER site with sufficient data." width="1600" />
+<p class="caption">
+Overall Map (all sites) percent Change of Si flux for each LTER site
+with sufficient data.
 </p>
 
 </div>

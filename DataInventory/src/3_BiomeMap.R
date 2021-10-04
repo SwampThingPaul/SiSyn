@@ -679,6 +679,36 @@ for(i in 6:10){
 }
 dev.off()
 
+# png(filename=paste0(plot.path,"WRTDS_PchangeMap_Conc_overall.png"),width=8,height=2.5,units="in",res=200,type="windows",bg="white")
+par(family="serif",oma=c(0.25,0.25,0.25,0.25),mar=c(0.1,0.1,0.1,0.1),xpd=F)
+# layout(matrix(c(1:2,2:5,rep(7,6)),2,6,byrow=T))
+layout(matrix(1:2,1,2,byrow=T),widths = c(1.5,0.75))
+
+tmp=merge(sites2,pctchge,by.x="Site.Stream",by.y="SITE",all.x=T)
+tmp=merge(tmp,WBT,"likeC",all.x=T)
+
+bbox.lims=bbox(sites2)
+plot(world,col="grey90",border="grey",ylim=bbox.lims[c(2,4)],xlim=bbox.lims[c(1,3)],lwd=0.01)
+plot(spTransform(subset(tmp,is.na(pConc)==F),NAD83),pch=21,
+     bg=adjustcolor(as.character(subset(tmp,is.na(pConc)==F)$WBT.col),0.25),
+     cex=subset(tmp,is.na(pConc)==F)$pConc.size/2,lwd=0.1,add=T)
+box(lwd=1)
+mapmisc::scaleBar(wgs84,"bottom",bty="n",cex=0.8,seg.len=4,outer=F)
+
+# Legend
+plot(0:1,0:1,ann=F,axes=F,type="n")
+int.bks.vals=bks
+labs=c(paste0("< ",int.bks.vals[2]),paste(int.bks.vals[2:3],int.bks.vals[3:4],sep=" - "),paste(paste0(">",int.bks.vals[5])))
+legend(0.25,0.5,legend=labs,
+       pt.bg="grey",pch=21,lty=0,lwd=0.1,col="black",
+       pt.cex=bks.size/2,ncol=1,cex=0.75,bty="n",y.intersp=1.5,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
+       title.adj=0,title = "% Change\nSi Concenctration")
+legend(0.75,0.5,legend=c("Highly Likely","Very Likely","Likely","Unlikely"),
+       pt.bg=pal(4),pch=21,lty=0,lwd=0.1,col="black",
+       pt.cex=2,ncol=1,cex=0.75,bty="n",y.intersp=1.5,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
+       title.adj=0,title = "Likelihood of\nIncreasing Trend")
+dev.off()
+
 subset(pctchge,LTER=="ARC")
 
 range(pctchge$pFlux)
@@ -785,6 +815,36 @@ for(i in 6:10){
   box(lwd=1)
   mapmisc::scaleBar(wgs84,"bottomright",bty="n",cex=0.8,seg.len=4,outer=F)
 }
+dev.off()
+
+# png(filename=paste0(plot.path,"WRTDS_PchangeMap_Flux_overall.png"),width=8,height=2.5,units="in",res=200,type="windows",bg="white")
+par(family="serif",oma=c(0.25,0.25,0.25,0.25),mar=c(0.1,0.1,0.1,0.1),xpd=F)
+# layout(matrix(c(1:2,2:5,rep(7,6)),2,6,byrow=T))
+layout(matrix(1:2,1,2,byrow=T),widths = c(1.5,0.75))
+
+tmp=merge(sites2,pctchge,by.x="Site.Stream",by.y="SITE",all.x=T)
+tmp=merge(tmp,WBT,"likeF",all.x=T)
+
+bbox.lims=bbox(sites2)
+plot(world,col="grey90",border="grey",ylim=bbox.lims[c(2,4)],xlim=bbox.lims[c(1,3)],lwd=0.01)
+plot(spTransform(subset(tmp,is.na(pFlux)==F),NAD83),pch=21,
+     bg=adjustcolor(as.character(subset(tmp,is.na(pFlux)==F)$WBT.col),0.25),
+     cex=subset(tmp,is.na(pFlux)==F)$pFlux.size/2,lwd=0.1,add=T)
+box(lwd=1)
+mapmisc::scaleBar(wgs84,"bottom",bty="n",cex=0.8,seg.len=4,outer=F)
+
+# Legend
+plot(0:1,0:1,ann=F,axes=F,type="n")
+int.bks.vals=bks
+labs=c(paste0("< ",int.bks.vals[2]),paste(int.bks.vals[2:3],int.bks.vals[3:4],sep=" - "),paste(paste0(">",int.bks.vals[5])))
+legend(0.25,0.5,legend=labs,
+       pt.bg="grey",pch=21,lty=0,lwd=0.1,col="black",
+       pt.cex=bks.size/2,ncol=1,cex=0.75,bty="n",y.intersp=1.5,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
+       title.adj=0,title = "% Change\nSi Flux")
+legend(0.75,0.5,legend=c("Highly Likely","Very Likely","Likely","Unlikely"),
+       pt.bg=pal(4),pch=21,lty=0,lwd=0.1,col="black",
+       pt.cex=2,ncol=1,cex=0.75,bty="n",y.intersp=1.5,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
+       title.adj=0,title = "Likelihood of\nIncreasing Trend")
 dev.off()
 
 
