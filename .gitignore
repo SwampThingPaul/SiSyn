@@ -44,3 +44,5 @@ vignettes/*.pdf
 /DataInventory/README.RMD
 
 /HJA_WRTDS/README.RMD
+
+/DataInventory/src/0_ceramictoken.R

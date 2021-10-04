@@ -75,8 +75,49 @@ Data Inventory \|
 [Link](https://swampthingecology.org/SiSyn/DataInventory/SiSyn_DataInventory.html)
 \|
 
-Concentration Discharge Evalution \|
+Concentration Discharge Evaluation \|
 [Link](https://swampthingecology.org/SiSyn/ConcentrationDischarge/CQFunction.html)
 \|
+
+**Biome Map** \|
+
+<div class="figure" style="text-align: center">
+
+<img src="./DataInventory/Plots/Map_biome_all.png" alt="Map of 'LTER' sites and where they align on the Whittaker biome 'map' based on annual mean air temperature and annual precipitation." width="1050" />
+<p class="caption">
+Map of ‘LTER’ sites and where they align on the Whittaker biome ‘map’
+based on annual mean air temperature and annual precipitation.
+</p>
+
+</div>
+
+Source Code:
+[/DataInventory/src/3\_BiomeMap.R](./DataInventory/src/3_BiomeMap.R)
+
+**WRTDS Percent Change Map** \|
+
+<div class="figure" style="text-align: center">
+
+<img src="./DataInventory/Plots/WRTDS_PchangeMap_Conc.png" alt="Percent Change of Si Concentration for each LTER site with sufficient data." width="1600" />
+<p class="caption">
+Percent Change of Si Concentration for each LTER site with sufficient
+data.
+</p>
+
+</div>
+
+<br>
+
+<div class="figure" style="text-align: center">
+
+<img src="./DataInventory/Plots/WRTDS_PchangeMap_Flux.png" alt="Percent Change of Si flux for each LTER site with sufficient data." width="1600" />
+<p class="caption">
+Percent Change of Si flux for each LTER site with sufficient data.
+</p>
+
+</div>
+
+Source Code:
+[/DataInventory/src/3\_BiomeMap.R](./DataInventory/src/3_BiomeMap.R)
 
 ------------------------------------------------------------------------
