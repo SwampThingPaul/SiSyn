@@ -111,6 +111,6 @@ annual_site_slopes_mblm_stats = merge(annual_site_slopes_stats, annual_site_slop
 
 #plot mblm slopes by site/LTER
 ggplot(annual_site_slopes_mblm_stats, aes(x=year, y=slope))+
-  geom_point()+
-  geom_abline(aes(slope=mblm_slope, intercept=mblm_intercept, color=mblm_sig))+
+  geom_point(aes(color=LTER))+
+  geom_abline(aes(slope=mblm_slope, intercept=mblm_intercept, lty=mblm_sig))+
   facet_wrap(~site.name, scales="free")
