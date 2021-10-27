@@ -75,7 +75,7 @@ annual_site_slopes_stats = merge(annual_site_slopes, Si_Q_WRTDS_sites_stats)
 #plot by LTER?
 ggplot(annual_site_slopes_stats, aes(x=year, y=slope))+
   geom_abline(intercept=0,slope=0, lty="dashed", color="black")+
-  geom_point(aes(shape=sig))+
+  #geom_point(aes(shape=sig))+
   geom_smooth(aes(color=site.name),se=F)+
   facet_wrap(~LTER, scales="free")+
   theme(legend.position="none")
