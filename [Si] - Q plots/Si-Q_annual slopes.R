@@ -88,29 +88,127 @@ as.numeric(mblm(slope~year, annual_site_slopes_stats[annual_site_slopes_stats$si
 summary(mblm(slope~year, annual_site_slopes_stats[annual_site_slopes_stats$site.name=="ALBION",]))$coefficients[1,1] #intercept
 summary(mblm(slope~year, annual_site_slopes_stats[annual_site_slopes_stats$site.name=="ALBION",]))$coefficients[2,4] #pvalue
 
+#change insignificant annual slopes to 0
+annual_site_slopes$sig_slopes = ifelse(annual_site_slopes$sig=="sig",annual_site_slopes$slope,0)
+
+#loop through annual slopes, run mblm for long term change over time
 annual_site_slopes_mblm = list()
 for (i in 1:length(site_list)){
-  annual_site_slope = subset(annual_site_slopes, annual_site_slopes$site.name==site_list[i])
-  
-  mblm_slope=as.numeric(mblm(slope~year, annual_site_slope)$coefficients[2])
-  mblm_intercept=summary(mblm(slope~year, annual_site_slope))$coefficients[1,1]
-  mblm_pvalue=summary(mblm(slope~year, annual_site_slope))$coefficients[2,4]
-  
-  d = data.frame(site.name=site_list[i],
-                 mblm_slope=mblm_slope,
-                 mblm_intercept=mblm_intercept,
-                 mblm_pvalue=mblm_pvalue)
-  
-  annual_site_slopes_mblm[[i]] = d
+  tryCatch({
+    annual_site_slope = subset(annual_site_slopes, annual_site_slopes$site.name==site_list[i])
+    
+    mblm_slope=as.numeric(mblm(sig_slopes~year, annual_site_slope)$coefficients[2])
+    mblm_intercept=summary(mblm(sig_slopes~year, annual_site_slope))$coefficients[1,1]
+    mblm_pvalue=summary(mblm(sig_slopes~year, annual_site_slope))$coefficients[2,4]
+  }, error=function(e){cat("ERROR: ",conditionMessage(e),"\n")})
+    d = data.frame(site.name=site_list[i],
+                   mblm_slope=mblm_slope,
+                   mblm_intercept=mblm_intercept,
+                   mblm_pvalue=mblm_pvalue)
+    
+    annual_site_slopes_mblm[[i]] = d
 }
 
 annual_site_slopes_mblm = ldply(annual_site_slopes_mblm, data.frame)
-annual_site_slopes_mblm$mblm_sig = ifelse(annual_site_slopes_mblm$mblm_pvalue<=0.05, "sig","not sig")
+annual_site_slopes_mblm = merge(annual_site_slopes_mblm, LTERsitelist, all=T)
+annual_site_slopes_mblm$mblm_sig = ifelse(annual_site_slopes_mblm$mblm_pvalue<=0.055, "sig","not sig")
+write.csv(annual_site_slopes_mblm, file="LTERsites_CQmblm.csv")
 
+annual_site_slopes_stats$sig_slopes = ifelse(annual_site_slopes_stats$sig=="sig",annual_site_slopes_stats$slope,0)
 annual_site_slopes_mblm_stats = merge(annual_site_slopes_stats, annual_site_slopes_mblm,all=T)
 
 #plot mblm slopes by site/LTER
-ggplot(annual_site_slopes_mblm_stats, aes(x=year, y=slope))+
-  geom_point(aes(color=LTER))+
-  geom_abline(aes(slope=mblm_slope, intercept=mblm_intercept, lty=mblm_sig))+
+annual_site_slopes_mblm_stats = na.omit(annual_site_slopes_mblm_stats)
+annual_site_slopes_mblm_stats$year = as.Date(annual_site_slopes_mblm_stats$year, format="%Y")
+
+ggplot(annual_site_slopes_mblm_stats, aes(x=year, y=sig_slopes))+
+  geom_abline(aes(slope=mblm_slope, intercept=mblm_intercept, color=mblm_sig))+
+  scale_color_manual(values=c("white","black"))+
+  geom_point(aes(fill=sig), pch=21)+
+  scale_fill_manual(values=c("white","black"))+
+  labs(y="Slope")+
+  theme_bw(base_size=12)+
+  theme(axis.title.x=element_blank(),
+        legend.position="none")+
   facet_wrap(~site.name, scales="free")
+#aspect ratio 1750x1000
+
+#subset sites with significant mblm slopes
+sig_mblm = subset(annual_site_slopes_mblm_stats, annual_site_slopes_mblm_stats$mblm_sig=="sig")
+
+#create time series plot 
+ggplot(sig_mblm, aes(x=year, y=sig_slopes))+
+  geom_abline(aes(slope=mblm_slope, intercept=mblm_intercept))+
+  geom_point(aes(fill=sig), pch=21)+
+  scale_fill_manual(values=c("white","black"))+
+  labs(y="Slope")+
+  theme_bw(base_size=12)+
+  theme(axis.title.x=element_blank(),
+        legend.position="none")+
+  facet_wrap(~site.name, scales="free")
+
+#group by LTER
+NWT_mblm = 
+  ggplot(sig_mblm[sig_mblm$LTER=="NWT",], aes(x=year, y=sig_slopes))+
+  geom_abline(aes(slope=mblm_slope, intercept=mblm_intercept))+
+  geom_point(aes(fill=sig), pch=21)+
+  scale_fill_manual(values=c("white","black"))+
+  labs(y="Slope")+
+  theme_bw(base_size=12)+
+  theme(axis.title.x=element_blank(),
+        legend.position="none")+
+  facet_wrap(~site.name, scales="free")
+#trend goes across all insignificant slope values
+MCM_mblm = 
+  ggplot(sig_mblm[sig_mblm$LTER=="MCM",], aes(x=year, y=sig_slopes))+
+  geom_abline(aes(slope=mblm_slope, intercept=mblm_intercept))+
+  geom_point(aes(fill=sig), pch=21)+
+  scale_fill_manual(values=c("white","black"))+
+  labs(y="Slope",title="MCM LTER")+
+  theme_bw(base_size=12)+
+  theme(axis.title.x=element_blank(),
+        legend.position="none")+
+  facet_wrap(~site.name, scales="free")
+
+AND_mblm = 
+  ggplot(sig_mblm[sig_mblm$LTER=="AND",], aes(x=year, y=sig_slopes))+
+  geom_abline(aes(slope=mblm_slope, intercept=mblm_intercept))+
+  geom_point(aes(fill=sig), pch=21)+
+  scale_fill_manual(values=c("white","black"))+
+  labs(y="Slope",title="AND LTER")+
+  theme_bw(base_size=12)+
+  theme(axis.title.x=element_blank(),
+        legend.position="none")+
+  facet_wrap(~site.name, scales="free")
+
+LUQ_mblm = 
+  ggplot(sig_mblm[sig_mblm$LTER=="LUQ",], aes(x=year, y=sig_slopes))+
+  geom_abline(aes(slope=mblm_slope, intercept=mblm_intercept))+
+  geom_point(aes(fill=sig), pch=21)+
+  scale_fill_manual(values=c("white","black"))+
+  labs(y="Slope",title="LUQ LTER")+
+  theme_bw(base_size=12)+
+  theme(axis.title.x=element_blank(),
+        legend.position="none")+
+  facet_wrap(~site.name, scales="free")
+
+HBR_mblm = 
+  ggplot(sig_mblm[sig_mblm$LTER=="HBR",], aes(x=year, y=sig_slopes))+
+  geom_abline(aes(slope=mblm_slope, intercept=mblm_intercept))+
+  geom_point(aes(fill=sig), pch=21)+
+  scale_fill_manual(values=c("white","black"))+
+  labs(y="Slope", title="HBR LTER")+
+  theme_bw(base_size=12)+
+  theme(axis.title.x=element_blank(),
+        legend.position="none")+
+  facet_wrap(~site.name, scales="free")
+
+library(patchwork)
+(MCM_mblm + HBR_mblm) / (LUQ_mblm + AND_mblm) + plot_layout(heights=c(1,2))
+#create boxplots for annual slopes by site - facet by LTER?
+ggplot(sig_mblm, aes(y=site.name, x=sig_slopes))+
+  geom_boxplot()+
+  facet_wrap(~LTER,scales="free")
+
+#create same as above, but as forest plot
+
