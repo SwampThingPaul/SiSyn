@@ -105,7 +105,7 @@ tang.unit$data.set="tanguro"
 HBR.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_HBR.xlsx"),sheet=2,startRow=1,na.strings = "NA")
 HBR.unit$data.set="HBR"
 
-gro.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_GRO.xlsx"),sheet=2,startRow=1,na.strings = "NA")
+gro.unit=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_GRO_090321.xlsx"),sheet=2,startRow=1,na.strings = "NA")
 gro.unit=gro.unit[,1:2]
 gro.unit$data.set="GRO"
 gro.unit[gro.unit$Measurement=="Alkalinity","Unit"]="mg CaCO3/L"
@@ -556,6 +556,9 @@ tango.dat.melt$value=with(tango.dat.melt, ifelse(value<0,abs(value),value))
 tango.dat.melt$value=with(tango.dat.melt,value*CF)
 tango.dat.melt$LTER="Tanguro(Jankowski)"
 
+umr.basin=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_Tanguro.xlsx"),sheet=4,startRow=4,na.strings = "NA")
+umr.basin=umr.basin[,basin.vars]
+
 # HBR
 hbr.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_HBR.xlsx"),sheet=1,startRow=2,na.strings = "NA")
 hbr.dat$Sampling.Date=convertToDate(hbr.dat$Sampling.Date)
@@ -575,7 +578,7 @@ hbr.dat.melt$value=with(hbr.dat.melt,value*CF)
 hbr.dat.melt$LTER="HBR"
 
 # GRO
-GRO.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_GRO.xlsx"),sheet=1,startRow=2,na.strings = "NA")
+GRO.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_GRO_090321.xlsx"),sheet=1,startRow=2,na.strings = "NA")
 GRO.dat$Sampling.Date=convertToDate(GRO.dat$Sampling.Date)
 names(GRO.dat)
 names(hbr.dat)%in%names(GRO.dat)
@@ -618,6 +621,7 @@ master.dat=subset(master.dat,is.na(value)==F)
 subset(master.dat, value==0)
 
 summary(master.dat)
+subset(master.dat, value<0)
 # write.csv(master.dat,paste0(export.path,"20201015_masterdata.csv"),row.names=F)
 
 # Chlorophyll data should be in master data
@@ -637,6 +641,9 @@ summary(master.dat)
 
 # Added GRO
 # write.csv(master.dat,paste0(export.path,"20210804_masterdata.csv"),row.names=F)
+
+# Added GRO higher frequency data
+# write.csv(master.dat,paste0(export.path,"20210907_masterdata.csv"),row.names=F)
 
 
 boxplot(value~site,subset(master.dat,variable=="DSi"),log="y",col="grey",ylab="DSi (uM)")
