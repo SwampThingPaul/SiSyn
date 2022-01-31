@@ -73,11 +73,28 @@ remove_these<-grep("Toolik Inlet|TW Weir", WRTDS_files_List)
 
 WRTDS_files_List<-WRTDS_files_List[-c(remove_these)]
 
+#make list of only INFO files
+WRTDS_files_List_Info<-WRTDS_files_List_Info[WRTDS_files_List_Info %like% "INFO"]
+
+#make list of site names
+WRTDS_files<-sub("*_INFO.csv", "", WRTDS_files_List_Info)
+
+WRTDS_files_Q<-sub("*_Q_WRTDS.csv", "", WRTDS_files_List_Q)
+
+remove_these_files<-setdiff(WRTDS_files_Q, WRTDS_files)
+
+matches <- paste(remove_these_files,collapse="|")
+
 #make list of only Q files
 WRTDS_files_List_Q<-WRTDS_files_List[WRTDS_files_List %like% "Q_WRTDS"]
 
+WRTDS_files_List_Q<-WRTDS_files_List_Q[!WRTDS_files_List_Q %like% matches]
+
 #make list of only Si files
 WRTDS_files_List_Si<-WRTDS_files_List[WRTDS_files_List %like% "Si"]
+
+WRTDS_files_List_Si<-WRTDS_files_List_Si[!WRTDS_files_List_Si %like% matches]
+WRTDS_files_List_Si<-WRTDS_files_List_Si[!WRTDS_files_List_Si %like% ".zip"]
 
 WRTDS_files_List_Info<-list.files(path = "/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/WRTDS_Prep_Si")
 
@@ -91,14 +108,14 @@ WRTDS_files<-sub("*_INFO.csv", "", WRTDS_files_List_Info)
 month<-seq(1,12,1)
 
 #run WRTDS! output will be saved to the same file
-for (i in 30:length(WRTDS_files)) {
+for (i in 2:length(WRTDS_files)) {
   
   #read in Q file
-  Daily<-readUserDaily("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/WRTDS_Prep_Si", WRTDS_files_List_Q[i],
+  Daily<-readUserDaily("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/SiPrepWRTDS_Updated", WRTDS_files_List_Q[i],
                        qUnit = 2)
   
   #read in Si file
-  Sample<-readUserSample("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/WRTDS_Prep_Si", WRTDS_files_List_Si[i])
+  Sample<-readUserSample("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/SiPrepWRTDS_Updated", WRTDS_files_List_Si[i])
   
   #read in Info file
   Info<-readUserInfo("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/WRTDS_Prep_Si", WRTDS_files_List_Info[i])
@@ -114,13 +131,13 @@ for (i in 30:length(WRTDS_files)) {
   eList_original<-mergeReport(Info, Daily, Sample)
   
   #save workspace so it can be accessed later
-  savePath<-"/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/WRTDS_Prep_Si/workspaces/"
+  savePath<-"/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/SiPrepWRTDS_Updated/workspaces/"
   saveResults(savePath, eList_original)
   
-  for (k in 1:length(month)) {
+  #estimate continuous Si
+  eList<-modelEstimation(eList_original, minNumObs=50)
   
-    #estimate continuous Si
-    eList<-modelEstimation(eList_original, minNumObs=50)
+  for (k in 1:length(month)) {
     
     # For Sagehen Site
     #eList <- blankTime(eList, startBlank = "1996-01-01", endBlank = "2001-01-01")
@@ -129,7 +146,7 @@ for (i in 30:length(WRTDS_files)) {
     eList <- setPA(eList, paStart=month[k], paLong=1)
     
     #write output to this folder
-    setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/WRTDS_Prep_Si/monthly/")
+    setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/SiPrepWRTDS_Updated/monthly/")
     
     #extract continuous Si file from eList
     ContConc<-eList$Daily
@@ -171,7 +188,7 @@ for (i in 30:length(WRTDS_files)) {
 }
 
 #list all "ResultsTable" files from monthly results run in WRTDS
-monthly_results<-list.files(path = "/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/WRTDS_Prep_Si/monthly",
+monthly_results<-list.files(path = "/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/SiPrepWRTDS_Updated/monthly",
                             pattern = "ResultsTable_WRTDS.csv")
 
 #remove kolyma and mackenzie from WRTDS_files and monthly_results lists
@@ -234,10 +251,10 @@ for (q in 1:length(LTER_list)) {
     plot_list<-list()
     
     #create list of month names for all LTER except MCM
-    #months<-month.name
+    months<-month.name
     
     #months list for MCM sites
-    months<-c("January", "December")
+    #months<-c("January", "December")
     
     #for each month
     for (k in 1:length(site_data)) {

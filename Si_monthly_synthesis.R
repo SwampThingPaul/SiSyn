@@ -39,10 +39,10 @@ WRTDS_files_List_Info<-WRTDS_files_List[WRTDS_files_List %like% "INFO"]
 #make list of site names
 WRTDS_files<-sub("*_Q_WRTDS.csv", "", WRTDS_files_List_Q)
 
-#read in monthly results files
-setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/WRTDS_Prep_Si/monthly")
+#read in monthly results files - make sure you use updated files with proper discharge
+setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/SiPrepWRTDS_Updated/monthly")
 
-monthly_results<-list.files(path = "/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/WRTDS_Prep_Si/monthly",
+monthly_results<-list.files(path = "/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/SiPrepWRTDS_Updated/monthly",
                             pattern = "ResultsTable_WRTDS.csv")
 
 site_slope_list<-list()
@@ -72,7 +72,7 @@ for (i in 1:length(WRTDS_files)) {
     results<-read.csv(site_data[k])
     
     #perform sens slope test - MAKE SURE TO CHANGE COLUMN (after $) for conc, flux, etc
-    SS<-sens.slope(results$FN.Conc..mg.L.)
+    SS<-sens.slope(results$Flux..10.6kg.yr.)
     
     #extract p value
     pvalue<-SS$p.value
@@ -96,17 +96,23 @@ slope_df<-as.data.frame(do.call(rbind, site_slope_list))
 
 #rename columns
 rownames(slope_df)<-WRTDS_files
-colnames(slope_df)<-month.name
+colnames(slope_df)<-months
 
 #write to csv
 setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
 
-write.csv(slope_df, "Conc_Slope.csv")
+write.csv(slope_df, "Flux_Slope.csv")
 
 #read in sites list files
 setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
 
 sites<-read.csv("Data_years_streams_WRTDS.csv")
+
+slope_df<-read.csv("Flux_Slope.csv")
+
+col_order<-month.name
+
+slope_df<-slope_df[, c("X", col_order)]
 
 #add files to slope dataframe
 slope_df$Stream.Site<-WRTDS_files
@@ -114,7 +120,7 @@ slope_df$Stream.Site<-WRTDS_files
 #merge slope_df with sites list
 slope_tot<-merge(slope_df, sites, by="Stream.Site")
 
-slope_tot<-slope_tot[,c(1:14)]
+slope_tot<-slope_tot[,c(1,3:15)]
 
 #remove * from slope_tot df
 for (i in 2:13) {
@@ -139,37 +145,37 @@ slope_tot_melt$value<-ifelse(slope_tot_melt$LTER=="MCM" & slope_tot_melt$variabl
 #complete cases
 slope_tot_melt<-slope_tot_melt[complete.cases(slope_tot_melt),]
 
-jpeg("LTER_FNFlux_Slope_Final.jpeg", width = 1000, height = 700)
+jpeg("LTER_Flux_Slope_Final.jpeg", width = 1000, height = 700)
 
 #plot all slopes on log axis with free scales
 ggplot(slope_tot_melt, aes(variable, value))+geom_boxplot(aes(col=variable))+
   theme(legend.position = "none", axis.text.x = element_text(angle = 45))+
-  ggtitle("LTER FN Flux Slopes")+facet_wrap(~LTER, scales = "free_y")+xlab("Month")+ylab("Slope")
+  ggtitle("LTER Flux Slopes")+facet_wrap(~LTER, scales = "free_y")+xlab("Month")+ylab("Slope")
   
 dev.off()
 
-#these (p1-p4) all plot on non-log axes with fixed scales
-p1<-ggplot(slope_tot_melt, aes(variable, value))+geom_boxplot(aes(col=variable))+theme(legend.position = "none", 
-                                                                               axis.text.x = element_text(angle = 45))+
-  ggtitle("LTER Concentration Slopes")+facet_wrap(~LTER)
-
-p2<-ggplot(slope_tot_melt, aes(variable, value))+geom_boxplot(aes(col=variable))+theme(legend.position = "none", 
-                                                                               axis.text.x = element_text(angle = 45))+
-  ylim(c(-100,100))+ggtitle("LTER Concentration Slopes")+facet_wrap(~LTER)
-
-p3<-ggplot(slope_tot_melt, aes(variable, value))+geom_boxplot(aes(col=variable))+theme(legend.position = "none", 
-                                                                               axis.text.x = element_text(angle = 45))+
-  ylim(c(-1,1))+ggtitle("LTER Concentration Slopes")+facet_wrap(~LTER)
-
-p4<-ggplot(slope_tot_melt, aes(variable, value))+geom_boxplot(aes(col=variable))+theme(legend.position = "none", 
-                                                                               axis.text.x = element_text(angle = 45))+
-  ylim(c(-.5,.5))+ggtitle("LTER Concentration Slopes")+facet_wrap(~LTER)
-
-jpeg("LTER_Concentration_Slope_Boxplot_byLTER.jpeg", width = 1400, height = 1100)
-
-ggarrange(p1, p2, p3, p4)
-
-dev.off()
+# #these (p1-p4) all plot on non-log axes with fixed scales
+# p1<-ggplot(slope_tot_melt, aes(variable, value))+geom_boxplot(aes(col=variable))+theme(legend.position = "none", 
+#                                                                                axis.text.x = element_text(angle = 45))+
+#   ggtitle("LTER Concentration Slopes")+facet_wrap(~LTER)
+# 
+# p2<-ggplot(slope_tot_melt, aes(variable, value))+geom_boxplot(aes(col=variable))+theme(legend.position = "none", 
+#                                                                                axis.text.x = element_text(angle = 45))+
+#   ylim(c(-100,100))+ggtitle("LTER Concentration Slopes")+facet_wrap(~LTER)
+# 
+# p3<-ggplot(slope_tot_melt, aes(variable, value))+geom_boxplot(aes(col=variable))+theme(legend.position = "none", 
+#                                                                                axis.text.x = element_text(angle = 45))+
+#   ylim(c(-1,1))+ggtitle("LTER Concentration Slopes")+facet_wrap(~LTER)
+# 
+# p4<-ggplot(slope_tot_melt, aes(variable, value))+geom_boxplot(aes(col=variable))+theme(legend.position = "none", 
+#                                                                                axis.text.x = element_text(angle = 45))+
+#   ylim(c(-.5,.5))+ggtitle("LTER Concentration Slopes")+facet_wrap(~LTER)
+# 
+# jpeg("LTER_Concentration_Slope_Boxplot_byLTER.jpeg", width = 1400, height = 1100)
+# 
+# ggarrange(p1, p2, p3, p4)
+# 
+# dev.off()
 
 #these summarize positive/negative/significant slopes from slopes df
 positive<-list()
