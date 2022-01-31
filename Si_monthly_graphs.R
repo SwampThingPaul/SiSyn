@@ -63,10 +63,10 @@ for (i in 2:length(site_files)) {
 #################################################################################
 ### start here if not downloading from Google Drive
 ## set up files for loop
-setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/WRTDS_Prep_Si")
+setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/SiPrepWRTDS_Updated")
 
 #make list of all files that you just downloaded to local folder
-WRTDS_files_List<-list.files(path = "/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/WRTDS_Prep_Si")
+WRTDS_files_List<-list.files(path = "/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/SiPrepWRTDS_Updated")
 
 #remove sites with missing discharge
 remove_these<-grep("Toolik Inlet|TW Weir", WRTDS_files_List)
@@ -79,11 +79,13 @@ WRTDS_files_List_Q<-WRTDS_files_List[WRTDS_files_List %like% "Q_WRTDS"]
 #make list of only Si files
 WRTDS_files_List_Si<-WRTDS_files_List[WRTDS_files_List %like% "Si"]
 
+WRTDS_files_List_Info<-list.files(path = "/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/WRTDS_Prep_Si")
+
 #make list of only INFO files
-WRTDS_files_List_Info<-WRTDS_files_List[WRTDS_files_List %like% "INFO"]
+WRTDS_files_List_Info<-WRTDS_files_List_Info[WRTDS_files_List_Info %like% "INFO"]
 
 #make list of site names
-WRTDS_files<-sub("*_Q_WRTDS.csv", "", WRTDS_files_List_Q)
+WRTDS_files<-sub("*_INFO.csv", "", WRTDS_files_List_Info)
 
 #make list of months
 month<-seq(1,12,1)

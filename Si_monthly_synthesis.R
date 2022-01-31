@@ -1,5 +1,4 @@
 #for monthly slope tables and synthesis plots
-
 require(tidyverse)
 require(googledrive)
 require(stringr)
@@ -63,7 +62,8 @@ for (i in 1:length(WRTDS_files)) {
   
   month_slope_list<-list()
   
-  months<-month.name
+  months<-c("January","October","November","December","February","March","April","May", 
+            "June","July","August","September")
   
   #this loop is for months
   for (k in 1:length(site_data)) {
