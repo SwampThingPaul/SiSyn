@@ -315,7 +315,10 @@ site.climate$mean.precip=with(site.climate,ifelse(LTER=="Ipswich",1188,mean.prec
 site.climate$LTER=with(site.climate,ifelse(LTER=="DOE SFA East River","Coal Crk",LTER))
 site.climate$LTER=as.factor(site.climate$LTER)
 # write.csv(site.climate,paste0(export.path,"site_climate.csv"),row.names = F)
-
+## Updated file
+site.climate=read.csv(paste0(data.path,"MAP_MAT_byLTER.csv"))
+site.climate$mean.precip=with(site.climate,ifelse(LTER=="Coal Crk",1163,mean.precip))
+site.climate$LTER=as.factor(site.climate$LTER)
 site.climate$mean.precip=site.climate$mean.precip*0.1
 
 library(rnaturalearth)
@@ -365,19 +368,29 @@ biome.list=data.frame(biome_id=1:9,
                         "Temperate seasonal forest"),
                       Ricklefs.cols=c("#A09700","#DCBB50","#75A95E", "#317A22","#D16E3F","#C1E1DD","#A5C790",
                                       "#FCD57A","#97B669"))
+cols2=wesanderson::wes_palette("Zissou1",9,"continuous")
 par(mar=c(2.5,3.5,0.5,1),xpd=F)
 ylim.val=c(0,500);by.y=100;ymaj=seq(ylim.val[1],ylim.val[2],by.y);ymin=seq(ylim.val[1],ylim.val[2],by.y/2)
 xlim.val=c(-20,30);by.x=10;xmaj=seq(xlim.val[1],xlim.val[2],by.x);xmin=seq(xlim.val[1],xlim.val[2],by.x/2)
-
+txt.cex=0.75
 plot(precp_cm~temp_c,Whittaker_biomes,type="n",ylim=ylim.val,xlim=xlim.val,ann=F,axes=F)
 abline(h=ymaj,v=xmaj,lty=1,col=adjustcolor("grey",0.5))
 abline(h=ymin,v=xmin,lty=2,col=adjustcolor("grey",0.5))
 for(i in 1:9){
-  with(subset(Whittaker_biomes,biome_id==i),polygon(temp_c,precp_cm,col=adjustcolor(biome.list$Ricklefs.cols[i],0.5),lwd=0.5))
+  with(subset(Whittaker_biomes,biome_id==i),
+       polygon(temp_c,precp_cm,col=adjustcolor(biome.list$Ricklefs.cols[i],0.5),lwd=0.5))
   # with(subset(Whittaker_biomes,biome_id==i),text(mean(temp_c),mean(precp_cm),biome.list$biome[i],cex=0.75))
 }
 with(site.climate,points(mean.precip~mean.temp,pch=21,bg=site.cols.climate,cex=1.5))
-with(site.climate,text(mean.temp,mean.precip,LTER,pos=3))
+# with(site.climate,text(mean.temp,mean.precip,LTER,pos=3))
+with(subset(site.climate,LTER=="Sagehen"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+with(subset(site.climate,LTER=="BcCZO"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+with(subset(site.climate,LTER=="PIE"),text(mean.temp,mean.precip,LTER,pos=4,cex=txt.cex))
+with(subset(site.climate,LTER=="UMR"),text(mean.temp,mean.precip,LTER,pos=1,cex=txt.cex))
+with(subset(site.climate,LTER=="LMP"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+with(subset(site.climate,LTER=="ARC"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+with(subset(site.climate,!(LTER%in%c("Sagehen","BcCZO","PIE","UMR","LMP","ARC"))),
+     text(mean.temp,mean.precip,LTER,pos=3,cex=txt.cex))
 axis_fun(1,xmaj,xmin,xmaj,line=-0.5)
 axis_fun(2,ymaj,ymin,ymaj);box(lwd=1)
 mtext(side=1,line=1.5,"Tempature (\u00B0C)")
@@ -397,34 +410,91 @@ dev.off()
 
 
 
-# WRTDS -------------------------------------------------------------------
-## WRTDS percent change files from KJ
+unique(sites$Site.Stream)
+sites2=read.csv(paste0(data.path,"LongTermWatersheds_LatLong.csv"))
+sites2$Longitude=with(sites2,ifelse(LTER=="Sagehen",Longitude*-1,Longitude))
+unique(sites2$LTER)
 
-pctchge=read.csv(paste0(data.path,"WRTDS/WRTDS_pctchange_map.csv"))
-unique(pctchge$likeC)
-range(pctchge$pConc,na.rm=T)
+sites2=SpatialPointsDataFrame(coords=sites2[,c("Longitude","Latitude")],
+                             data=sites2,
+                             proj4string = wgs84)
+sort.LTERs=c("ARC", "GRO", "BNZ", "AND", "HBR", 
+             "LMP", "PIE", "Ipswich", "UMR", "NWT", "BcCZO", "Sagehen", "KNZ", 
+             "Coal Crk", "KRR", "LUQ", "Tanguro", "MCM")
+sort.LTERs=sort.LTERs[sort.LTERs%in%unique(sites2$LTER)]
 
-unique(pctchge$likeF)
-range(pctchge$pFlux,na.rm=T)
+# sites2$LTER=as.factor(sites2$LTER)
+sites2$LTER=factor(sites2$LTER,levels=sort.LTERs)
 
-unique(pctchge$LTER)
-# Edits to fit site file
-# subset(pctchge,SITE=="Toolik Inlet")
-# pctchge[pctchge$SITE=='Toolik Inlet',]$LTER="ARC"
-## Removed Toolik Inlet due to NAs
-pctchge=subset(pctchge,SITE!="Toolik Inlet")
+site.climate2=subset(site.climate,LTER%in%unique(sites2$LTER))
+site.climate2$LTER=factor(site.climate2$LTER,levels=sort.LTERs)
+cols=wesanderson::wes_palette("Zissou1",length(unique(sites2$LTER)),"continuous")
+site.cols.climate=cols[site.climate2$LTER]
+site.cols=cols[sites2$LTER]
+# png(filename=paste0(plot.path,"Map_biome_LongTerm.png"),width=5.25,height=5.5,units="in",res=200,type="windows",bg="white")
+par(family="serif",oma=c(0.25,0.25,0.25,0.25),mar=c(0.1,0.1,0.1,0.1),xpd=F)
+layout(matrix(c(1,1,2,3),2,2,byrow=T),widths=c(1,0.3),heights=c(0.75,1))
 
-subset(pctchge,LTER=="NWT")
-pctchge[pctchge$SITE=='ALBION',]$SITE="Albion"
-pctchge[pctchge$SITE=='MARTINELLI',]$SITE="Martinelli"
-pctchge[pctchge$SITE=='SADDLE STREAM 007',]$SITE="Saddle"
+bbox.lims=bbox(sites)
+#plot(world,col="cornsilk",bg="lightblue")
+plot(world,col="grey80",border="grey",ylim=bbox.lims[c(2,4)],xlim=bbox.lims[c(1,3)],lwd=0.01)
+plot(sites2,add=T,pch=21,bg=site.cols,col="white",lwd=0.1,cex=1.25)
+box(lwd=1)
+mapmisc::scaleBar(wgs84,"bottom",bty="n",cex=1,seg.len=4,outer=F)
+legend("bottomleft",legend=sort.LTERs,
+       pt.bg=cols,pch=21,lty=0,lwd=0.1,col="white",
+       pt.cex=1.5,ncol=2,cex=0.75,bty="n",y.intersp=1,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
+       title.adj=0,title = " LTER")
 
-subset(pctchge,LTER=="GRO")
-pctchge[pctchge$SITE=='Ob',]$SITE="Ob'"
+# devtools::install_github("valentinitnelav/plotbiomes")
+library(plotbiomes)
+data(Whittaker_biomes)
+biome.list=data.frame(biome_id=1:9,
+                      biome=c("Tropical seasonal forest/savanna", 
+                              "Subtropical desert", "Temperate rain forest", "Tropical rain forest", 
+                              "Woodland/shrubland", "Tundra", "Boreal forest", "Temperate grassland/desert", 
+                              "Temperate seasonal forest"),
+                      Ricklefs.cols=c("#A09700","#DCBB50","#75A95E", "#317A22","#D16E3F","#C1E1DD","#A5C790",
+                                      "#FCD57A","#97B669"))
+cols2=wesanderson::wes_palette("Zissou1",9,"continuous")
+par(mar=c(2.5,3.5,0.5,1),xpd=F)
+ylim.val=c(0,500);by.y=100;ymaj=seq(ylim.val[1],ylim.val[2],by.y);ymin=seq(ylim.val[1],ylim.val[2],by.y/2)
+xlim.val=c(-20,30);by.x=10;xmaj=seq(xlim.val[1],xlim.val[2],by.x);xmin=seq(xlim.val[1],xlim.val[2],by.x/2)
+txt.cex=0.75
+plot(precp_cm~temp_c,Whittaker_biomes,type="n",ylim=ylim.val,xlim=xlim.val,ann=F,axes=F)
+abline(h=ymaj,v=xmaj,lty=1,col=adjustcolor("grey",0.5))
+abline(h=ymin,v=xmin,lty=2,col=adjustcolor("grey",0.5))
+for(i in 1:9){
+  with(subset(Whittaker_biomes,biome_id==i),
+       polygon(temp_c,precp_cm,col=adjustcolor(biome.list$Ricklefs.cols[i],0.5),lwd=0.5))
+  # with(subset(Whittaker_biomes,biome_id==i),text(mean(temp_c),mean(precp_cm),biome.list$biome[i],cex=0.75))
+}
+with(site.climate2,points(mean.precip~mean.temp,pch=21,bg=site.cols.climate,cex=1.5,lwd=0.01))
+# with(site.climate,text(mean.temp,mean.precip,LTER,pos=3))
+with(subset(site.climate2,LTER=="Sagehen"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+# with(subset(site.climate2,LTER=="BcCZO"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+# with(subset(site.climate2,LTER=="PIE"),text(mean.temp,mean.precip,LTER,pos=4,cex=txt.cex))
+with(subset(site.climate2,LTER=="UMR"),text(mean.temp,mean.precip,LTER,pos=1,cex=txt.cex))
+with(subset(site.climate2,LTER=="LMP"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+with(subset(site.climate2,LTER=="ARC"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+with(subset(site.climate2,!(LTER%in%c("Sagehen","BcCZO","PIE","UMR","LMP","ARC"))),
+     text(mean.temp,mean.precip,LTER,pos=3,cex=txt.cex))
+axis_fun(1,xmaj,xmin,xmaj,line=-0.5)
+axis_fun(2,ymaj,ymin,ymaj);box(lwd=1)
+mtext(side=1,line=1.5,"Temperature (\u00B0C)")
+mtext(side=2,line=2.5,"Precipitation (cm)")
 
-subset(pctchge,LTER=="Sagehen")
-pctchge[pctchge$SITE=='Sagehen',]$SITE="Sagehen Creek"
-
+plot(0:1,0:1,type="n",ann=F,axes=F)
+biome.lab=c("Tropical seasonal\nforest/savanna", 
+            "Subtropical\ndesert", "Temperate\nrain forest", "Tropical\nrain forest", 
+            "Woodland/shrubland", "Tundra", "Boreal forest", "Temperate\ngrassland/desert", 
+            "Temperate\nseasonal forest")
+legend(0.1,0.5,legend=biome.lab,
+       pch=22,lwd=0.1,lty=0,
+       pt.bg=adjustcolor(biome.list$Ricklefs.cols,0.5),
+       pt.cex=1.5,ncol=1,cex=0.75,bty="n",y.intersp=1.5,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
+       title.adj=0,title = " Biome")
+dev.off()
 
 # Polar plots
 # https://khufkens.com/2017/01/18/r-polar-plots/
@@ -467,6 +537,112 @@ glac.dat=readOGR("C:/Julian_LaCie/_GISData/NaturalEarthData/50m","ne_50m_glaciat
 lake.dat=readOGR("C:/Julian_LaCie/_GISData/NaturalEarthData/50m","ne_50m_lakes")
 rivers.dat=readOGR("C:/Julian_LaCie/_GISData/NaturalEarthData/10m","ne_10m_rivers_lake_centerlines")
 world <- ne_countries(scale = 50, returnclass = "sp")
+
+
+
+
+# png(filename=paste0(plot.path,"Map_biome_LongTerm_polar.png"),width=7.5,height=5.5,units="in",res=200,type="windows",bg="white")
+par(family="serif",oma=c(0.25,0.25,0.25,0.25),mar=c(0.1,0.1,0.1,0.1),xpd=F)
+layout(matrix(1:4,2,2,byrow=T),widths=c(1.25,0.5),heights=c(0.8,1))
+
+bbox.lims=bbox(sites)
+#plot(world,col="cornsilk",bg="lightblue")
+plot(world,col="grey80",border="grey",ylim=bbox.lims[c(2,4)],xlim=bbox.lims[c(1,3)],lwd=0.01)
+plot(sites2,add=T,pch=21,bg=site.cols,col="white",lwd=0.1,cex=1.25)
+
+box(lwd=1)
+mapmisc::scaleBar(wgs84,"bottom",bty="n",cex=1,seg.len=4,outer=F)
+legend("bottomleft",legend=sort.LTERs,
+       pt.bg=cols,pch=21,lty=0,lwd=0.1,col="white",
+       pt.cex=1.5,ncol=2,cex=0.75,bty="n",y.intersp=1,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
+       title.adj=0,title = " LTER")
+
+m=maps2sp(xlim=c(-180,180),ylim=c(60,120))
+gl = gridlines(m, easts = seq(-180,180,20))
+plot(spTransform(m,Npolar),lwd=0.01,col="grey90",border="grey")
+plot(spTransform(pol.clip(glac.dat,xlim=c(-180,180),ylim=c(60,120)),Npolar),col=adjustcolor("lightblue1",0.5),border="lightblue1",lwd=0.1,add=T)
+plot(spTransform(pol.clip(lake.dat,xlim=c(-180,180),ylim=c(60,120)),Npolar),col="lightblue",border="dodgerblue1",lwd=0.1,add=T)
+plot(spTransform(pol.clip(rivers.dat,xlim=c(-180,180),ylim=c(60,120)),Npolar),col="skyblue",add=T,lwd=0.8)
+# plot(spTransform(ice.shelf,Npolar),col="skyblue",border="blue",add=T,lty=2)
+gl.polar = spTransform(gl, Npolar)
+lines(gl.polar,lty=2,lwd=0.25,col=adjustcolor("grey50",0.5))
+# raster::text(spTransform(tmp,Npolar),"Site.Stream",pos=1,halo=T)
+plot(spTransform(subset(sites2,LTER%in%c("ARC",'GRO')),Npolar),pch=21,bg=cols[subset(sites2,LTER%in%c("ARC",'GRO'))$LTER],cex=1.25,lwd=0.1,add=T)
+raster::text(spTransform(subset(sites2,Stream.Site=="TW Weir"),Npolar),"LTER",halo=T,pos=2,cex=0.75)
+raster::text(spTransform(subset(sites2,LTER%in%c('GRO')),Npolar),"LTER",halo=T,pos=2,cex=0.75)
+box(lwd=1)
+mapmisc::scaleBar(Npolar,"bottomleft",bty="n",cex=1,seg.len=4,outer=T)
+
+cols2=wesanderson::wes_palette("Zissou1",9,"continuous")
+par(mar=c(2.5,3.5,0.5,1),xpd=F)
+ylim.val=c(0,500);by.y=100;ymaj=seq(ylim.val[1],ylim.val[2],by.y);ymin=seq(ylim.val[1],ylim.val[2],by.y/2)
+xlim.val=c(-20,30);by.x=10;xmaj=seq(xlim.val[1],xlim.val[2],by.x);xmin=seq(xlim.val[1],xlim.val[2],by.x/2)
+txt.cex=0.75
+plot(precp_cm~temp_c,Whittaker_biomes,type="n",ylim=ylim.val,xlim=xlim.val,ann=F,axes=F)
+abline(h=ymaj,v=xmaj,lty=1,col=adjustcolor("grey",0.5))
+abline(h=ymin,v=xmin,lty=2,col=adjustcolor("grey",0.5))
+for(i in 1:9){
+  with(subset(Whittaker_biomes,biome_id==i),
+       polygon(temp_c,precp_cm,col=adjustcolor(biome.list$Ricklefs.cols[i],0.5),lwd=0.5))
+  # with(subset(Whittaker_biomes,biome_id==i),text(mean(temp_c),mean(precp_cm),biome.list$biome[i],cex=0.75))
+}
+with(site.climate2,points(mean.precip~mean.temp,pch=21,bg=site.cols.climate,cex=1.5,lwd=0.01))
+# with(site.climate,text(mean.temp,mean.precip,LTER,pos=3))
+with(subset(site.climate2,LTER=="Sagehen"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+# with(subset(site.climate2,LTER=="BcCZO"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+# with(subset(site.climate2,LTER=="PIE"),text(mean.temp,mean.precip,LTER,pos=4,cex=txt.cex))
+with(subset(site.climate2,LTER=="UMR"),text(mean.temp,mean.precip,LTER,pos=1,cex=txt.cex))
+with(subset(site.climate2,LTER=="LMP"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+with(subset(site.climate2,LTER=="ARC"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+with(subset(site.climate2,!(LTER%in%c("Sagehen","BcCZO","PIE","UMR","LMP","ARC"))),
+     text(mean.temp,mean.precip,LTER,pos=3,cex=txt.cex))
+axis_fun(1,xmaj,xmin,xmaj,line=-0.5)
+axis_fun(2,ymaj,ymin,ymaj);box(lwd=1)
+mtext(side=1,line=1.5,"Temperature (\u00B0C)")
+mtext(side=2,line=2.5,"Precipitation (cm)")
+
+plot(0:1,0:1,type="n",ann=F,axes=F)
+biome.lab=biome.list$biome# c("Tropical seasonal\nforest/savanna", 
+            # "Subtropical\ndesert", "Temperate\nrain forest", "Tropical\nrain forest", 
+            # "Woodland/shrubland", "Tundra", "Boreal forest", "Temperate\ngrassland/desert", 
+            # "Temperate\nseasonal forest")
+legend(0.1,0.5,legend=biome.lab,
+       pch=22,lwd=0.1,lty=0,
+       pt.bg=adjustcolor(biome.list$Ricklefs.cols,0.5),
+       pt.cex=1.5,ncol=1,cex=0.75,bty="n",y.intersp=1.5,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
+       title.adj=0,title = " Biome")
+dev.off()
+
+
+# WRTDS -------------------------------------------------------------------
+## WRTDS percent change files from KJ
+
+pctchge=read.csv(paste0(data.path,"WRTDS/WRTDS_pctchange_map.csv"))
+unique(pctchge$likeC)
+range(pctchge$pConc,na.rm=T)
+
+unique(pctchge$likeF)
+range(pctchge$pFlux,na.rm=T)
+
+unique(pctchge$LTER)
+# Edits to fit site file
+# subset(pctchge,SITE=="Toolik Inlet")
+# pctchge[pctchge$SITE=='Toolik Inlet',]$LTER="ARC"
+## Removed Toolik Inlet due to NAs
+pctchge=subset(pctchge,SITE!="Toolik Inlet")
+
+subset(pctchge,LTER=="NWT")
+pctchge[pctchge$SITE=='ALBION',]$SITE="Albion"
+pctchge[pctchge$SITE=='MARTINELLI',]$SITE="Martinelli"
+pctchge[pctchge$SITE=='SADDLE STREAM 007',]$SITE="Saddle"
+
+subset(pctchge,LTER=="GRO")
+pctchge[pctchge$SITE=='Ob',]$SITE="Ob'"
+
+subset(pctchge,LTER=="Sagehen")
+pctchge[pctchge$SITE=='Sagehen',]$SITE="Sagehen Creek"
+
+
 
 canal=spTransform(readOGR("C:/Julian_LaCie/_GISData/SFER_GIS_Geodatabase.gdb","SFWMD_Canals"),wgs84)
 
