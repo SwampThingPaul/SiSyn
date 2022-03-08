@@ -35,7 +35,7 @@ Jankowski, US Geological Survey
 ### Table of Contents
 
 -   `./ConcentrationDischarge/` - CQ function and examples (PJ)
--   `./DataInventory/` - Biogeochemical inventory data (PJ)
+-   `./DataInventory/` - Biogeochemical inventory data combination (PJ)
 -   `./Discharge at WRTDS sites/` -
 -   `./Discharge/` -
 -   `./Loadflex/` -
