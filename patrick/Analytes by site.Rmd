@@ -1,0 +1,263 @@
+---
+title: "Analytes by site"
+output: html_document
+---
+
+# Setup
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+library(tidyverse)
+library(knitr)
+library(psych)
+library(GGally)
+library(ggfortify)
+library(cluster)
+library(lubridate)
+
+theme_set(theme_bw()+
+            theme(axis.text=element_text(size=8),
+  axis.title.x = element_text(size = 16),
+  axis.title.y = element_text(size = 16)))
+
+select <- dplyr::select
+```
+
+
+> Make matrix of site vs counts of observations of each analyte - including ALL SITES for now, not just our long term ones
+
+```{r echo=TRUE}
+
+sisyn <- read_csv("20201111_masterdata_RAW.csv")
+
+thematrix <- sisyn %>%
+  select(LTER, site, variable, value) %>%
+  count(LTER, site, variable, sort=TRUE) %>% 
+  pivot_wider(names_from = variable, values_from = n)%>% 
+  filter(!is.na(site)) #%>% 
+#  column_to_rownames(var="site")
+
+thematrix[is.na(thematrix)] <- 0 #turns NAs into zeros
+
+kable(head(thematrix))
+
+```
+
+>INSERT SAME^ BUT ONLY LONG TERM SITES at some point to see if patterns are different at all
+
+# Variable counts - all sites - no filtering by length of record
+
+> # Total # observations by analyte as we have seen before
+
+```{r}
+sisyn %>% count(variable, sort = TRUE) %>% kable()
+```
+
+> # Observations of analyte by LTER (a lot to scroll through but you kinda see which sites have lots of what)
+
+```{r}
+sisyn %>% count(LTER, variable, sort = TRUE) %>% kable()
+#sisyn %>% count(LTER, site, variable, sort = TRUE) %>% kable()
+
+```
+
+## Correlations among observation counts of some key analytes
+
+> There are 33 analytes so it's tricky to look at those all at once, but here's a subset of what should be important. The point here is just that more observations of one thing is correlated with more observations of other stuff within a site, and most sites that have lots of DSi data *usually* also have N and P data
+
+```{r}
+thematrix %>% 
+  select(DSi, NOx, NH4, PO4) %>% 
+  pairs.panels(scale = TRUE)
+```
+
+> also the lower left wedge area looks like a good target for things that are measured at the same time + place as DSi (and their ratios)
+
+```{r}
+thematrix %>% 
+  ggcorr()
+
+#thematrix %>% 
+ # select(DSi, NOx, NH4, PO4) %>% 
+  #ggpairs()
+```
+
+> correlations between DSi and other stuff
+
+```{r}
+x <- thematrix %>% 
+  select(DSi, NOx, SO4, DOC, NH4, PO4, TSS, TN, TP,
+         TDN, SRP, Suspended.Chl, DIN, VSS) %>% 
+  corr.test()
+
+x <- x[["r"]]
+x[1,]
+
+x
+
+```
+
+
+## PCA: clustering of analytes by site
+
+```{r}
+pca1 <- prcomp(thematrix[3:35])
+summary(pca1, size = 4)
+#autoplot(pca1)
+```
+
+> looks like maybe 2 distinct clusters - those with lots DSi, NOx, NO4, SO4, PO4 etc and then a couple with lots of TN, TP, chl, etc
+
+```{r}
+autoplot(prcomp(thematrix[3:35]), data = thematrix, colour = 'LTER', loadings=TRUE, loadings.label=TRUE, size = 4)
+
+#it really didn't like the names for discharge and thought it was a function
+
+thematrix <- thematrix %>% 
+  rename(IQ=`Instantaneous.Q.(Discharge)`) %>% 
+  rename(DQ = `Daily.Avg.Q.(Discharge)`)
+```
+
+> or maybe 3 clusters - those with few data points (probably not super long term sites), then those with lots of data points but going either in the direction of TN/TP or NOx/PO4?
+
+```{r}
+autoplot(fanny(thematrix[3:35], 3), frame=TRUE, frame.type='norm', data = thematrix, size = 4)
+
+#autoplot(fanny(pca1, frame = TRUE,label=TRUE))
+
+```
+
+
+# Variable counts - only long term sites
+
+> filtering to get just the LTERs we will mostly focus on with long-term data (I think)
+
+```{r, echo=TRUE}
+
+# I think these are the right long term LTERS????
+longtermLTERs <- c("ARC", "AND", "KRR(Julian)", "LMP(Wymore)", "LUQ", "MCM", "NWT", "Sagehen(Sullivan)", "UMR(Jankowski)")
+
+thematrix2 <-  thematrix %>%
+  filter(LTER %in% longtermLTERs)
+
+```
+
+> looks same as with all sites, at least that lower left wedge
+
+```{r}
+thematrix2 %>% 
+  ggcorr()
+```
+
+
+```{r}
+
+autoplot(prcomp(thematrix2[3:35]), data = thematrix2, colour = 'LTER', loadings=TRUE, loadings.label=TRUE, size = 4)
+
+
+autoplot(fanny(thematrix[3:35], 3), frame=TRUE, frame.type='norm', data = thematrix, size = 4)
+```
+
+> another way to look at which of the long-term sites have what
+
+```{r}
+
+sisyn2 <- sisyn %>% 
+  filter(LTER %in% longtermLTERs) %>% 
+  count(LTER, site, variable, sort=TRUE)
+  
+ggplot(sisyn2, aes(variable, n))+
+  geom_boxplot()+
+  facet_wrap(~LTER)+
+  coord_flip()
+
+sisyn2 %>% 
+  filter(variable %in% c("PO4", "NOx", "DSi")) %>% 
+  ggplot(aes(variable, n))+
+  geom_boxplot()+
+  facet_wrap(~LTER)+
+  coord_flip()
+
+sisyn2 %>% 
+  filter(variable %in% c("TP", "TN", "DSi")) %>% 
+  ggplot(aes(variable, n))+
+  geom_boxplot()+
+  facet_wrap(~LTER)+
+  coord_flip()
+
+
+```
+
+
+# Finding which sites have >15 years of DSi, NOx, PO4, SRP data
+
+
+> long data approach
+
+```{r}
+# making year into its own column
+
+sisyn <- sisyn %>% 
+  mutate(sample.date=date(Sampling.Date)) %>%  
+  mutate(year=year(sample.date))
+
+si_range <- sisyn %>%
+  group_by(LTER, site, variable) %>% 
+  summarize(first_year=min(year), last_year=max(year),
+            num_observations = n()) %>% 
+  mutate(time_range = last_year-first_year) %>% 
+  mutate(obs_per_year=num_observations/time_range)
+
+ggplot(si_range, aes(time_range, num_observations))+
+  geom_point()
+
+long_term <- si_range %>% 
+  filter(time_range>14) %>% 
+  filter(variable %in% c("DSi", "NOx", "PO4", "SRP", "TN", "TP"))
+
+ggplot(long_term, aes(time_range, num_observations, color=LTER))+
+  geom_point()+
+  geom_smooth()+
+  facet_wrap(~variable, scales = 'free')
+
+long_term_wide <- long_term %>% 
+  pivot_wider(names_from = variable, values_from = c(time_range, num_observations, obs_per_year))
+
+
+long_term_wide2 <- long_term %>%
+  select(-first_year, -last_year) %>% 
+  pivot_wider(names_from = variable, values_from = c(time_range, num_observations, obs_per_year))
+
+long_term %>% group_by(variable) %>% 
+  summarize(sum(num_observations))
+
+dim(long_term_wide2)
+
+long_term_wide2 %>% 
+  filter(is.na(time_range_TN)) %>% 
+  dim()
+long_term_wide2 %>% 
+  filter(is.na(time_range_TP)) %>% 
+  dim()
+
+#write.csv(long_term_wide, "long_term_wide.csv")
+#write.csv(long_term_wide2, "long_term_wide2.csv")
+#write.csv(long_term_wide2, "long_term_wide_TNTP.csv")
+
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+

@@ -1,0 +1,465 @@
+---
+title: "Summary analysis for Jan 2021 meeting"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(broom)
+library(ggridges)
+library(patchwork)
+library(growthrates)
+library(ggpubr)
+#library(rayshader)
+library(plotly)
+library(knitr)
+library(PerformanceAnalytics)
+library(car)
+library(MASS)
+library(vegan)
+library(lubridate)
+library(scales)
+library(lme4)
+library(nlme)
+
+theme_set(theme_bw()+
+            theme(axis.text=element_text(size=8),
+  axis.title.x = element_text(size = 16),
+  axis.title.y = element_text(size = 16)))
+
+select <- dplyr::select
+```
+
+
+
+# Setup for concentrations vs time
+
+Read in data and check out how many observations of each variable we have to play with
+
+```{r}
+sisyn <- read_csv("20201111_masterdata_RAW.csv")
+
+sisyn %>% count(variable, sort = TRUE) %>% kable()
+```
+
+Spread the data into wide format, make year column, and summarize annual averages into a data table
+
+```{r}
+# Spreading data to give each variable a column, averaging values by date/site
+
+sisyn_wide <- sisyn %>% 
+  mutate(sample=paste(LTER, site, Sampling.Date, sep="_")) %>%
+  pivot_wider(names_from = variable, values_from = value, values_fn = mean, id_cols = c(sample, LTER, Sampling.Date, site, `Site/Stream.Name`))
+
+# making year into its own column
+
+sisyn_wide <- sisyn_wide %>% 
+  mutate(sample.date=date(Sampling.Date)) %>%  
+  mutate(year=year(sample.date))
+
+# making another dataset of just annual averages for DSi, NOx, and PO4
+
+sisyn_annual <- sisyn_wide %>% 
+  group_by(year, LTER, site) %>% 
+  summarize(meanDSi = mean(DSi, na.rm=TRUE),
+            NOx = mean(NOx, na.rm=TRUE),
+            PO4 = mean(PO4, na.rm=TRUE),
+            CV_DSi = (sd(DSi)/mean(DSi))) %>% 
+  mutate(site = str_replace_all(site, " ", "_"))
+
+# some have NAs for DSi so those should be removed
+i <- which(is.na(sisyn_annual$DSi))
+sisyn_annual[i,]
+
+sisyn_annual <- sisyn_annual %>% 
+  filter(!is.na(DSi))
+
+i <- which(is.na(sisyn_annual$DSi))
+sisyn_annual[i,]
+
+#making each column contain DSi conc for each site, since this is the only way I could figure out how to do >400 regressions at once
+
+sisyn_annual_wide <- sisyn_annual[1:4]
+sisyn_annual_wide <- sisyn_annual_wide %>% 
+  pivot_wider(names_from = site, values_from = DSi)
+
+
+sisyn_annual %>% 
+  filter(!is.na(DSi)) %>%
+  count(site)
+
+sisyn_annual <-  sisyn_annual %>% 
+  filter(!is.na(DSi)) %>%
+  group_by(LTER, site) %>% 
+  count(site, sort = TRUE) %>% 
+  kable()
+```
+
+# DSi concentrations by year and site
+
+```{r}
+
+ggplot(sisyn_annual, aes(year, DSi, group=site))+
+  geom_line(stat="smooth", method="lm", se=FALSE, alpha=.5)+
+  facet_wrap(~LTER, scales = "free_y")+
+  scale_x_continuous(breaks=c(1980, 2000, 2020))+
+  theme(strip.text.x = element_text(size = 6))
+
+ggsave('DSivyear_lines.png')
+
+ggplot(sisyn_annual, aes(year, DSi, group=site))+
+  #geom_point(alpha=0.2)+
+  geom_line(alpha=0.2)+
+  facet_wrap(~LTER, scales = "free_y")+
+  scale_x_continuous(breaks=c(1980, 2000, 2020))+
+  theme(strip.text.x = element_text(size = 6))
+ggsave('DSivyear_points.png')
+
+```
+
+Using lapply to get regression coefficients for each site (finally)
+
+found here https://stackoverflow.com/questions/27952653/how-to-loop-repeat-a-linear-regression-in-r
+
+```{r}
+#set number of columns (i.e., sites)
+
+n <- 434
+
+#list of the columns (sites) which may or may not be useful
+myvars <- as.list(colnames(sisyn_annual_wide[3:435]))
+
+#apply a linear regression for DSi vs year for all sites. the 'as.matrix' part was necessary to make it work, but I am still not totally sure why
+
+my_lms <- lapply(3:n, function(x) lm(as.matrix(sisyn_annual_wide[,x]) ~ year, data=sisyn_annual_wide))
+
+#extracting the slope and intercept from my_lms and turning it into a data frame
+                   
+coefs <- sapply(my_lms, coef)
+coefs <- data.frame(coefs)
+#rownames(coef)[1:435] <- myvars #FIGURE OUT HOW TO DO THIS!!!!
+
+#making the coefs data more usable 
+
+coefs <- rownames_to_column(coefs)
+
+coefs_long <- coefs %>% 
+  pivot_longer(!rowname,
+               names_to = "coeftype",
+               values_to="value")
+# now we have slopes in long format and can play with those!
+```
+
+```{r}
+coefs_long %>% filter(rowname=="year") %>% 
+  ggplot(aes(value))+
+  geom_density()+
+  scale_x_log10(labels=comma)+
+  #geom_vline(xintercept = 1, linetype='dashed')+
+  xlab('Slope of year vs DSi')
+
+
+```
+
+
+
+Use this in case we also want to look at *\R^2* values
+
+```{r}
+#same as above but gets list with rsquare values
+
+summaries <- lapply(my_lms, summary)
+rquares <- sapply(summaries, function(x) c(r_sq = x$r.squared, 
+                                adj_r_sq = x$adj.r.squared))
+
+#same as above but gives p values
+
+pvals <- lapply(summaries, function(x) x$coefficients[, c(1,4)])
+
+
+```
+
+
+
+```{r}
+```
+
+
+# Discharge by site over time
+
+
+```{r}
+# read in data that Lienne nicely compiled
+
+discharge_raw <- read_csv("WRTDS_discharge_allsites.csv")
+
+# change the date into the right format, extract year, and change site.name to site because I felt like it
+
+discharge <- discharge_raw %>% 
+  mutate(Date=date(Date)) %>%  
+  mutate(year=year(Date)) %>% 
+  rename(site=site.name) %>% 
+  filter(!is.na(Q))
+
+discharge_annual <- discharge %>%
+  group_by(year, site) %>% 
+  summarize(mean_Q = mean(Q, na.rm=TRUE),
+            sum_Q = sum(Q, na.rm = TRUE))
+
+QandSi <- left_join(sisyn_annual, discharge_annual)
+QandSi <- QandSi %>% filter(!is.na(mean_Q))
+```
+
+
+plotting meanQ and sumQ vs year although sumQ doesn't make any sense, does it?
+
+```{r}
+ggplot(QandSi, aes(year, mean_Q, group=site))+
+  geom_line(stat="smooth", method="lm", se=FALSE, alpha=.5)+
+  facet_wrap(~LTER, scales = "free_y")+
+  scale_x_continuous(breaks=c(1980, 2000, 2020))+
+  theme(strip.text.x = element_text(size = 6))
+
+ggsave('meanQvyear_lm.png')
+
+ggplot(QandSi, aes(year, mean_Q, group=site))+
+  geom_line(alpha=.5)+
+  facet_wrap(~LTER, scales = "free_y")+
+  scale_x_continuous(breaks=c(1980, 2000, 2020))+
+  theme(strip.text.x = element_text(size = 6))
+
+ggsave('meanQvyear_geomline.png')
+```
+
+yes, sumQ is silly
+```{r eval=FALSE, include=FALSE}
+ggplot(QandSi, aes(year, sum_Q, group=site))+
+  geom_line(stat="smooth", method="lm", se=FALSE, alpha=.5)+
+  facet_wrap(~LTER, scales = "free_y")+
+  scale_x_continuous(breaks=c(1980, 2000, 2020))+
+  theme(strip.text.x = element_text(size = 6))
+
+ggsave('sumQvyear_lm.png')
+
+ggplot(QandSi, aes(year, sum_Q, group=site))+
+  geom_line(alpha=.5)+
+  facet_wrap(~LTER, scales = "free_y")+
+  scale_x_continuous(breaks=c(1980, 2000, 2020))+
+  theme(strip.text.x = element_text(size = 6))
+
+ggsave('sumQvyear_geomline.png')
+
+ggplot(QandSi, aes(mean_Q, sum_Q))+
+  geom_smooth(method="lm")+
+  facet_wrap(~LTER, scales = 'free')
+
+```
+
+
+Trying to extract slopes for year vs Q
+
+```{r}
+# I have to call dplyr by name for some stupid ass reason...
+
+QandSiwide <- QandSi %>%
+  dplyr::select(year, LTER, site, mean_Q) %>% 
+  pivot_wider(names_from = site, values_from = mean_Q)
+
+#set number of columns (i.e., sites)
+
+n <- 62
+
+#list of the columns (sites) which may or may not be useful
+myvars <- as.list(colnames(QandSiwide[3:62]))
+
+#apply a linear regression for DSi vs year for all sites. the 'as.matrix' part was necessary to make it work, but I am still not totally sure why
+
+my_lms <- lapply(3:n, function(x) lm(as.matrix(QandSiwide[,x]) ~ year, data=QandSiwide))
+
+#extracting the slope and intercept from my_lms and turning it into a data frame
+                   
+coefs <- sapply(my_lms, coef)
+coefs <- data.frame(coefs)
+#rownames(coef)[1:435] <- myvars #FIGURE OUT HOW TO DO THIS!!!!
+
+#making the coefs data more usable 
+
+coefs <- rownames_to_column(coefs)
+
+coefs_long <- coefs %>% 
+  pivot_longer(!rowname,
+               names_to = "coeftype",
+               values_to="value")
+# now we have slopes in long format and can play with those!
+
+
+coefs_long %>% filter(rowname=="year") %>%
+  ggplot(aes(value))+
+  geom_density()+
+  scale_x_log10(labels=comma)+
+  #geom_vline(xintercept = 0.0, linetype='dashed')+
+  xlab('Slope of year vs Q')
+
+```
+
+
+Trying to do something about C-Q relationships and annual CVs
+
+```{r}
+ggplot(QandSi, aes(DSi, mean_Q, group=site))+
+  geom_line(stat="smooth", method="lm", se=FALSE, alpha=.5)+
+  facet_wrap(~LTER, scales = "free")+
+  theme(strip.text.x = element_text(size = 6))
+
+
+ggplot(sisyn_annual, aes(year, CV_DSi, group=site))+
+  geom_point()+
+  geom_line()+
+  facet_wrap(~LTER, scales = "free")+
+  scale_x_continuous(breaks=c(1980, 2000, 2020))+
+  theme(strip.text.x = element_text(size = 6))
+
+```
+
+
+# JUNK AND FAILURE
+
+trying LMER approach to get slopes for each site
+
+```{r eval=FALSE, include=FALSE}
+
+sisyn_annual <- sisyn_annual %>% 
+  mutate(site=paste(LTER, site, sep="_"))
+
+fit1 <- lmer(DSi ~ year + (1+year|site), data=sisyn_annual)
+summary(fit1)
+anova(fit1)
+ranef(fit1)
+
+
+plot(fit1)
+
+```
+
+trying lapply and shit
+
+```{r}
+
+GSWS09 <- filter(sisyn_annual, site=='GSWS09')
+fit <- lm(DSi~year, data=GSWS09)
+summary(fit)
+plot(fit)
+
+
+set.seed(1)
+# run n regressions
+
+n <- 438
+
+my_lms <- sisyn_annual_wide %>%
+  lapply(1:n, function(x) lm(DSi[,x] ~ year[,x]))
+
+# extract just coefficients
+sapply(my_lms, coef)
+
+```
+
+
+```{r}
+
+mod_summaries <- list()                  # Create empty list
+
+
+for(i in 3:ncol(sisyn_annual_wide)) {                 # Head of for-loop
+ 
+  sites_i <- colnames(sisyn_annual_wide)[3:i]    # Create vector of predictor names
+  mod_summaries[[i - 1]] <- summary(     # Store regression model summary in list
+    lm(year ~ ., data=sisyn_annual_wide[ , c("year", sites_i)]))
+ 
+}
+
+set.seed(98274)                          # Creating example data
+y <- rnorm(1000)
+x1 <- rnorm(1000) + 0.2 * y
+x2 <- rnorm(1000) + 0.2 * x1 + 0.1 * y
+x3 <- rnorm(1000) - 0.1 * x1 + 0.3 * x2 - 0.3 * y
+data <- data.frame(y, x1, x2, x3)
+head(data)  
+
+mod_summaries <- list()                  # Create empty list
+
+for(i in 2:ncol(data)) {                 # Head of for-loop
+ 
+  predictors_i <- colnames(data)[2:i]    # Create vector of predictor names
+  mod_summaries[[i - 1]] <- summary(     # Store regression model summary in list
+    lm(y ~ ., data[ , c("y", predictors_i)]))$coefficients
+ 
+}
+
+mod_summaries
+```
+
+
+```{r}
+
+set.seed(1)
+
+# number of columns in the Lung and Blood data.frames. 22,000 for you?
+n <- 20
+
+myvars <- as.list(colnames(sisyn_annual_wide[3:435]))
+
+
+# run n regressions
+my_lms <- lapply(myvars, function(x) lm(sisyn_annual_wide[,x] ~ year,
+                                     data=sisyn_annual_wide))
+
+my_lms <- lapply(myvars, function(x) lm(as.matrix(sisyn_annual_wide[,x]) ~ year, data=sisyn_annual_wide))
+                   
+sapply(my_lms, coef)
+
+lms <- function(x) {
+  fit <- lm(sisyn_annual_wide[,x] ~ year, data=sisyn_annual_wide)
+  return(summary(fit))
+}
+
+lms(3)
+
+fit <- lm(GSWS09~year, data=sisyn_annual_wide)
+summary(fit)
+
+fit <- lm(as.matrix(sisyn_annual_wide[,3])~year, data=sisyn_annual_wide)
+summary(fit)
+                                     
+# extract just coefficients
+sapply(my_lms, coef)
+
+# if you need more info, get full summary call. now you can get whatever, like:
+summaries <- lapply(my_lms, summary)
+# ...coefficents with p values:
+lapply(summaries, function(x) x$coefficients[, c(1,4)])
+# ...or r-squared values
+sapply(summaries, function(x) c(r_sq = x$r.squared, 
+                                adj_r_sq = x$adj.r.squared))
+```
+
+
+```{r}
+
+myvars <- as.list(colnames(sisyn_annual_wide[3:436]))
+
+
+fit <- lapply(myvars, function(year, myvars)
+    lm(year ~ myvars, data=sisyn_annual_wide))
+
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
