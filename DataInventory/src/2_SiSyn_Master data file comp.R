@@ -130,7 +130,7 @@ unique(unit.all$Measurement)
 subset(unit.all,Measurement=="Si")
 Si.CF=data.frame(Measurement="Si",
                  Unit=c("mg Si/L","mg SiO2/L","ug Si/L"),
-                 CF=c((1/Si.mw)*1000,((1/SiO2.mw)*(SiO2.mw/Si.mw))*1000,1/Si.mw))
+                 CF=c((1/Si.mw)*1000,(1/SiO2.mw)*1000,1/Si.mw))
 N.cf=data.frame(Measurement=c("TN","DIN","DIN","TN"),Unit=c(rep("mg N/L",2),"uM N","uM N"),CF=c(rep((1/N.mw)*1000,2),1,1))
 NOX.cf=data.frame(Measurement="NOX",
                   Unit=c("uM NO3","mg NO3-N/L","ug NO3-N/L","ueq/L","uM NO3-N","mg NO3/L"),
