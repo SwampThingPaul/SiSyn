@@ -315,7 +315,10 @@ site.climate$mean.precip=with(site.climate,ifelse(LTER=="Ipswich",1188,mean.prec
 site.climate$LTER=with(site.climate,ifelse(LTER=="DOE SFA East River","Coal Crk",LTER))
 site.climate$LTER=as.factor(site.climate$LTER)
 # write.csv(site.climate,paste0(export.path,"site_climate.csv"),row.names = F)
-
+## Updated file
+site.climate=read.csv(paste0(data.path,"MAP_MAT_byLTER.csv"))
+site.climate$mean.precip=with(site.climate,ifelse(LTER=="Coal Crk",1163,mean.precip))
+site.climate$LTER=as.factor(site.climate$LTER)
 site.climate$mean.precip=site.climate$mean.precip*0.1
 
 library(rnaturalearth)
@@ -365,19 +368,29 @@ biome.list=data.frame(biome_id=1:9,
                         "Temperate seasonal forest"),
                       Ricklefs.cols=c("#A09700","#DCBB50","#75A95E", "#317A22","#D16E3F","#C1E1DD","#A5C790",
                                       "#FCD57A","#97B669"))
+cols2=wesanderson::wes_palette("Zissou1",9,"continuous")
 par(mar=c(2.5,3.5,0.5,1),xpd=F)
 ylim.val=c(0,500);by.y=100;ymaj=seq(ylim.val[1],ylim.val[2],by.y);ymin=seq(ylim.val[1],ylim.val[2],by.y/2)
 xlim.val=c(-20,30);by.x=10;xmaj=seq(xlim.val[1],xlim.val[2],by.x);xmin=seq(xlim.val[1],xlim.val[2],by.x/2)
-
+txt.cex=0.75
 plot(precp_cm~temp_c,Whittaker_biomes,type="n",ylim=ylim.val,xlim=xlim.val,ann=F,axes=F)
 abline(h=ymaj,v=xmaj,lty=1,col=adjustcolor("grey",0.5))
 abline(h=ymin,v=xmin,lty=2,col=adjustcolor("grey",0.5))
 for(i in 1:9){
-  with(subset(Whittaker_biomes,biome_id==i),polygon(temp_c,precp_cm,col=adjustcolor(biome.list$Ricklefs.cols[i],0.5),lwd=0.5))
+  with(subset(Whittaker_biomes,biome_id==i),
+       polygon(temp_c,precp_cm,col=adjustcolor(biome.list$Ricklefs.cols[i],0.5),lwd=0.5))
   # with(subset(Whittaker_biomes,biome_id==i),text(mean(temp_c),mean(precp_cm),biome.list$biome[i],cex=0.75))
 }
 with(site.climate,points(mean.precip~mean.temp,pch=21,bg=site.cols.climate,cex=1.5))
-with(site.climate,text(mean.temp,mean.precip,LTER,pos=3))
+# with(site.climate,text(mean.temp,mean.precip,LTER,pos=3))
+with(subset(site.climate,LTER=="Sagehen"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+with(subset(site.climate,LTER=="BcCZO"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+with(subset(site.climate,LTER=="PIE"),text(mean.temp,mean.precip,LTER,pos=4,cex=txt.cex))
+with(subset(site.climate,LTER=="UMR"),text(mean.temp,mean.precip,LTER,pos=1,cex=txt.cex))
+with(subset(site.climate,LTER=="LMP"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+with(subset(site.climate,LTER=="ARC"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+with(subset(site.climate,!(LTER%in%c("Sagehen","BcCZO","PIE","UMR","LMP","ARC"))),
+     text(mean.temp,mean.precip,LTER,pos=3,cex=txt.cex))
 axis_fun(1,xmaj,xmin,xmaj,line=-0.5)
 axis_fun(2,ymaj,ymin,ymaj);box(lwd=1)
 mtext(side=1,line=1.5,"Tempature (\u00B0C)")
@@ -397,34 +410,91 @@ dev.off()
 
 
 
-# WRTDS -------------------------------------------------------------------
-## WRTDS percent change files from KJ
+unique(sites$Site.Stream)
+sites2=read.csv(paste0(data.path,"LongTermWatersheds_LatLong.csv"))
+sites2$Longitude=with(sites2,ifelse(LTER=="Sagehen",Longitude*-1,Longitude))
+unique(sites2$LTER)
 
-pctchge=read.csv(paste0(data.path,"WRTDS/WRTDS_pctchange_map.csv"))
-unique(pctchge$likeC)
-range(pctchge$pConc,na.rm=T)
+sites2=SpatialPointsDataFrame(coords=sites2[,c("Longitude","Latitude")],
+                             data=sites2,
+                             proj4string = wgs84)
+sort.LTERs=c("ARC", "GRO", "BNZ", "AND", "HBR", 
+             "LMP", "PIE", "Ipswich", "UMR", "NWT", "BcCZO", "Sagehen", "KNZ", 
+             "Coal Crk", "KRR", "LUQ", "Tanguro", "MCM")
+sort.LTERs=sort.LTERs[sort.LTERs%in%unique(sites2$LTER)]
 
-unique(pctchge$likeF)
-range(pctchge$pFlux,na.rm=T)
+# sites2$LTER=as.factor(sites2$LTER)
+sites2$LTER=factor(sites2$LTER,levels=sort.LTERs)
 
-unique(pctchge$LTER)
-# Edits to fit site file
-# subset(pctchge,SITE=="Toolik Inlet")
-# pctchge[pctchge$SITE=='Toolik Inlet',]$LTER="ARC"
-## Removed Toolik Inlet due to NAs
-pctchge=subset(pctchge,SITE!="Toolik Inlet")
+site.climate2=subset(site.climate,LTER%in%unique(sites2$LTER))
+site.climate2$LTER=factor(site.climate2$LTER,levels=sort.LTERs)
+cols=wesanderson::wes_palette("Zissou1",length(unique(sites2$LTER)),"continuous")
+site.cols.climate=cols[site.climate2$LTER]
+site.cols=cols[sites2$LTER]
+# png(filename=paste0(plot.path,"Map_biome_LongTerm.png"),width=5.25,height=5.5,units="in",res=200,type="windows",bg="white")
+par(family="serif",oma=c(0.25,0.25,0.25,0.25),mar=c(0.1,0.1,0.1,0.1),xpd=F)
+layout(matrix(c(1,1,2,3),2,2,byrow=T),widths=c(1,0.3),heights=c(0.75,1))
 
-subset(pctchge,LTER=="NWT")
-pctchge[pctchge$SITE=='ALBION',]$SITE="Albion"
-pctchge[pctchge$SITE=='MARTINELLI',]$SITE="Martinelli"
-pctchge[pctchge$SITE=='SADDLE STREAM 007',]$SITE="Saddle"
+bbox.lims=bbox(sites)
+#plot(world,col="cornsilk",bg="lightblue")
+plot(world,col="grey80",border="grey",ylim=bbox.lims[c(2,4)],xlim=bbox.lims[c(1,3)],lwd=0.01)
+plot(sites2,add=T,pch=21,bg=site.cols,col="white",lwd=0.1,cex=1.25)
+box(lwd=1)
+mapmisc::scaleBar(wgs84,"bottom",bty="n",cex=1,seg.len=4,outer=F)
+legend("bottomleft",legend=sort.LTERs,
+       pt.bg=cols,pch=21,lty=0,lwd=0.1,col="white",
+       pt.cex=1.5,ncol=2,cex=0.75,bty="n",y.intersp=1,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
+       title.adj=0,title = " LTER")
 
-subset(pctchge,LTER=="GRO")
-pctchge[pctchge$SITE=='Ob',]$SITE="Ob'"
+# devtools::install_github("valentinitnelav/plotbiomes")
+library(plotbiomes)
+data(Whittaker_biomes)
+biome.list=data.frame(biome_id=1:9,
+                      biome=c("Tropical seasonal forest/savanna", 
+                              "Subtropical desert", "Temperate rain forest", "Tropical rain forest", 
+                              "Woodland/shrubland", "Tundra", "Boreal forest", "Temperate grassland/desert", 
+                              "Temperate seasonal forest"),
+                      Ricklefs.cols=c("#A09700","#DCBB50","#75A95E", "#317A22","#D16E3F","#C1E1DD","#A5C790",
+                                      "#FCD57A","#97B669"))
+cols2=wesanderson::wes_palette("Zissou1",9,"continuous")
+par(mar=c(2.5,3.5,0.5,1),xpd=F)
+ylim.val=c(0,500);by.y=100;ymaj=seq(ylim.val[1],ylim.val[2],by.y);ymin=seq(ylim.val[1],ylim.val[2],by.y/2)
+xlim.val=c(-20,30);by.x=10;xmaj=seq(xlim.val[1],xlim.val[2],by.x);xmin=seq(xlim.val[1],xlim.val[2],by.x/2)
+txt.cex=0.75
+plot(precp_cm~temp_c,Whittaker_biomes,type="n",ylim=ylim.val,xlim=xlim.val,ann=F,axes=F)
+abline(h=ymaj,v=xmaj,lty=1,col=adjustcolor("grey",0.5))
+abline(h=ymin,v=xmin,lty=2,col=adjustcolor("grey",0.5))
+for(i in 1:9){
+  with(subset(Whittaker_biomes,biome_id==i),
+       polygon(temp_c,precp_cm,col=adjustcolor(biome.list$Ricklefs.cols[i],0.5),lwd=0.5))
+  # with(subset(Whittaker_biomes,biome_id==i),text(mean(temp_c),mean(precp_cm),biome.list$biome[i],cex=0.75))
+}
+with(site.climate2,points(mean.precip~mean.temp,pch=21,bg=site.cols.climate,cex=1.5,lwd=0.01))
+# with(site.climate,text(mean.temp,mean.precip,LTER,pos=3))
+with(subset(site.climate2,LTER=="Sagehen"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+# with(subset(site.climate2,LTER=="BcCZO"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+# with(subset(site.climate2,LTER=="PIE"),text(mean.temp,mean.precip,LTER,pos=4,cex=txt.cex))
+with(subset(site.climate2,LTER=="UMR"),text(mean.temp,mean.precip,LTER,pos=1,cex=txt.cex))
+with(subset(site.climate2,LTER=="LMP"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+with(subset(site.climate2,LTER=="ARC"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+with(subset(site.climate2,!(LTER%in%c("Sagehen","BcCZO","PIE","UMR","LMP","ARC"))),
+     text(mean.temp,mean.precip,LTER,pos=3,cex=txt.cex))
+axis_fun(1,xmaj,xmin,xmaj,line=-0.5)
+axis_fun(2,ymaj,ymin,ymaj);box(lwd=1)
+mtext(side=1,line=1.5,"Temperature (\u00B0C)")
+mtext(side=2,line=2.5,"Precipitation (cm)")
 
-subset(pctchge,LTER=="Sagehen")
-pctchge[pctchge$SITE=='Sagehen',]$SITE="Sagehen Creek"
-
+plot(0:1,0:1,type="n",ann=F,axes=F)
+biome.lab=c("Tropical seasonal\nforest/savanna", 
+            "Subtropical\ndesert", "Temperate\nrain forest", "Tropical\nrain forest", 
+            "Woodland/shrubland", "Tundra", "Boreal forest", "Temperate\ngrassland/desert", 
+            "Temperate\nseasonal forest")
+legend(0.1,0.5,legend=biome.lab,
+       pch=22,lwd=0.1,lty=0,
+       pt.bg=adjustcolor(biome.list$Ricklefs.cols,0.5),
+       pt.cex=1.5,ncol=1,cex=0.75,bty="n",y.intersp=1.5,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
+       title.adj=0,title = " Biome")
+dev.off()
 
 # Polar plots
 # https://khufkens.com/2017/01/18/r-polar-plots/
@@ -468,82 +538,104 @@ lake.dat=readOGR("C:/Julian_LaCie/_GISData/NaturalEarthData/50m","ne_50m_lakes")
 rivers.dat=readOGR("C:/Julian_LaCie/_GISData/NaturalEarthData/10m","ne_10m_rivers_lake_centerlines")
 world <- ne_countries(scale = 50, returnclass = "sp")
 
-canal=spTransform(readOGR("C:/Julian_LaCie/_GISData/SFER_GIS_Geodatabase.gdb","SFWMD_Canals"),wgs84)
-
-cols=wesanderson::wes_palette("Zissou1",length(unique(pctchge$LTER)),"continuous")
-sites2=subset(sites,LTER%in%unique(pctchge$LTER))
-sites2$Site.Stream=with(sites2@data,ifelse(LTER=="UMR",Unique.ID,Site.Stream))
-
-sort.LTERs=sort.LTERs[sort.LTERs%in%unique(pctchge$LTER)]
-sites2$LTER=factor(sites2$LTER,levels=sort.LTERs)
-
-site.cols=cols[sites2$LTER]
-
-bks=c(-50,-25,0,100,200,300) # seq(-50,300,10)
-bks.int=findInterval(pctchge$pConc,bks)
-pal=colorRampPalette(c("blue","grey","red"))
-# cols2=adjustcolor(pal(length(bks)),0.75)
-# pctchge$pConc.cols=cols2[bks.int]#viridis::magma(length(bks))[bks.int]
-
-bks.int=findInterval(pctchge$pConc,bks)
-bks.size=seq(1,4, along.with=bks)#length.out=length(bks))
-pctchge$pConc.size=bks.size[bks.int]
-
-# WBT.cols=viridis::inferno(7)
-# plot(rep(1,7)~seq(0,1,along.with=WBT.cols),pch=21,bg=WBT.cols,cex=2)
-# WBT=data.frame(WBT.txt=c("HLikely","VLikely","Likely","About","Unlikely","VUnlikely","HUnlikely"),
-#               WBT.col=WBT.cols)
-WBT=data.frame(likeC=c("highly","very","likely","",NA),
-             WBT.col=c(pal(4)[1:3],pal(4)[4],pal(4)[4]))
-
-
-# png(filename=paste0(plot.path,"WRTDS_PchangeMap.png"),width=8,height=5,units="in",res=200,type="windows",bg="white")
+# png(filename=paste0(plot.path,"Map_biome_LongTerm_polar.png"),width=7.5,height=5.5,units="in",res=200,type="windows",bg="white")
 par(family="serif",oma=c(0.25,0.25,0.25,0.25),mar=c(0.1,0.1,0.1,0.1),xpd=F)
-# layout(matrix(c(1:2,2:5,rep(7,6)),2,6,byrow=T))
-layout(matrix(c(1:6,rep(7,6),8:13),3,6,byrow=T),heights=c(0.8,1,0.8))
+layout(matrix(1:4,2,2,byrow=T),widths=c(1.25,0.5),heights=c(0.8,1))
 
-for(i in 1:6){
-tmp=merge(subset(sites2,LTER==sort.LTERs[i]),
-          subset(pctchge,LTER==sort.LTERs[i]),by.x="Site.Stream",by.y="SITE",all.x=T)
-if(sort.LTERs[i]=="GRO"){
+bbox.lims=bbox(sites)
+#plot(world,col="cornsilk",bg="lightblue")
+plot(world,col="grey80",border="grey",ylim=bbox.lims[c(2,4)],xlim=bbox.lims[c(1,3)],lwd=0.01)
+plot(sites2,add=T,pch=21,bg=site.cols,col="white",lwd=0.1,cex=1.25)
+
+box(lwd=1)
+mapmisc::scaleBar(wgs84,"bottom",bty="n",cex=1,seg.len=4,outer=F)
+legend("bottomleft",legend=sort.LTERs,
+       pt.bg=cols,pch=21,lty=0,lwd=0.1,col="white",
+       pt.cex=1.5,ncol=2,cex=0.75,bty="n",y.intersp=1,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
+       title.adj=0,title = " LTER")
+
 m=maps2sp(xlim=c(-180,180),ylim=c(60,120))
 gl = gridlines(m, easts = seq(-180,180,20))
-plot(spTransform(m,Npolar),lwd=0.01,col="grey90",border="grey",bg="skyblue")
-plot(spTransform(pol.clip(glac.dat,xlim=c(-180,180),ylim=c(60,120)),Npolar),col="white",border=NA,add=T)
+plot(spTransform(m,Npolar),lwd=0.01,col="grey90",border="grey")
+plot(spTransform(pol.clip(glac.dat,xlim=c(-180,180),ylim=c(60,120)),Npolar),col=adjustcolor("lightblue1",0.5),border="lightblue1",lwd=0.1,add=T)
 plot(spTransform(pol.clip(lake.dat,xlim=c(-180,180),ylim=c(60,120)),Npolar),col="lightblue",border="dodgerblue1",lwd=0.1,add=T)
 plot(spTransform(pol.clip(rivers.dat,xlim=c(-180,180),ylim=c(60,120)),Npolar),col="skyblue",add=T,lwd=0.8)
-plot(spTransform(ice.shelf,Npolar),col="skyblue",border="blue",add=T,lty=2)
+# plot(spTransform(ice.shelf,Npolar),col="skyblue",border="blue",add=T,lty=2)
 gl.polar = spTransform(gl, Npolar)
-lines(gl.polar,lty=2,lwd=0.25)
+lines(gl.polar,lty=2,lwd=0.25,col=adjustcolor("grey50",0.5))
 # raster::text(spTransform(tmp,Npolar),"Site.Stream",pos=1,halo=T)
-plot(spTransform(tmp,Npolar),pch=21,bg=subset(tmp,is.na(pConc)==F)$pConc.cols,cex=1.5,lwd=0.1,add=T)
-mtext(side=1,adj=0,line=-1.25,sort.LTERs[i],cex=0.8)
+plot(spTransform(subset(sites2,LTER%in%c("ARC",'GRO')),Npolar),pch=21,bg=cols[subset(sites2,LTER%in%c("ARC",'GRO'))$LTER],cex=1.25,lwd=0.1,add=T)
+raster::text(spTransform(subset(sites2,Stream.Site=="TW Weir"),Npolar),"LTER",halo=T,pos=2,cex=0.75)
+raster::text(spTransform(subset(sites2,LTER%in%c('GRO')),Npolar),"LTER",halo=T,pos=2,cex=0.75)
 box(lwd=1)
-# }else if(sort.LTERs[i]=="MCM"){
-#   m=maps2sp(xlim=c(-180,180), ylim = c(-90,-70), clip = FALSE)
-#   plot(spTransform(m,Spolar),col="grey")
-#   plot(spTransform(tmp,Spolar),pch=21,bg=subset(tmp,is.na(pConc)==F)$pConc.cols,cex=1.25,add=T)
-#   mtext(side=3,adj=0,line=-1.25,sort.LTERs[i])
-# }
-}else{
-  bbox.lims=bbox(gBuffer(spTransform(tmp,NAD83),width=0.06))
-plot(world,col="grey90",border="grey",ylim=bbox.lims[c(2,4)],xlim=bbox.lims[c(1,3)],lwd=0.01,bg="skyblue")
-plot(glac.dat,col="white",border=NA,add=T)
-# if(sort.LTERs[i]!="MCM"){
-# plot(lake.dat,col="lightblue",border="dodgerblue1",add=T,lwd=0.75)
-# plot(rivers.dat,col="skyblue",add=T)
-# plot(ice.shelf,col="skyblue",border="blue",add=T,lty=2)
-# }
-plot(tmp,pch=21,bg=adjustcolor("grey",0.5),col=adjustcolor("white",0.5),lwd=0.1,cex=0.8,add=T)
-plot(subset(tmp,is.na(pConc)==F),pch=21,bg=subset(tmp,is.na(pConc)==F)$pConc.cols,cex=1.5,lwd=0.1,add=T)
-mtext(side=1,adj=0,line=-1.25,sort.LTERs[i],cex=0.8)
-box(lwd=1)
-}
-}
+mapmisc::scaleBar(Npolar,"bottomleft",bty="n",cex=1,seg.len=4,outer=T)
 
-bbox.lims=bbox(sites2)
-plot(world,col="grey90",border="grey",ylim=bbox.lims[c(2,4)],xlim=bbox.lims[c(1,3)],lwd=0.01)
+cols2=wesanderson::wes_palette("Zissou1",9,"continuous")
+par(mar=c(2.5,3.5,0.5,1),xpd=F)
+ylim.val=c(0,500);by.y=100;ymaj=seq(ylim.val[1],ylim.val[2],by.y);ymin=seq(ylim.val[1],ylim.val[2],by.y/2)
+xlim.val=c(-20,30);by.x=10;xmaj=seq(xlim.val[1],xlim.val[2],by.x);xmin=seq(xlim.val[1],xlim.val[2],by.x/2)
+txt.cex=0.75
+plot(precp_cm~temp_c,Whittaker_biomes,type="n",ylim=ylim.val,xlim=xlim.val,ann=F,axes=F)
+abline(h=ymaj,v=xmaj,lty=1,col=adjustcolor("grey",0.5))
+abline(h=ymin,v=xmin,lty=2,col=adjustcolor("grey",0.5))
+for(i in 1:9){
+  with(subset(Whittaker_biomes,biome_id==i),
+       polygon(temp_c,precp_cm,col=adjustcolor(biome.list$Ricklefs.cols[i],0.5),lwd=0.5))
+  # with(subset(Whittaker_biomes,biome_id==i),text(mean(temp_c),mean(precp_cm),biome.list$biome[i],cex=0.75))
+}
+with(site.climate2,points(mean.precip~mean.temp,pch=21,bg=site.cols.climate,cex=1.5,lwd=0.01))
+# with(site.climate,text(mean.temp,mean.precip,LTER,pos=3))
+with(subset(site.climate2,LTER=="Sagehen"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+# with(subset(site.climate2,LTER=="BcCZO"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+# with(subset(site.climate2,LTER=="PIE"),text(mean.temp,mean.precip,LTER,pos=4,cex=txt.cex))
+with(subset(site.climate2,LTER=="UMR"),text(mean.temp,mean.precip,LTER,pos=1,cex=txt.cex))
+with(subset(site.climate2,LTER=="LMP"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+with(subset(site.climate2,LTER=="ARC"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+with(subset(site.climate2,!(LTER%in%c("Sagehen","BcCZO","PIE","UMR","LMP","ARC"))),
+     text(mean.temp,mean.precip,LTER,pos=3,cex=txt.cex))
+axis_fun(1,xmaj,xmin,xmaj,line=-0.5)
+axis_fun(2,ymaj,ymin,ymaj);box(lwd=1)
+mtext(side=1,line=1.5,"Temperature (\u00B0C)")
+mtext(side=2,line=2.5,"Precipitation (cm)")
+
+plot(0:1,0:1,type="n",ann=F,axes=F)
+biome.lab=biome.list$biome# c("Tropical seasonal\nforest/savanna", 
+            # "Subtropical\ndesert", "Temperate\nrain forest", "Tropical\nrain forest", 
+            # "Woodland/shrubland", "Tundra", "Boreal forest", "Temperate\ngrassland/desert", 
+            # "Temperate\nseasonal forest")
+legend(0.1,0.5,legend=biome.lab,
+       pch=22,lwd=0.1,lty=0,
+       pt.bg=adjustcolor(biome.list$Ricklefs.cols,0.5),
+       pt.cex=1.5,ncol=1,cex=0.75,bty="n",y.intersp=1.5,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
+       title.adj=0,title = " Biome")
+dev.off()
+
+
+si.dat=read.csv(paste0(export.path,"20210907_masterdata.csv"))
+sort.LTERs.df=data.frame(LTER=c("ARC", "GRO","AND","HBR","LMP(Wymore)",
+                  "UMR(Jankowski)","NWT","Sagehen(Sullivan)",
+                  "KRR(Julian)","LUQ","MCM"),
+  LTER2=sort.LTERs)
+si.dat=subset(si.dat,LTER%in%sort.LTERs.df$LTER)
+si.dat=merge(si.dat,sort.LTERs.df,"LTER",all.x=T)
+si.dat$LTER=factor(si.dat$LTER,levels=sort.LTERs)
+
+boxplot(value~LTER2,subset(si.dat,variable=="DSi"),outline=F)
+
+mean.dat=ddply(subset(si.dat,variable=="DSi"),"LTER2",summarise,mean.val=mean(value,na.rm=T))
+mean.dat$pch.val=log(mean.dat$mean.val)/max(log(mean.dat$mean.val))*2
+mean.dat$pch.val2=1+scale(mean.dat$mean.val)
+# png(filename=paste0(plot.path,"Map_biome_LongTerm_polar_v2.png"),width=7.5,height=5.5,units="in",res=200,type="windows",bg="white")
+par(family="serif",oma=c(0.25,0.25,0.25,0.25),mar=c(0.1,0.1,0.1,0.1),xpd=F)
+# layout(matrix(c(1,1,2:5),2,3,byrow=T),widths=c(1.25,0.4,0.4),heights=c(0.8,1))
+# layout(matrix(1:4,2,2,byrow=T),widths=c(1.25,0.5),heights=c(0.8,1))
+layout(matrix(1:4,2,2,byrow=T),widths=c(1.25,0.65),heights=c(0.8,1))
+
+bbox.lims=bbox(sites)
+#plot(world,col="cornsilk",bg="lightblue")
+plot(world,col="grey80",border="grey",ylim=bbox.lims[c(2,4)],xlim=bbox.lims[c(1,3)],lwd=0.01)
 plot(sites2,add=T,pch=21,bg=site.cols,col="white",lwd=0.1,cex=1.25)
+
 box(lwd=1)
 mapmisc::scaleBar(wgs84,"bottom",bty="n",cex=1,seg.len=4,outer=F)
 legend("bottomleft",legend=sort.LTERs,
@@ -551,452 +643,229 @@ legend("bottomleft",legend=sort.LTERs,
        pt.cex=1.5,ncol=2,cex=0.75,bty="n",y.intersp=1,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
        title.adj=0,title = " LTER")
 
-for(i in 7:11){
-  tmp=merge(subset(sites2,LTER==sort.LTERs[i]),
-            subset(pctchge,LTER==sort.LTERs[i]),by.x="Site.Stream",by.y="SITE",all.x=T)
-  
-    bbox.lims=bbox(gBuffer(spTransform(tmp,NAD83),width=0.06))
-    plot(world,col="grey90",border="grey",ylim=bbox.lims[c(2,4)],xlim=bbox.lims[c(1,3)],lwd=0.01,bg="skyblue")
-    plot(glac.dat,col="white",border=NA,add=T)
-    if(sort.LTERs[i]!="MCM"){
-      plot(lake.dat,col="lightblue",border="dodgerblue1",add=T,lwd=0.75)
-      plot(rivers.dat,col="skyblue",add=T)
-      plot(ice.shelf,col="skyblue",border="blue",add=T,lty=2)
-      # for SF
-      plot(canal,col="skyblue",add=T)
-      
-    }
-    plot(tmp,pch=21,bg=adjustcolor("grey",0.5),col=adjustcolor("white",0.5),lwd=0.1,cex=0.8,add=T)
-    plot(subset(tmp,is.na(pConc)==F),pch=21,bg=subset(tmp,is.na(pConc)==F)$pConc.cols,cex=1.5,lwd=0.1,add=T)
-    mtext(side=1,adj=0,line=-1.25,sort.LTERs[i],cex=0.8)
-    box(lwd=1)
-}
+m=maps2sp(xlim=c(-180,180),ylim=c(60,120))
+gl = gridlines(m, easts = seq(-180,180,20))
+plot(spTransform(m,Npolar),lwd=0.01,col="grey90",border="grey")
+plot(spTransform(pol.clip(glac.dat,xlim=c(-180,180),ylim=c(60,120)),Npolar),col=adjustcolor("lightblue1",0.5),border="lightblue1",lwd=0.1,add=T)
+plot(spTransform(pol.clip(lake.dat,xlim=c(-180,180),ylim=c(60,120)),Npolar),col="lightblue",border="dodgerblue1",lwd=0.1,add=T)
+plot(spTransform(pol.clip(rivers.dat,xlim=c(-180,180),ylim=c(60,120)),Npolar),col="skyblue",add=T,lwd=0.8)
+# plot(spTransform(ice.shelf,Npolar),col="skyblue",border="blue",add=T,lty=2)
+gl.polar = spTransform(gl, Npolar)
+lines(gl.polar,lty=2,lwd=0.25,col=adjustcolor("grey50",0.5))
+# raster::text(spTransform(tmp,Npolar),"Site.Stream",pos=1,halo=T)
+plot(spTransform(subset(sites2,LTER%in%c("ARC",'GRO')),Npolar),pch=21,
+     bg=cols[subset(sites2,LTER%in%c("ARC",'GRO'))$LTER],cex=1.25,lwd=0.1,add=T)
+raster::text(spTransform(subset(sites2,Stream.Site=="TW Weir"),Npolar),"LTER",halo=T,pos=2,cex=0.75)
+raster::text(spTransform(subset(sites2,LTER%in%c('GRO')),Npolar),"LTER",halo=T,pos=2,cex=0.75)
+box(lwd=1)
+mapmisc::scaleBar(Npolar,"bottomleft",bty="n",cex=1,seg.len=4,outer=T)
 
-plot(0:1,0:1,ann=F,axes=F,type="n")
-int.bks.vals=bks
-labs=c(paste0("< ",int.bks.vals[2]),paste(int.bks.vals[2:9],int.bks.vals[3:10],sep=" - "),paste(paste0(">",int.bks.vals[11])))
-n.bks=length(bks)-1
-bx.val= seq(0.1,0.8,(0.8-0.1)/n.bks)
-rect(0.15,bx.val[1:n.bks],0.25,bx.val[2:(n.bks+1)],col=rev(cols2),lty=0)
-text(x=0.25, y = bx.val[2:(n.bks+1)]-c(mean(diff(bx.val[2:(n.bks+1)]))/2), labels = rev(labs),cex=0.85,adj=0,pos=4)
-text(x=0.15,y=0.95,"Percent Change\nSi Concentration",adj=0,cex=1)
+cols2=wesanderson::wes_palette("Zissou1",9,"continuous")
+par(mar=c(2.5,3.5,0.5,1),xpd=F)
+ylim.val=c(0,500);by.y=100;ymaj=seq(ylim.val[1],ylim.val[2],by.y);ymin=seq(ylim.val[1],ylim.val[2],by.y/2)
+xlim.val=c(-20,30);by.x=10;xmaj=seq(xlim.val[1],xlim.val[2],by.x);xmin=seq(xlim.val[1],xlim.val[2],by.x/2)
+txt.cex=0.75
+plot(precp_cm~temp_c,Whittaker_biomes,type="n",ylim=ylim.val,xlim=xlim.val,ann=F,axes=F)
+abline(h=ymaj,v=xmaj,lty=1,col=adjustcolor("grey",0.5))
+abline(h=ymin,v=xmin,lty=2,col=adjustcolor("grey",0.5))
+for(i in 1:9){
+  with(subset(Whittaker_biomes,biome_id==i),
+       polygon(temp_c,precp_cm,col=adjustcolor(biome.list$Ricklefs.cols[i],0.5),lwd=0.5))
+  # with(subset(Whittaker_biomes,biome_id==i),text(mean(temp_c),mean(precp_cm),biome.list$biome[i],cex=0.75))
+}
+with(site.climate2,points(mean.precip~mean.temp,pch=21,bg=site.cols.climate,cex=mean.dat$pch.val,lwd=0.01))
+# with(site.climate2,points(mean.precip~mean.temp,pch=21,bg=site.cols.climate,cex=mean.dat$pch.val2,lwd=0.01))
+# with(site.climate,text(mean.temp,mean.precip,LTER,pos=3))
+with(subset(site.climate2,LTER=="Sagehen"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+# with(subset(site.climate2,LTER=="BcCZO"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+# with(subset(site.climate2,LTER=="PIE"),text(mean.temp,mean.precip,LTER,pos=4,cex=txt.cex))
+with(subset(site.climate2,LTER=="UMR"),text(mean.temp,mean.precip,LTER,pos=1,cex=txt.cex))
+with(subset(site.climate2,LTER=="LMP"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+with(subset(site.climate2,LTER=="ARC"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+with(subset(site.climate2,!(LTER%in%c("Sagehen","BcCZO","PIE","UMR","LMP","ARC"))),
+     text(mean.temp,mean.precip,LTER,pos=3,cex=txt.cex))
+axis_fun(1,xmaj,xmin,xmaj,line=-0.5)
+axis_fun(2,ymaj,ymin,ymaj);box(lwd=1)
+mtext(side=1,line=1.5,"Temperature (\u00B0C)")
+mtext(side=2,line=2.5,"Precipitation (cm)")
+
+plot(0:1,0:1,type="n",ann=F,axes=F)
+biome.lab=biome.list$biome# c("Tropical seasonal\nforest/savanna", 
+# "Subtropical\ndesert", "Temperate\nrain forest", "Tropical\nrain forest", 
+# "Woodland/shrubland", "Tundra", "Boreal forest", "Temperate\ngrassland/desert", 
+# "Temperate\nseasonal forest")
+legend(0.1,0.5,legend=biome.lab,
+       pch=22,lwd=0.1,lty=0,
+       pt.bg=adjustcolor(biome.list$Ricklefs.cols,0.5),
+       pt.cex=1.5,ncol=1,cex=0.75,bty="n",y.intersp=1.5,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
+       title.adj=0,title = " Biome")
+
+# plot(0:1,0:1,type="n",ann=F,axes=F)
+round(subset(mean.dat,pch.val==max(pch.val))$mean.val,0)
+
+legend(0.8,0.5,legend=c("High",NA,"Low"),
+       pch=c(21,NA,21),lwd=0.1,lty=0,
+       pt.bg="grey",
+       pt.cex=c(2,NA,1),ncol=1,cex=0.75,bty="n",y.intersp=1.5,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
+       title.adj=0,title = " Relative DSi\nConcentration")
+
 dev.off()
 
 
 
-sort.LTERs2=sort.LTERs[!(sort.LTERs%in%c("LMP","Sagehen"))]
-# png(filename=paste0(plot.path,"WRTDS_PchangeMap_Conc.png"),width=8,height=5,units="in",res=200,type="windows",bg="white")
-par(family="serif",oma=c(0.25,0.25,0.25,0.25),mar=c(0.1,0.1,0.1,0.1),xpd=F)
-# layout(matrix(c(1:2,2:5,rep(7,6)),2,6,byrow=T))
-layout(matrix(c(1:4,rep(5,2),c(6,6),7:10),3,4,byrow=T),heights=c(0.8,1,0.8))
+biome.rename1=read.csv(paste0(data.path,"Biome.csv"))
+colnames(biome.rename1)=c("LTER",'SITE',"Biome_new")
 
-# ARC and GRO
-tmp=merge(subset(sites2,LTER%in%sort.LTERs2[1:2]),
-          subset(pctchge,LTER%in%sort.LTERs2[1:2]),by.x="Site.Stream",by.y="SITE",all.x=T)
-tmp=merge(tmp,WBT,"likeC",all.x=T)
-head(tmp@data)
-m=maps2sp(xlim=c(-180,180),ylim=c(60,120))
-gl = gridlines(m, easts = seq(-180,180,20))
-plot(spTransform(m,Npolar),lwd=0.01,col="grey90",border="grey",bg="skyblue")
-plot(spTransform(pol.clip(glac.dat,xlim=c(-180,180),ylim=c(60,120)),Npolar),col="white",border=NA,add=T)
-plot(spTransform(pol.clip(lake.dat,xlim=c(-180,180),ylim=c(60,120)),Npolar),col="lightblue",border="dodgerblue1",lwd=0.1,add=T)
-plot(spTransform(pol.clip(rivers.dat,xlim=c(-180,180),ylim=c(60,120)),Npolar),col="skyblue",add=T,lwd=0.8)
-plot(spTransform(ice.shelf,Npolar),col="skyblue",border="blue",add=T,lty=2)
-gl.polar = spTransform(gl, Npolar)
-lines(gl.polar,lty=2,lwd=0.25)
-plot(spTransform(subset(tmp,is.na(pConc)==F),Npolar),pch=21,
-     bg=as.character(subset(tmp,is.na(pConc)==F)$WBT.col),
-     cex=subset(tmp,is.na(pConc)==F)$pConc.size,lwd=0.1,add=T)
-raster::text(spTransform(subset(tmp,is.na(pConc)==F),Npolar),"LTER.x",pos=2,halo=T,offset = 0.5,cex=0.75)
-mtext(side=1,adj=0,line=-1.25," GRO & ARC",cex=0.8)
-mapmisc::scaleBar(wgs84,"bottomright",bty="n",cex=0.8,seg.len=4,outer=F)
-box(lwd=1)
+biome.rename=ddply(biome.rename1, c("LTER","Biome_new"),summarise,N.val=N.obs(LTER))
+unique(biome.rename$LTER)
+biome.rename$LTER=factor(biome.rename$LTER,levels=sort.LTERs)
 
-for(i in 3:5){
-  tmp=merge(subset(sites2,LTER==sort.LTERs2[i]),
-            subset(pctchge,LTER==sort.LTERs2[i]),by.x="Site.Stream",by.y="SITE",all.x=T)
-  tmp=merge(tmp,WBT,"likeC",all.x=T)
+biome.rename.sort=c(
+  "Tropical rainforest","Tropical savanna",
+  "Temperate coniferous forest","Temperate deciduous forest",
+  "Temperate grassland","Alpine tundra", "Arctic tundra",
+  "Boreal forest","Polar desert"
+)
+biome.cols=c("lawngreen", "goldenrod1", 
+             "darkgreen", "darkorange2", 
+             "firebrick1", "mediumpurple3", 
+              "dodgerblue4","lightsteelblue3","ivory3")
   
-  bbox.lims=bbox(gBuffer(spTransform(tmp,NAD83),width=0.05))
-  plot(world,col="grey90",border="grey",ylim=bbox.lims[c(2,4)],xlim=bbox.lims[c(1,3)],lwd=0.01,bg="skyblue")
-  plot(glac.dat,col="white",border=NA,add=T)
-  plot(lake.dat,col="lightblue",border="dodgerblue1",add=T,lwd=0.75)
-  plot(rivers.dat,col="skyblue",add=T)
-  plot(ice.shelf,col="skyblue",border="blue",add=T,lty=2)
-  plot(spTransform(subset(tmp,is.na(pConc)==F),NAD83),pch=21,
-       bg=as.character(subset(tmp,is.na(pConc)==F)$WBT.col),
-       cex=subset(tmp,is.na(pConc)==F)$pConc.size,lwd=0.1,add=T)
-  mtext(side=1,adj=0,line=-1.25,sort.LTERs2[i],cex=0.8)
-  box(lwd=1)
-  mapmisc::scaleBar(wgs84,"bottomright",bty="n",cex=0.8,seg.len=4,outer=F)
-}
+biome.rename$Biome_new=factor(biome.rename$Biome_new,levels=biome.rename.sort)
 
-# Overall 
-bbox.lims=bbox(sites2)
-plot(world,col="grey90",border="grey",ylim=bbox.lims[c(2,4)],xlim=bbox.lims[c(1,3)],lwd=0.01)
+# biome.cols=adjustcolor(biome.cols,0.5)
+site.climate2[site.climate2$LTER=="ARC","mean.precip"]=35
+
+sites.climate3=merge(site.climate2,biome.rename,by="LTER")
+sites.climate3$Biome_new
+
+# png(filename=paste0(plot.path,"Map_biome_LongTerm_polar_v3.png"),width=7.5,height=5.5,units="in",res=200,type="windows",bg="white")
+par(family="serif",oma=c(0.25,0.25,0.25,0.25),mar=c(0.1,0.1,0.1,0.1),xpd=F)
+layout(matrix(1:4,2,2,byrow=T),widths=c(1.25,0.65),heights=c(0.8,1))
+
+bbox.lims=bbox(sites)
+plot(world,col="grey80",border="grey",ylim=bbox.lims[c(2,4)],xlim=bbox.lims[c(1,3)],lwd=0.01)
 plot(sites2,add=T,pch=21,bg=site.cols,col="white",lwd=0.1,cex=1.25)
+
 box(lwd=1)
 mapmisc::scaleBar(wgs84,"bottom",bty="n",cex=1,seg.len=4,outer=F)
 legend("bottomleft",legend=sort.LTERs,
        pt.bg=cols,pch=21,lty=0,lwd=0.1,col="white",
        pt.cex=1.5,ncol=2,cex=0.75,bty="n",y.intersp=1,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
-       title.adj=0,title = " LTER")
+       title.adj=0,title = " Site")
 
-# Legend
-plot(0:1,0:1,ann=F,axes=F,type="n")
-int.bks.vals=bks
-labs=c(paste0("< ",int.bks.vals[2]),paste(int.bks.vals[2:3],int.bks.vals[3:4],sep=" - "),paste(paste0(">",int.bks.vals[5])))
-legend(0.25,0.5,legend=labs,
-       pt.bg="grey",pch=21,lty=0,lwd=0.1,col="black",
-       pt.cex=bks.size,ncol=1,cex=1,bty="n",y.intersp=1.5,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
-       title.adj=0,title = "% Change\nSi Concenctration")
-legend(0.6,0.5,legend=c("Highly Likely","Very Likely","Likely","Unlikely"),
-       pt.bg=pal(4),pch=21,lty=0,lwd=0.1,col="black",
+m=maps2sp(xlim=c(-180,180),ylim=c(60,120))
+gl = gridlines(m, easts = seq(-180,180,20))
+plot(spTransform(m,Npolar),lwd=0.01,col="grey90",border="grey")
+plot(spTransform(pol.clip(glac.dat,xlim=c(-180,180),ylim=c(60,120)),Npolar),col=adjustcolor("lightblue1",0.5),border="lightblue1",lwd=0.1,add=T)
+plot(spTransform(pol.clip(lake.dat,xlim=c(-180,180),ylim=c(60,120)),Npolar),col="lightblue",border="dodgerblue1",lwd=0.1,add=T)
+plot(spTransform(pol.clip(rivers.dat,xlim=c(-180,180),ylim=c(60,120)),Npolar),col="skyblue",add=T,lwd=0.8)
+# plot(spTransform(ice.shelf,Npolar),col="skyblue",border="blue",add=T,lty=2)
+gl.polar = spTransform(gl, Npolar)
+lines(gl.polar,lty=2,lwd=0.25,col=adjustcolor("grey50",0.5))
+# raster::text(spTransform(tmp,Npolar),"Site.Stream",pos=1,halo=T)
+plot(spTransform(subset(sites2,LTER%in%c("ARC",'GRO')),Npolar),pch=21,
+     bg=cols[subset(sites2,LTER%in%c("ARC",'GRO'))$LTER],cex=1.25,lwd=0.1,add=T)
+raster::text(spTransform(subset(sites2,Stream.Site=="TW Weir"),Npolar),"LTER",halo=T,pos=2,cex=0.75)
+raster::text(spTransform(subset(sites2,LTER%in%c('GRO')),Npolar),"LTER",halo=T,pos=2,cex=0.75)
+box(lwd=1)
+mapmisc::scaleBar(Npolar,"bottomleft",bty="n",cex=1,seg.len=4,outer=T)
+
+
+par(mar=c(2.5,3.5,0.5,1),xpd=F)
+ylim.val=c(0,400);by.y=100;ymaj=seq(ylim.val[1],ylim.val[2],by.y);ymin=seq(ylim.val[1],ylim.val[2],by.y/2)
+xlim.val=c(-20,30);by.x=10;xmaj=seq(xlim.val[1],xlim.val[2],by.x);xmin=seq(xlim.val[1],xlim.val[2],by.x/2)
+txt.cex=0.75
+plot(precp_cm~temp_c,Whittaker_biomes,type="n",ylim=ylim.val,xlim=xlim.val,ann=F,axes=F)
+abline(h=ymaj,v=xmaj,lty=1,col=adjustcolor("grey",0.5))
+abline(h=ymin,v=xmin,lty=2,col=adjustcolor("grey",0.5))
+abline(v=0,h=0)
+with(subset(sites.climate3,LTER!="UMR"),points(mean.temp,mean.precip,pch=21,
+       bg=biome.cols[Biome_new],cex=1.5,lwd=0.01))
+with(subset(sites.climate3,LTER=="UMR"&Biome_new=="Temperate deciduous forest"),
+     points(mean.temp+0.5,mean.precip-5,pch=21,
+            bg=biome.cols[Biome_new],cex=1.5,lwd=0.01))
+with(subset(sites.climate3,LTER=="UMR"&Biome_new=="Temperate grassland"),
+     points(mean.temp-0.5,mean.precip+5,pch=21,
+            bg=biome.cols[Biome_new],cex=1.5,lwd=0.01))
+with(subset(site.climate2,LTER=="Sagehen"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+with(subset(site.climate2,LTER=="UMR"),text(mean.temp,mean.precip,LTER,pos=4,cex=txt.cex))
+with(subset(site.climate2,LTER=="LMP"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+with(subset(site.climate2,LTER=="ARC"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+with(subset(site.climate2,!(LTER%in%c("Sagehen","BcCZO","PIE","UMR","LMP","ARC"))),
+     text(mean.temp,mean.precip,LTER,pos=3,cex=txt.cex))
+axis_fun(1,xmaj,xmin,xmaj,line=-0.5)
+axis_fun(2,ymaj,ymin,ymaj);box(lwd=1)
+mtext(side=1,line=1.5,"Temperature (\u00B0C)")
+mtext(side=2,line=2.5,"Precipitation (cm)")
+
+plot(0:1,0:1,type="n",ann=F,axes=F)
+legend("center",legend=biome.rename.sort,
+       pch=22,lwd=0.1,lty=0,
+       pt.bg=biome.cols,
        pt.cex=2,ncol=1,cex=1,bty="n",y.intersp=1.5,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
-       title.adj=0,title = "Likelihood of\nIncreasing Trend")
-
-for(i in 6:10){
-  tmp=merge(subset(sites2,LTER==sort.LTERs2[i]),
-            subset(pctchge,LTER==sort.LTERs2[i]),by.x="Site.Stream",by.y="SITE",all.x=T)
-  tmp=merge(tmp,WBT,"likeC",all.x=T)
-  
-  if(sort.LTERs2[i]=="NWT"){
-    bbox.lims=bbox(gBuffer(spTransform(tmp,NAD83),width=0.01))}else{
-      bbox.lims=bbox(gBuffer(spTransform(tmp,NAD83),width=0.05))
-    }
-  plot(world,col="grey90",border="grey",ylim=bbox.lims[c(2,4)],xlim=bbox.lims[c(1,3)],lwd=0.01,bg="skyblue")
-  plot(glac.dat,col="white",border=NA,add=T)
-  plot(lake.dat,col="lightblue",border="dodgerblue1",add=T,lwd=0.75)
-  plot(rivers.dat,col="skyblue",add=T)
-  plot(ice.shelf,col="skyblue",border="blue",add=T,lty=2)
-  plot(canal,col="skyblue",add=T) # for KRR
-  plot(spTransform(subset(tmp,is.na(pConc)==F),NAD83),pch=21,
-       bg=as.character(subset(tmp,is.na(pConc)==F)$WBT.col),
-       cex=subset(tmp,is.na(pConc)==F)$pConc.size,lwd=0.1,add=T)
-  mtext(side=1,adj=0,line=-1.25,sort.LTERs2[i],cex=0.8)
-  box(lwd=1)
-  mapmisc::scaleBar(wgs84,"bottomright",bty="n",cex=0.8,seg.len=4,outer=F)
-}
+       title.adj=0,title = " Biome")
 dev.off()
 
-# png(filename=paste0(plot.path,"WRTDS_PchangeMap_Conc_overall.png"),width=8,height=2.5,units="in",res=200,type="windows",bg="white")
+
+
+sites2$Stream.Site
+subset(sites2,LTER=="MCM")@data
+subset(biome.rename1,LTER=="MCM")
+subset(sites3,LTER=="MCM")
+
+biome.rename1$SITE
+sites3=merge(sites2,biome.rename1,by.x=c("Stream.Site","LTER"),by.y=c("SITE","LTER"))
+sites3$Biome_new=factor(sites3$Biome_new,levels=biome.rename.sort)
+
+# png(filename=paste0(plot.path,"Map_biome_LongTerm_polar_v4.png"),width=5.25,height=5.5,units="in",res=200,type="windows",bg="white")
 par(family="serif",oma=c(0.25,0.25,0.25,0.25),mar=c(0.1,0.1,0.1,0.1),xpd=F)
-# layout(matrix(c(1:2,2:5,rep(7,6)),2,6,byrow=T))
-layout(matrix(1:2,1,2,byrow=T),widths = c(1.5,0.75))
+layout(matrix(c(1,1:3),2,2,byrow=T),widths=c(1,0.65),heights=c(0.75,1))
 
-tmp=merge(sites2,pctchge,by.x="Site.Stream",by.y="SITE",all.x=T)
-tmp=merge(tmp,WBT,"likeC",all.x=T)
-
-bbox.lims=bbox(sites2)
+bbox.lims=bbox(sites)
 plot(world,col="grey90",border="grey",ylim=bbox.lims[c(2,4)],xlim=bbox.lims[c(1,3)],lwd=0.01)
-plot(spTransform(subset(tmp,is.na(pConc)==F),NAD83),pch=21,
-     bg=adjustcolor(as.character(subset(tmp,is.na(pConc)==F)$WBT.col),0.25),
-     cex=subset(tmp,is.na(pConc)==F)$pConc.size/2,lwd=0.1,add=T)
-box(lwd=1)
-mapmisc::scaleBar(wgs84,"bottom",bty="n",cex=0.8,seg.len=4,outer=F)
-
-# Legend
-plot(0:1,0:1,ann=F,axes=F,type="n")
-int.bks.vals=bks
-labs=c(paste0("< ",int.bks.vals[2]),paste(int.bks.vals[2:3],int.bks.vals[3:4],sep=" - "),paste(paste0(">",int.bks.vals[5])))
-legend(0.25,0.5,legend=labs,
-       pt.bg="grey",pch=21,lty=0,lwd=0.1,col="black",
-       pt.cex=bks.size/2,ncol=1,cex=0.75,bty="n",y.intersp=1.5,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
-       title.adj=0,title = "% Change\nSi Concenctration")
-legend(0.75,0.5,legend=c("Highly Likely","Very Likely","Likely","Unlikely"),
-       pt.bg=pal(4),pch=21,lty=0,lwd=0.1,col="black",
-       pt.cex=2,ncol=1,cex=0.75,bty="n",y.intersp=1.5,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
-       title.adj=0,title = "Likelihood of\nIncreasing Trend")
-dev.off()
-
-subset(pctchge,LTER=="ARC")
-
-range(pctchge$pFlux)
-bks=c(-40,-20,0,100,150,200) # seq(-50,300,10)
-bks.int=findInterval(pctchge$pFlux,bks)
-pal=colorRampPalette(c("blue","grey","red"))
-
-bks.int=findInterval(pctchge$pFlux,bks)
-bks.size=seq(1,4, along.with=bks)#length.out=length(bks))
-pctchge$pFlux.size=bks.size[bks.int]
-
-WBT=data.frame(likeF=c("highly","very","likely","",NA),
-               WBT.col=c(pal(4)[1:3],pal(4)[4],pal(4)[4]))
-
-# png(filename=paste0(plot.path,"WRTDS_PchangeMap_Flux.png"),width=8,height=5,units="in",res=200,type="windows",bg="white")
-par(family="serif",oma=c(0.25,0.25,0.25,0.25),mar=c(0.1,0.1,0.1,0.1),xpd=F)
-# layout(matrix(c(1:2,2:5,rep(7,6)),2,6,byrow=T))
-layout(matrix(c(1:4,rep(5,2),c(6,6),7:10),3,4,byrow=T),heights=c(0.8,1,0.8))
-
-# ARC and GRO
-tmp=merge(subset(sites2,LTER%in%sort.LTERs2[1:2]),
-          subset(pctchge,LTER%in%sort.LTERs2[1:2]),by.x="Site.Stream",by.y="SITE",all.x=T)
-tmp=merge(tmp,WBT,"likeF",all.x=T)
-head(tmp@data)
-m=maps2sp(xlim=c(-180,180),ylim=c(60,120))
-gl = gridlines(m, easts = seq(-180,180,20))
-plot(spTransform(m,Npolar),lwd=0.01,col="grey90",border="grey",bg="skyblue")
-plot(spTransform(pol.clip(glac.dat,xlim=c(-180,180),ylim=c(60,120)),Npolar),col="white",border=NA,add=T)
-plot(spTransform(pol.clip(lake.dat,xlim=c(-180,180),ylim=c(60,120)),Npolar),col="lightblue",border="dodgerblue1",lwd=0.1,add=T)
-plot(spTransform(pol.clip(rivers.dat,xlim=c(-180,180),ylim=c(60,120)),Npolar),col="skyblue",add=T,lwd=0.8)
-plot(spTransform(ice.shelf,Npolar),col="skyblue",border="blue",add=T,lty=2)
-gl.polar = spTransform(gl, Npolar)
-lines(gl.polar,lty=2,lwd=0.25)
-plot(spTransform(subset(tmp,is.na(pFlux)==F),Npolar),pch=21,
-     bg=as.character(subset(tmp,is.na(pFlux)==F)$WBT.col),
-     cex=subset(tmp,is.na(pConc)==F)$pFlux.size,lwd=0.1,add=T)
-raster::text(spTransform(subset(tmp,is.na(pFlux)==F),Npolar),"LTER.x",pos=2,halo=T,offset = 0.5,cex=0.75)
-mtext(side=1,adj=0,line=-1.25," GRO & ARC",cex=0.8)
-mapmisc::scaleBar(wgs84,"bottomright",bty="n",cex=0.8,seg.len=4,outer=F)
-box(lwd=1)
-
-for(i in 3:5){
-  tmp=merge(subset(sites2,LTER==sort.LTERs2[i]),
-            subset(pctchge,LTER==sort.LTERs2[i]),by.x="Site.Stream",by.y="SITE",all.x=T)
-  tmp=merge(tmp,WBT,"likeF",all.x=T)
-  
-  bbox.lims=bbox(gBuffer(spTransform(tmp,NAD83),width=0.05))
-  plot(world,col="grey90",border="grey",ylim=bbox.lims[c(2,4)],xlim=bbox.lims[c(1,3)],lwd=0.01,bg="skyblue")
-  plot(glac.dat,col="white",border=NA,add=T)
-  plot(lake.dat,col="lightblue",border="dodgerblue1",add=T,lwd=0.75)
-  plot(rivers.dat,col="skyblue",add=T)
-  plot(ice.shelf,col="skyblue",border="blue",add=T,lty=2)
-  plot(spTransform(subset(tmp,is.na(pFlux)==F),NAD83),pch=21,
-       bg=as.character(subset(tmp,is.na(pFlux)==F)$WBT.col),
-       cex=subset(tmp,is.na(pFlux)==F)$pFlux.size,lwd=0.1,add=T)
-  mtext(side=1,adj=0,line=-1.25,sort.LTERs2[i],cex=0.8)
-  box(lwd=1)
-  mapmisc::scaleBar(wgs84,"bottomright",bty="n",cex=0.8,seg.len=4,outer=F)
-}
-
-# Overall 
-bbox.lims=bbox(sites2)
-plot(world,col="grey90",border="grey",ylim=bbox.lims[c(2,4)],xlim=bbox.lims[c(1,3)],lwd=0.01)
-plot(sites2,add=T,pch=21,bg=site.cols,col="white",lwd=0.1,cex=1.25)
+plot(sites3,add=T,pch=21,bg=biome.cols[sites3$Biome_new],col="black",lwd=0.1,cex=1.25)
 box(lwd=1)
 mapmisc::scaleBar(wgs84,"bottom",bty="n",cex=1,seg.len=4,outer=F)
-legend("bottomleft",legend=sort.LTERs,
-       pt.bg=cols,pch=21,lty=0,lwd=0.1,col="white",
-       pt.cex=1.5,ncol=2,cex=0.75,bty="n",y.intersp=1,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
-       title.adj=0,title = " LTER")
 
-# Legend
-plot(0:1,0:1,ann=F,axes=F,type="n")
-int.bks.vals=bks
-labs=c(paste0("< ",int.bks.vals[2]),paste(int.bks.vals[2:3],int.bks.vals[3:4],sep=" - "),paste(paste0(">",int.bks.vals[5])))
-legend(0.25,0.5,legend=labs,
-       pt.bg="grey",pch=21,lty=0,lwd=0.1,col="black",
-       pt.cex=bks.size,ncol=1,cex=1,bty="n",y.intersp=1.5,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
-       title.adj=0,title = "% Change\nSi Flux")
-legend(0.6,0.5,legend=c("Highly Likely","Very Likely","Likely","Unlikely"),
-       pt.bg=pal(4),pch=21,lty=0,lwd=0.1,col="black",
-       pt.cex=2,ncol=1,cex=1,bty="n",y.intersp=1.5,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
-       title.adj=0,title = "Likelihood of\nIncreasing Trend")
+par(mar=c(2.5,3.5,0.5,0.1),xpd=F)
+ylim.val=c(0,400);by.y=100;ymaj=seq(ylim.val[1],ylim.val[2],by.y);ymin=seq(ylim.val[1],ylim.val[2],by.y/2)
+xlim.val=c(-20,30);by.x=10;xmaj=seq(xlim.val[1],xlim.val[2],by.x);xmin=seq(xlim.val[1],xlim.val[2],by.x/2)
+txt.cex=0.75
+plot(precp_cm~temp_c,Whittaker_biomes,type="n",ylim=ylim.val,xlim=xlim.val,ann=F,axes=F)
+abline(h=ymaj,v=xmaj,lty=1,col=adjustcolor("grey",0.5))
+abline(h=ymin,v=xmin,lty=2,col=adjustcolor("grey",0.5))
+abline(v=0,h=0)
+with(subset(sites.climate3,LTER!="UMR"),points(mean.temp,mean.precip,pch=21,
+                                               bg=biome.cols[Biome_new],cex=1.5,lwd=0.01))
+xval=0.3;yval=5
+with(subset(sites.climate3,LTER=="UMR"&Biome_new=="Temperate deciduous forest"),
+     points(mean.temp+xval,mean.precip-yval,pch=21,
+            bg=biome.cols[Biome_new],cex=1.5,lwd=0.01))
+with(subset(sites.climate3,LTER=="UMR"&Biome_new=="Temperate deciduous forest"),
+     text(mean.temp+xval,mean.precip-yval,"UMR",pos=1,cex=txt.cex,offset=0.25))
+with(subset(sites.climate3,LTER=="UMR"&Biome_new=="Temperate grassland"),
+     points(mean.temp-xval,mean.precip+yval,pch=21,
+            bg=biome.cols[Biome_new],cex=1.5,lwd=0.01))
+with(subset(sites.climate3,LTER=="UMR"&Biome_new=="Temperate deciduous forest"),
+     text(mean.temp-xval,mean.precip+yval,"UMR",pos=4,cex=txt.cex))
+with(subset(site.climate2,LTER=="Sagehen"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+# with(subset(site.climate2,LTER=="UMR"),text(mean.temp,mean.precip,LTER,pos=4,cex=txt.cex))
+with(subset(site.climate2,LTER=="LMP"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+with(subset(site.climate2,LTER=="ARC"),text(mean.temp,mean.precip,LTER,pos=2,cex=txt.cex))
+with(subset(site.climate2,!(LTER%in%c("Sagehen","BcCZO","PIE","UMR","LMP","ARC"))),
+     text(mean.temp,mean.precip,LTER,pos=3,cex=txt.cex))
+axis_fun(1,xmaj,xmin,xmaj,line=-0.5)
+axis_fun(2,ymaj,ymin,ymaj);box(lwd=1)
+mtext(side=1,line=1.5,"Temperature (\u00B0C)")
+mtext(side=2,line=2.5,"Precipitation (cm)")
 
-for(i in 6:10){
-  tmp=merge(subset(sites2,LTER==sort.LTERs2[i]),
-            subset(pctchge,LTER==sort.LTERs2[i]),by.x="Site.Stream",by.y="SITE",all.x=T)
-  tmp=merge(tmp,WBT,"likeF",all.x=T)
-  
-  if(sort.LTERs2[i]=="NWT"){
-  bbox.lims=bbox(gBuffer(spTransform(tmp,NAD83),width=0.01))}else{
-    bbox.lims=bbox(gBuffer(spTransform(tmp,NAD83),width=0.05))
-  }
-  plot(world,col="grey90",border="grey",ylim=bbox.lims[c(2,4)],xlim=bbox.lims[c(1,3)],lwd=0.01,bg="skyblue")
-  plot(glac.dat,col="white",border=NA,add=T)
-  plot(lake.dat,col="lightblue",border="dodgerblue1",add=T,lwd=0.75)
-  plot(rivers.dat,col="skyblue",add=T)
-  plot(ice.shelf,col="skyblue",border="blue",add=T,lty=2)
-  plot(canal,col="skyblue",add=T) # for KRR
-  plot(spTransform(subset(tmp,is.na(pFlux)==F),NAD83),pch=21,
-       bg=as.character(subset(tmp,is.na(pFlux)==F)$WBT.col),
-       cex=subset(tmp,is.na(pFlux)==F)$pFlux.size,lwd=0.1,add=T)
-  mtext(side=1,adj=0,line=-1.25,sort.LTERs2[i],cex=0.8)
-  box(lwd=1)
-  mapmisc::scaleBar(wgs84,"bottomright",bty="n",cex=0.8,seg.len=4,outer=F)
-}
-dev.off()
-
-# png(filename=paste0(plot.path,"WRTDS_PchangeMap_Flux_overall.png"),width=8,height=2.5,units="in",res=200,type="windows",bg="white")
-par(family="serif",oma=c(0.25,0.25,0.25,0.25),mar=c(0.1,0.1,0.1,0.1),xpd=F)
-# layout(matrix(c(1:2,2:5,rep(7,6)),2,6,byrow=T))
-layout(matrix(1:2,1,2,byrow=T),widths = c(1.5,0.75))
-
-tmp=merge(sites2,pctchge,by.x="Site.Stream",by.y="SITE",all.x=T)
-tmp=merge(tmp,WBT,"likeF",all.x=T)
-
-bbox.lims=bbox(sites2)
-plot(world,col="grey90",border="grey",ylim=bbox.lims[c(2,4)],xlim=bbox.lims[c(1,3)],lwd=0.01)
-plot(spTransform(subset(tmp,is.na(pFlux)==F),NAD83),pch=21,
-     bg=adjustcolor(as.character(subset(tmp,is.na(pFlux)==F)$WBT.col),0.25),
-     cex=subset(tmp,is.na(pFlux)==F)$pFlux.size/2,lwd=0.1,add=T)
-box(lwd=1)
-mapmisc::scaleBar(wgs84,"bottom",bty="n",cex=0.8,seg.len=4,outer=F)
-
-# Legend
-plot(0:1,0:1,ann=F,axes=F,type="n")
-int.bks.vals=bks
-labs=c(paste0("< ",int.bks.vals[2]),paste(int.bks.vals[2:3],int.bks.vals[3:4],sep=" - "),paste(paste0(">",int.bks.vals[5])))
-legend(0.25,0.5,legend=labs,
-       pt.bg="grey",pch=21,lty=0,lwd=0.1,col="black",
-       pt.cex=bks.size/2,ncol=1,cex=0.75,bty="n",y.intersp=1.5,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
-       title.adj=0,title = "% Change\nSi Flux")
-legend(0.75,0.5,legend=c("Highly Likely","Very Likely","Likely","Unlikely"),
-       pt.bg=pal(4),pch=21,lty=0,lwd=0.1,col="black",
-       pt.cex=2,ncol=1,cex=0.75,bty="n",y.intersp=1.5,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
-       title.adj=0,title = "Likelihood of\nIncreasing Trend")
+plot(0:1,0:1,type="n",ann=F,axes=F)
+legend(0.25,0.5,legend=biome.rename.sort,
+       pch=22,lwd=0.1,lty=0,
+       pt.bg=biome.cols,
+       pt.cex=2,ncol=1,cex=0.8,bty="n",y.intersp=1.5,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
+       title.adj=0,title = " Biome")
 dev.off()
 
 
-## Experiment
-# adding imagery? ---------------------------------------------------------
-library(ceramic)
-source("./DataInventory/src/0_ceramictoken.R")
-public.token
-Sys.setenv(MAPBOX_API_KEY=public.token)
-# roi=raster::extent(subset(tmp,is.na(pConc)==F))
-# im <- cc_location(roi,zoom=12)
-# im=projectRaster(im,crs=wgs84)
-# setValues(im,scales::rescale(values(im), c(0,255)))
-# plotRGB(im)
-
-
-imagery.zoom=c(7,NA,10,11,12,8,14,15,12,12,9)
-i=11
-tmp=merge(subset(sites2,LTER==sort.LTERs[i]),
-          subset(pctchge,LTER==sort.LTERs[i]),by.x="Site.Stream",by.y="SITE",all.x=T)
-
-
-roi=raster::extent(spTransform(gBuffer(spTransform(tmp,NAD83),width=0.4),wgs84))
-im <- cc_location(roi,zoom=9)
-im=projectRaster(im,crs=wgs84)
-setValues(im,scales::rescale(values(im),to= c(0,255)))
-plotRGB(im)
-
-plot(subset(tmp,is.na(pConc)==F),pch=21,bg=subset(tmp,is.na(pConc)==F)$pConc.cols,col="white",cex=1.5,lwd=0.1,add=T)
-
-# png(filename=paste0(plot.path,"WRTDS_PchangeMap2.png"),width=8,height=5,units="in",res=200,type="windows",bg="white")
-par(family="serif",oma=c(0.25,0.25,0.25,0.25),mar=c(0.1,0.1,0.1,0.1),xpd=F)
-# layout(matrix(c(1:2,2:5,rep(7,6)),2,6,byrow=T))
-layout(matrix(c(1:5,rep(6,3),5,6,7:11),3,5,byrow=T),heights=c(0.8,1,0.8))
-
-# ARC and GRO
-tmp=merge(subset(sites2,LTER%in%sort.LTERs[1:2]),
-          subset(pctchge,LTER%in%sort.LTERs[1:2]),by.x="Site.Stream",by.y="SITE",all.x=T)
-tmp=merge(tmp,WBT,by.x="likeC",by.y="WBT.txt",all.x=T)
-head(tmp@data)
-m=maps2sp(xlim=c(-180,180),ylim=c(60,120))
-gl = gridlines(m, easts = seq(-180,180,20))
-plot(spTransform(m,Npolar),lwd=0.01,col="grey90",border="grey",bg="skyblue")
-plot(spTransform(pol.clip(glac.dat,xlim=c(-180,180),ylim=c(60,120)),Npolar),col="white",border=NA,add=T)
-plot(spTransform(pol.clip(lake.dat,xlim=c(-180,180),ylim=c(60,120)),Npolar),col="lightblue",border="dodgerblue1",lwd=0.1,add=T)
-plot(spTransform(pol.clip(rivers.dat,xlim=c(-180,180),ylim=c(60,120)),Npolar),col="skyblue",add=T,lwd=0.8)
-plot(spTransform(ice.shelf,Npolar),col="skyblue",border="blue",add=T,lty=2)
-gl.polar = spTransform(gl, Npolar)
-lines(gl.polar,lty=2,lwd=0.25)
-plot(spTransform(subset(tmp,is.na(pConc)==F),Npolar),pch=21,
-     bg=subset(tmp,is.na(pConc)==F)$WBT.col,
-     cex=subset(tmp,is.na(pConc)==F)$pConc.size,lwd=0.1,add=T)
-raster::text(spTransform(subset(tmp,is.na(pConc)==F),Npolar),"LTER.x",pos=2,halo=T)
-mtext(side=1,adj=0,line=-1.25," GRO & ARC",cex=0.8)
-mapmisc::scaleBar(wgs84,"bottom",bty="n",cex=1,seg.len=4,outer=F)
-box(lwd=1)
-
-i=3
-  tmp=merge(subset(sites2,LTER%in%sort.LTERs[i]),
-            subset(pctchge,LTER%in%sort.LTERs[i]),by.x="Site.Stream",by.y="SITE",all.x=T)
-  tmp=merge(tmp,WBT,by.x="likeC",by.y="WBT.txt",all.x=T)
-  
-  roi=raster::extent(spTransform(gBuffer(spTransform(tmp,NAD83),width=0.1),wgs84))
-  im <- cc_location(roi,zoom = 12, type = "mapbox.satellite")
-  im=projectRaster(im,crs=wgs84)
-  setValues(im,scales::rescale(values(im),c(0,255)))
-  
-  ext.val=gBuffer(spTransform(tmp,NAD83),width=0.01)
-  plotRGB(crop(im,ext.val))
-  # plot(crop(rivers.dat,extent(im)),col="skyblue",add=T)
-  # plot(crop(canal,extent(im)),col="skyblue",add=T)
-  plot(subset(tmp,is.na(pConc)==F),
-       pch=21,
-       bg=subset(tmp,is.na(pConc)==F)$WBT.col,
-       cex=subset(tmp,is.na(pConc)==F)$pConc.size,lwd=0.1,add=T)
-  mtext(side=3,line=-1.5,paste0(" ",sort.LTERs[i]),cex=0.8,col="white")
-  mapmisc::scaleBar(wgs84,"bottom",bty="n",cex=1,seg.len=4,outer=F,col="white")
-
-  i=4
-  tmp=merge(subset(sites2,LTER%in%sort.LTERs[i]),
-            subset(pctchge,LTER%in%sort.LTERs[i]),by.x="Site.Stream",by.y="SITE",all.x=T)
-  tmp=merge(tmp,WBT,by.x="likeC",by.y="WBT.txt",all.x=T)
-  
-  roi=raster::extent(spTransform(gBuffer(spTransform(tmp,NAD83),width=0.1),wgs84))
-  im <- cc_location(roi,zoom = 13, type = "mapbox.satellite")
-  im=projectRaster(im,crs=wgs84)
-  setValues(im,scales::rescale(values(im),c(0,255)))
-  
-  ext.val=gBuffer(spTransform(tmp,NAD83),width=0.01)
-  plotRGB(crop(im,ext.val))
-  # plot(crop(rivers.dat,extent(im)),col="skyblue",add=T)
-  # plot(crop(canal,extent(im)),col="skyblue",add=T)
-  plot(subset(tmp,is.na(pConc)==F),
-       pch=21,
-       bg=subset(tmp,is.na(pConc)==F)$WBT.col,
-       cex=subset(tmp,is.na(pConc)==F)$pConc.size,lwd=0.1,add=T)
-  mtext(side=3,line=-1.5,paste0(" ",sort.LTERs[i]),cex=0.8,col="white")
-  mapmisc::scaleBar(wgs84,"bottom",bty="n",cex=1,seg.len=4,outer=F,col="white")
-  
-  i=5
-  tmp=merge(subset(sites2,LTER%in%sort.LTERs[i]),
-            subset(pctchge,LTER%in%sort.LTERs[i]),by.x="Site.Stream",by.y="SITE",all.x=T)
-  tmp=merge(tmp,WBT,by.x="likeC",by.y="WBT.txt",all.x=T)
-  
-  roi=raster::extent(spTransform(gBuffer(spTransform(tmp,NAD83),width=0.1),wgs84))
-  im <- cc_location(roi,zoom = 12, type = "mapbox.satellite")
-  im=projectRaster(im,crs=wgs84)
-  setValues(im,scales::rescale(values(im),c(0,255)))
-  
-  ext.val=gBuffer(spTransform(tmp,NAD83),width=0.01)
-  plotRGB(crop(im,ext.val))
-  plot(crop(rivers.dat,extent(im)),col="skyblue",add=T)
-  plot(crop(canal,extent(im)),col="skyblue",add=T)
-  plot(subset(tmp,is.na(pConc)==F),
-       pch=21,
-       bg=subset(tmp,is.na(pConc)==F)$WBT.col,
-       cex=subset(tmp,is.na(pConc)==F)$pConc.size,lwd=0.1,add=T)
-  mtext(side=3,line=-1.5,paste0(" ",sort.LTERs[i]),cex=0.8,col="white")
-  mapmisc::scaleBar(wgs84,"bottom",bty="n",cex=1,seg.len=4,outer=F,col="white")  
-
-
-bbox.lims=bbox(sites2)
-plot(world,col="grey90",border="grey",ylim=bbox.lims[c(2,4)],xlim=bbox.lims[c(1,3)],lwd=0.01)
-plot(sites2,add=T,pch=21,bg=site.cols,col="white",lwd=0.1,cex=1.25)
-box(lwd=1)
-mapmisc::scaleBar(wgs84,"bottom",bty="n",cex=1,seg.len=4,outer=F)
-legend("bottomleft",legend=sort.LTERs,
-       pt.bg=cols,pch=21,lty=0,lwd=0.1,col="white",
-       pt.cex=1.5,ncol=2,cex=0.75,bty="n",y.intersp=1,x.intersp=0.75,xpd=NA,xjust=0.5,yjust=0.5,
-       title.adj=0,title = " LTER")
-
-i=11
-imagery.zoom=c(7,NA,12,11,12,8,7,10,11,11,9)
-tmp=merge(subset(sites2,LTER%in%sort.LTERs[i]),
-          subset(pctchge,LTER%in%sort.LTERs[i]),by.x="Site.Stream",by.y="SITE",all.x=T)
-tmp=merge(tmp,WBT,by.x="likeC",by.y="WBT.txt",all.x=T)
-# tmp=spTransform(tmp,wgs84)
-
-
-
-roi=raster::extent(spTransform(gBuffer(spTransform(tmp,NAD83),width=0.2),wgs84))
-im <- cc_location(roi,buffer = 500000, type = "mapbox.satellite")
-# im <- cc_elevation(roi)
-im=projectRaster(im,crs=wgs84)
-setValues(im,scales::rescale(values(im),c(0,255)))
-
-ext.val=gBuffer(spTransform(tmp,NAD83),width=0.06)
-plotRGB(crop(im,ext.val))
-plot(crop(rivers.dat,extent(im)),col="skyblue",add=T)
-plot(crop(canal,extent(im)),col="skyblue",add=T)
-plot(subset(tmp,is.na(pConc)==F),
-     pch=21,
-     bg=subset(tmp,is.na(pConc)==F)$WBT.col,
-     cex=subset(tmp,is.na(pConc)==F)$pConc.size,lwd=0.1,add=T)
-mtext(side=1,line=-1.25,paste0(" ",sort.LTERs[i]),cex=0.8)

@@ -1,0 +1,658 @@
+---
+title: "Figuring out how to quantify seasonality index"
+output: 
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+---
+
+# setup
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+library(tidyverse)
+library(forecast)
+library(knitr)
+library(lubridate)
+library(ggpubr)
+library(ggridges)
+library(leaflet)
+library(broom)
+
+theme_set(theme_bw()+
+            theme(axis.text=element_text(size=8),
+  axis.title.x = element_text(size = 16),
+  axis.title.y = element_text(size = 16)))
+
+```
+
+> load data, create a couple simple time series from subset of 2 sites from LUQ and UMR
+
+```{r include=FALSE}
+sisyn <- read_csv("20210804_masterdata.csv")
+
+sisyn <- sisyn %>%
+  mutate(variable=ifelse(variable=="SRP", "PO4", variable))%>% 
+  mutate(month = month(Sampling.Date)) %>% 
+  mutate(year = year(Sampling.Date))
+
+#unique(sisyn$variable)
+
+latlongs <- read_csv("LongTermWatersheds_LatLong.csv") %>% 
+  rename(site=Stream.Site)
+
+# for subsetting only 
+longtermsites <- unique(latlongs$site)
+
+#sisyn %>% count(variable, sort = TRUE) %>% kable()
+
+#sisyn %>%
+# distinct(LTER, site) %>% kable()
+
+luqtest <- sisyn %>%
+  filter(site=="MPR", variable =="DSi")
+
+umrtest <- sisyn %>% 
+  filter(site == "BK01.0M", variable =="DSi")
+
+summary(luqtest)
+summary(umrtest)
+
+A <- luqtest %>% 
+  ggplot(aes(as.factor(month), value))+
+  geom_boxplot()+
+  geom_hline(yintercept = mean(luqtest$value), linetype = "dashed")
+
+B <- umrtest %>% 
+  ggplot(aes(as.factor(month), value))+
+  geom_boxplot()+
+  geom_hline(yintercept = mean(umrtest$value), linetype = "dashed")
+
+fig <- ggarrange(A, B)
+annotate_figure(fig, top = text_grob("If our seasonality index can't differentiate\n between these sites\n then there is a problem...", size = 16, face = "bold"))
+
+```
+
+# testing out seasonality index for 2 sites following method used by Moatar et al 2017 paper + Lian et al 2016, and described by Walsh and Lawler 1981
+
+
+> SI formula from Walsh 1981 paper- Moatar used a seasonality index "based on" this, whatever that means. R is the mean annual rainfall and x is the mean rainfall of month n, as used in the original paper:
+
+![Walsh SI equation](walsh%20Si.png)
+
+```{r echo = TRUE}
+# summarize Si by monthly average
+luqmonthly <- luqtest %>% 
+  group_by(month) %>% 
+  summarize(monthly_avg = mean(value))
+
+# summarize Si by annual average
+luqannual <- luqtest %>%
+  group_by(year) %>%
+  summarize(annual_avg = mean(value))
+
+# average of annual averages (maybe just take overall average of all points here instead? doesn't change the value much though)
+luqoverallavg <- mean(luqannual$annual_avg)
+luqoverallavg
+
+luqindex <- luqmonthly %>% 
+  mutate(annual_avg=luqoverallavg) %>% # take overall average from above
+  mutate(monthly_dev = abs(monthly_avg - annual_avg)) %>% # abs value of monthly deviations difference from Walsh 1981 is not dividing by 12 here because that only makes sense for cumulative things like flux or precip but not concentrations
+  mutate(sum_dev = sum(monthly_dev)) %>% # sum of monthly deviations
+  mutate(seasonality_index=sum_dev/annual_avg) # SI is sum of monthly deviations/overall average
+
+unique(luqindex$seasonality_index)
+
+```
+
+
+```{r echo = TRUE}
+
+# summarize Si by monthly average
+umrmonthly <- umrtest %>% 
+  group_by(month) %>% 
+  summarize(monthly_avg = mean(value))
+
+# summarize Si by annual average
+umrannual <- umrtest %>%
+  group_by(year) %>%
+  summarize(annual_avg = mean(value))
+
+# average of annual averages
+umroverallavg <- mean(umrannual$annual_avg)
+umroverallavg
+
+umrindex <- umrmonthly %>% 
+  mutate(annual_avg=umroverallavg) %>% 
+  mutate(monthly_dev = abs(monthly_avg - annual_avg)) %>%
+  mutate(sum_dev = sum(monthly_dev)) %>% 
+  mutate(seasonality_index=sum_dev/annual_avg)
+
+unique(umrindex$seasonality_index)
+
+```
+
+> this shows that the SI for the Luquillo site is `r unique(luqindex$seasonality_index)` and the SI for the UMR site is `r unique(umrindex$seasonality_index)` which makes sense! This only works though when omitting the part of dividing my 12 as in Walsh and Lian et al's formulas. But I think this makes sense since our annual average DSi conc is not a cumulation of monthly DSi (as would be the case for the SI that was origingally made for precipication)
+
+```{r}
+# # join annual and monthly averages
+# luqindex <- left_join(luqmonthly, luqannual)
+
+# luqindex <- luqindex %>% 
+#   mutate(monthly_dev = abs(monthly_avg - (annual_avg/12))) %>% 
+#   mutate(SI=sum(monthly_dev)/annual_avg)
+# 
+# summary(luqindex)
+
+```
+
+# calculating SI for all sites
+
+>similar to the above test code but grouping by LTER, site, variable to get monthly averages
+
+```{r echo = TRUE}
+# summarize Si by monthly average
+sisynmonthly <- sisyn %>% 
+  group_by(LTER, site, variable, month) %>% 
+  summarize(monthly_avg = mean(value))
+
+# summarize Si by overall average
+sisynannual <- sisyn %>%
+  group_by(LTER, site, variable) %>%
+  summarize(grand_avg = mean(value))
+
+#join grand mean values to monthly averages
+sisynindex <- left_join(sisynmonthly, sisynannual)
+```
+
+> **Here's the main chunk of code to look at, since this calculates the actual seasonality index for all our data**
+
+```{r echo = TRUE}
+sisynindex <- sisynindex %>% 
+  mutate(monthly_dev = abs(monthly_avg - grand_avg)) %>%
+  mutate(sum_dev = sum(monthly_dev)) %>%
+  mutate(LTER, site, variable) %>% 
+  mutate(seas_index=sum_dev/grand_avg) %>% 
+  distinct(LTER, site, variable, seas_index)
+
+```
+
+# plots!
+
+## DSi seasonality by LTER
+
+> a couple ways to look at SI for DSi from long term sites
+
+```{r}
+
+sisynindex %>% 
+  filter(variable=="DSi", site %in% longtermsites) %>% 
+  ggplot(aes(LTER, seas_index))+
+  stat_summary(fun = mean, geom = "point") + 
+  stat_summary(fun.data = mean_cl_normal, size=1.5, geom = "pointrange", fun.args = list(mult = 1))+
+  geom_point(alpha=0.5, color = "#218D3A")+
+  coord_flip()+
+  scale_x_discrete(limits=rev)
+
+sisynindex %>% 
+  filter(variable=="DSi", site %in% longtermsites) %>% 
+  ggplot(aes(seas_index, LTER))+
+  geom_density_ridges(fill = "#218D3A")+
+  scale_y_discrete(limits=rev)
+
+
+```
+
+
+
+
+***
+
+
+
+## seasonality of DSi, discharge, a couple other things
+
+```{r}
+#unique(sisynindex$variable)
+#unique(sisynindex$LTER)
+
+sisynindex %>% 
+  filter(variable %in% c("DSi",  "Instantaneous.Q.(Discharge)", "Temp.C", "NOx", "PO4")) %>%
+  filter(site %in% longtermsites) %>% 
+  ggplot(aes(LTER, seas_index))+
+  stat_summary(fun = mean, geom = "point") + 
+  stat_summary(fun.data = mean_cl_normal, geom = "pointrange", fun.args = list(mult = 1))+
+  geom_point(alpha=0.5, color = "#218D3A")+
+  coord_flip()+
+  scale_x_discrete(limits=rev)+
+  facet_wrap(~variable, scales = 'free')
+```
+
+
+
+> checking up on why the SI is so low for arctic sites etc, but obviously because there isn't year round data so maybe we aren't able to include these unless we add 0s for frozen months
+
+```{r}
+
+sisyn %>% 
+  filter(LTER=="ARC") %>% 
+  ggplot(aes(as.factor(month), value))+
+  geom_boxplot()+
+  facet_wrap(~variable, scales = 'free')
+
+sisyn %>% 
+  filter(LTER=="MCM") %>% 
+  ggplot(aes(as.factor(month), value))+
+  geom_boxplot()+
+  facet_wrap(~variable, scales = 'free')
+
+```
+
+
+
+***
+
+
+
+## maps and latitude effects on seasonality index
+
+> importing lat-long data and having a quick look- looks like Sagehen needs to swap hemispheres
+
+> also this lat-long data doesn't include our most up to date list of long term sites so need to change that at some point
+
+```{r include=FALSE}
+
+leaflet(latlongs) %>%
+  addTiles() %>% 
+  addMarkers(lng = ~Longitude, lat = ~Latitude, popup = ~ LTER)
+
+latlongs <- latlongs %>% 
+  mutate(Longitude = ifelse(LTER=='Sagehen', -Longitude, Longitude))
+
+leaflet(latlongs) %>%
+  addTiles() %>% 
+  addMarkers(lng = ~Longitude, lat = ~Latitude, popup = ~ LTER)
+
+
+
+a <- unique(sisynindex$site) #usi this to check where there are differences in the colnames
+b <- unique(latlongs$site)
+setdiff(b,a)
+b %in% a
+which(a %in% b)
+# so at least everything in the long term site list is also named the same as the SI index etc
+
+```
+
+> SI for DSi concentration
+
+```{r}
+# join the SI index to latlong data
+sisynindex_latlong <- left_join(latlongs, sisynindex, by='site') %>% 
+  filter(variable == "DSi") # just change this filter and run chunk for other variables
+
+#summary(sisynindex_latlong)
+
+
+pal <- colorBin(palette = "GnBu", bins = c(0,1,2,3,4,5,6,7,8), domain = sisynindex_latlong$seas_index, reverse = TRUE)
+
+
+leaflet(sisynindex_latlong) %>%
+  addTiles() %>% 
+  addCircleMarkers(lng = ~Longitude,
+             lat = ~Latitude,
+             #popup = ~ LTER.x,
+             color="black",
+             stroke=TRUE,
+             fillColor = ~pal(seas_index),
+             fillOpacity = 10,
+             opacity = .5,
+             label = ~paste0(sisynindex_latlong$LTER.x,"::", sisynindex_latlong$site, ", Seasonality index: ", seas_index),
+             radius = 10) %>% 
+  addLegend(position = "bottomleft",
+                  pal = pal,
+                  values = range(sisynindex_latlong$seas_index),
+                  title = "Seasonality index for DSi concentration")
+
+```
+
+
+
+> SI for water temp
+
+```{r}
+# join the SI index to latlong data
+sisynindex_latlong <- left_join(latlongs, sisynindex, by='site') %>% 
+  filter(variable == "Temp.C") # just change this filter and run chunk for other variables
+
+#summary(sisynindex_latlong)
+
+
+pal <- colorBin(palette = "GnBu", bins = c(0,1,2,3,4,5,6,7,8), domain = sisynindex_latlong$seas_index, reverse = TRUE)
+
+
+leaflet(sisynindex_latlong) %>%
+  addTiles() %>% 
+  addCircleMarkers(lng = ~Longitude,
+             lat = ~Latitude,
+             #popup = ~ LTER.x,
+             color="black",
+             stroke=TRUE,
+             fillColor = ~pal(seas_index),
+             fillOpacity = 10,
+             opacity = .5,
+             label = ~paste0(sisynindex_latlong$LTER.x,"::", sisynindex_latlong$site, ", Seasonality index: ", seas_index),
+             radius = 10) %>% 
+  addLegend(position = "bottomleft",
+                  pal = pal,
+                  values = range(sisynindex_latlong$seas_index),
+                  title = "Seasonality index for water temperature")
+
+```
+
+
+
+> quick look at absolute latitude vs SI but it's not quite as clear as you'd expect since this doesn't include year-round data or interpolated data from some of the sites
+
+```{r}
+sisynindex_latlong <- left_join(latlongs, sisynindex, by='site')
+
+sisynindex_latlong %>% 
+  filter(variable %in% c("DSi", "Temp.C")) %>% 
+  ggplot(aes(abs(Latitude), seas_index))+
+  geom_point(aes(color=LTER.x))+
+  facet_wrap(~variable)
+
+```
+
+
+
+# A quick look at "annual seasonality" - monthly deviations for each year instead of from the grand mean across years, to see if this tells us anything about changes in seasonality over time
+
+
+```{r echo = TRUE}
+# summarize Si by monthly average
+sisynmonthly <- sisyn %>% 
+  group_by(LTER, site, variable, year, month) %>% 
+  summarize(monthly_avg = mean(value))
+
+# summarize Si by overall average
+sisynannual <- sisyn %>%
+  group_by(LTER, site, year, variable) %>%
+  summarize(annual_avg = mean(value))
+
+#join grand mean values to monthly averages
+sisynindex <- left_join(sisynmonthly, sisynannual)
+
+sisynindex_annual <- sisynindex %>%
+  mutate(monthly_dev = abs(monthly_avg - annual_avg)) %>%
+  group_by(LTER, site, variable, year) %>% 
+  summarize(sum_dev = sum(monthly_dev),
+            seas_index = unique(sum_dev/annual_avg)) #
+  
+```
+
+> a couple ways to visualize if within-year seasonality changes over time
+
+```{r}
+sisynindex_annual %>% 
+ filter(site %in% longtermsites, variable %in% c("DSi", "Temp.C")) %>% 
+  ggplot(aes(year, seas_index))+
+  geom_point(aes(color=LTER))+
+  geom_smooth(aes(color=LTER), method ='lm', se= FALSE)+
+  geom_smooth(color = 'black', method ='lm', se= T, size = 1.5)+
+  facet_wrap(~variable)
+
+sisynindex_annual %>% 
+ filter(site %in% longtermsites, variable %in% c("DSi", "Temp.C")) %>% 
+  ggplot(aes(year, seas_index))+
+  geom_point(aes(color=LTER))+
+  geom_smooth(aes(color=LTER), method ='lm', se= FALSE)+
+  facet_grid(LTER~variable, scales = 'free')
+```
+
+> and then calculating + plotting slopes of the seasonality index over time
+
+```{r}
+#regressions:
+seas_slopes <-  sisynindex_annual %>%
+  filter(!is.na(seas_index), variable=="DSi", site %in% longtermsites) %>% 
+  group_by(site, LTER, variable) %>%
+  do(model = tidy(lm(seas_index ~ year, data = .))) %>% # only works if you include the broom::tidy in here
+  unnest(model)
+
+seas_slopes %>% 
+  filter(term=="year") %>% 
+  ggplot(aes(LTER, estimate)) + 
+    stat_summary(fun = mean, geom = "point") + 
+    stat_summary(fun.data = mean_cl_normal, geom = "pointrange", fun.args = list(mult = 1))+
+  geom_hline(yintercept = 0)+
+  xlab("LTER")+
+  ylab("slope of DSi seasonality index ~ year")+
+  #stat_summary(fun.data = give.n, geom = "text", size=3, fontface="italic", position = position_nudge(x = 0.4, y=.1))+
+  coord_flip()+
+  scale_x_discrete(limits = rev)
+
+
+```
+
+
+# Refs
+
+Walsh, R. P. D., & Lawler, D. M. (1981). Rainfall Seasonality: Description, Spatial Patterns and Change Through Time. Weather, 36(7), 201--208. doi: 10.1002/j.1477-8696.1981.tb05400.x
+
+Tian, S., Youssef, M. A., Richards, R. P., Liu, J., Baker, D. B., & Liu, Y. (2016). Different seasonality of nitrate export from an agricultural watershed and an urbanized watershed in Midwestern USA. Journal of Hydrology, 541, 1375--1384. doi: 10.1016/j.jhydrol.2016.08.042
+
+Moatar, F., Abbott, B. W., Minaudo, C., Curie, F., & Pinay, G. (2017). Elemental properties, hydrology, and biology interact to shape concentration‐discharge curves for carbon, nutrients, sediment, and major ions. Water Resources Research, 53(2), 1270--1287. doi: 10.1002/2016WR019635
+
+------------------------------------------------------------------------
+
+------------------------------------------------------------------------
+
+------------------------------------------------------------------------
+
+------------------------------------------------------------------------
+
+------------------------------------------------------------------------
+
+------------------------------------------------------------------------
+
+> previous junk attempts at making a seasonalitty index with forecast, time series decomposition etc below (in rmd file only/hidden for knitted html)
+
+```{r}
+
+knitr::knit_exit()
+
+```
+
+
+# ---
+
+# junk that I don't think we will use
+
+
+# playing with simulated data
+
+> maybe this was obvious already but this clarifies that the deviation from mean approach doesn't distinguish stochasticity from seasonality (when using deviation of single points from the mean - so a bit different from the monthly deviation approach from Moatar and folks)
+
+```{r}
+
+t=seq(0,4*pi,0.01)
+
+x=sin(t)
+y=sin(4*t)
+z=0.1*sin(4*t)
+random = runif(t, -1, 1)
+random2 = runif(t, -.1, .1)
+  
+# qplot(t,x,geom="point", xlab="time", ylab="Si")+
+#   geom_hline(yintercept = 0, linetype="dashed")+
+#   theme_bw()
+
+qplot(t,y,geom="point", xlab="time", ylab="Si")+
+  geom_hline(yintercept = 0, linetype="dashed")+
+  theme_bw()
+
+qplot(t,z,geom="point", xlab="time", ylab="Si")+
+  geom_hline(yintercept = 0, linetype="dashed")+
+  theme_bw()+
+  ylim(-1,1)
+
+qplot(t,random,geom="point", xlab="time", ylab="Si")+
+  geom_hline(yintercept = 0, linetype="dashed")+
+  theme_bw()+
+  ylim(-1,1)
+
+qplot(t,random2,geom="point", xlab="time", ylab="Si")+
+  geom_hline(yintercept = 0, linetype="dashed")+
+  theme_bw()+
+  ylim(-1,1)
+
+var(y)
+var(x)
+var(z)
+var(random)
+var(random2)
+
+test <- data.frame(t, x, y, z, random)
+
+summary(test)
+
+test2 <- test %>% 
+  mutate(xdev = abs(x-mean(x)),
+         ydev = abs(y-mean(y)),
+         zdev = abs(z-mean(z)),
+         randomdev = abs(random-mean(random)),
+         random2dev = abs(random2-mean(random)))
+
+summary(test2)
+
+test2_long <- test2 %>% 
+  pivot_longer(cols = ydev:random2dev, names_to = "variable", values_to = "value")
+
+test2_long %>% 
+  ggplot(aes(variable, value))+
+  geom_boxplot()+
+  ylab('deviation from mean')
+
+
+fit <- lm(data=test2, random~t)
+summary(fit)
+
+```
+
+------------------------------------------------------------------------
+
+\
+\*\*\*
+
+# playing with forecast
+
+> notes:
+
+## -one page said this package is decrepit and we should be using fable instead now??
+
+> a couple useful links:
+
+<https://peeps.unet.brandeis.edu/~blebaron/classes/fin250a/regression/trendSeason.html> <http://course1.winona.edu/bdeppa/FIN%20335/Handouts/Time_Series_Decomposition.html>
+
+```{r}
+sisyn <- read_csv("20201111_masterdata_RAW.csv")
+
+sisyn <- sisyn %>%
+  mutate(variable=ifelse(variable=="SRP", "PO4", variable))
+
+#unique(sisyn$variable)
+
+#sisyn %>% count(variable, sort = TRUE) %>% kable()
+
+#sisyn %>% 
+#  distinct(LTER, site) %>% kable()
+```
+
+> subset a couple sites to test the `forecast` package on- a Luquillo site where mean DSi conc doesn't change much by month and a UMR site where it drops in spring
+
+```{r}
+luqtest <- sisyn %>%
+  filter(site=="MPR", variable =="DSi")
+
+umrtest <- sisyn %>% 
+  filter(site == "BK01.0M", variable =="DSi")
+
+summary(luqtest)
+summary(umrtest)
+```
+
+> useless example the package gives
+
+```{r}
+y <- ts(rnorm(120,0,3) + 1:120 + 20*sin(2*pi*(1:120)/12), frequency=12)
+fit <- tslm(y ~ trend + season)
+plot(forecast(fit, h=20))
+
+plot(y)
+```
+
+```{r}
+
+luq.ts <- ts(luqtest$value, freq=12)
+fit_luq <- tslm(luq.ts ~ trend + season)
+
+plot(forecast(fit))
+plot(luq.ts)
+
+
+trend <- coef(fit_luq)[1] + coef(fit_luq)['trend']*seq_along(luq.ts)
+components <- cbind(
+  data = luq.ts,
+  trend = trend,
+  season = luq.ts - trend - residuals(fit_luq),
+  remainder = residuals(fit_luq)
+)
+autoplot(components, facet=TRUE)
+
+```
+
+```{r}
+
+umr.ts <- ts(umrtest$value, freq=12)
+fit_umr <- tslm(umr.ts ~ trend + season)
+
+plot(forecast(fit))
+plot(umr.ts)
+
+
+trend <- coef(fit_umr)[1] + coef(fit_umr)['trend']*seq_along(umr.ts)
+components <- cbind(
+  data = umr.ts,
+  trend = trend,
+  season = umr.ts - trend - residuals(fit_umr),
+  remainder = residuals(fit_umr)
+)
+autoplot(components, facet=TRUE)
+
+```
+
+
+> using the more simple `decompose` function from base stats to get a value for seasonality for each month
+
+```{r}
+
+x <- decompose(luq.ts)
+x$figure
+plot(x)
+
+y <- decompose(umr.ts)
+y$figure
+plot(y)
+
+#xy <- rbind(x$figure,y$figure)
+
+mean(abs(x$figure))
+sum(x$figure)
+mean(abs(y$figure))
+
+
+```

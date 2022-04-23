@@ -123,23 +123,27 @@ unit.all=rbind(arc.unit,bczo.unit,carey.unit,coal.unit,cpcrw.unit,konza.unit,
 #
 SiO2.mw=(Si.mw+(O.mw*2))
 NO3.mw=(N.mw+(O.mw*3))
+NO2.mw=(N.mw+(O.mw*2))
 NH4.mw=(N.mw+(H.mw*4))
 PO4.mw=P.mw+(O.mw*4)
 SO4.mw=(S.mw+O.mw*4)
+NOX.val=1;# NOx valence
+PO4.val=3;# PO4 valence
+
 unique(unit.all$Measurement)
 subset(unit.all,Measurement=="Si")
 Si.CF=data.frame(Measurement="Si",
                  Unit=c("mg Si/L","mg SiO2/L","ug Si/L"),
-                 CF=c((1/Si.mw)*1000,((1/SiO2.mw)*(SiO2.mw/Si.mw))*1000,1/Si.mw))
+                 CF=c((1/Si.mw)*1000,(1/SiO2.mw)*1000,1/Si.mw))
 N.cf=data.frame(Measurement=c("TN","DIN","DIN","TN"),Unit=c(rep("mg N/L",2),"uM N","uM N"),CF=c(rep((1/N.mw)*1000,2),1,1))
 NOX.cf=data.frame(Measurement="NOX",
                   Unit=c("uM NO3","mg NO3-N/L","ug NO3-N/L","ueq/L","uM NO3-N","mg NO3/L"),
-                  CF=c(NO3.mw/N.mw,(1/N.mw)*1000,1/N.mw,(NO3.mw/N.mw),1,(1/N.mw)*1000))
-NO3.cf=data.frame(Measurement="NO3",Unit=c("ug/L"),CF=c(1/N.mw))
-NO2.cf=data.frame(Measurement="NO2",Unit=c("ug/L"),CF=c(1/N.mw))
+                  CF=c(1,(1/N.mw)*1000,1/N.mw,1,1,(1/NO3.mw)*1000))
+NO3.cf=data.frame(Measurement="NO3",Unit=c("ug/L"),CF=c(1/NO3.mw))
+NO2.cf=data.frame(Measurement="NO2",Unit=c("ug/L"),CF=c(1/NO2.mw))
 NH4.cf=data.frame(Measurement="NH4",
                   Unit=c("ueq/L","ug NH4/L","mg NH4-N/L","ug NH4-N/L","uM NH4-N","uM NH4"),
-                  CF=c(NH4.mw*(NH4.mw/N.mw),((1/NH4.mw)*(NH4.mw/N.mw)),(1/N.mw)*1000,(1/N.mw),1,1))
+                  CF=c(1,((1/NH4.mw)),(1/N.mw)*1000,(1/N.mw),1,1))
 other.N=data.frame(Measurement=c(rep("TDN",3),"DON","DTN"),
                    Unit=c("mg N/L","mg/L","uM N","ug/L","ug/L"),
                    CF=c(rep((1/N.mw)*1000,2),1,rep(1/N.mw,2)))
@@ -147,7 +151,7 @@ TP.cf=data.frame(Measurement=c("TP"),Unit=c("mg P/L","uM P"),CF=c((1/P.mw)*1000,
 
 PO4.cf=data.frame(Measurement=c("PO4"),
                   Unit=c("ueq/L","ug PO4-P/L","mg PO4-P/L","mg PO4/L","uM PO4-P","uM PO4"),
-                  CF=c((PO4.mw/P.mw),(1/P.mw),(1/P.mw)*1000,((1/PO4.mw)*(PO4.mw/P.mw))*1000,1,1))
+                  CF=c((1/PO4.val),(1/P.mw),(1/P.mw)*1000,((1/PO4.mw))*1000,1,1))
 SRP.cf=data.frame(Measurement=c("SRP"),
                   Unit=c("ug P/L","mg P/L","uM P"),
                   CF=c(1/P.mw,(1/P.mw)*1000,1))
@@ -158,14 +162,23 @@ Q.cf=data.frame(Measurement=c("Instantaneous Q","Daily Avg Q"),
 
 subset(unit.all,Measurement=="Cl")
 subset(unit.all,Measurement=="Alkalinity")
-alk.cf=data.frame(Measurement=c("Alkalinity"),Unit=c("ueq/L","meq/L","mg HCO3-C","mg CaCO3/L"),CF=c(1,1000,(1/(H.mw+C.mw+(O.mw*3)))*1000,(1/(Ca.mw+C.mw+(O.mw*3)))*1000))
+## 1 meq/L Alk = 50 mg/L CaCO3
+alk.cf=data.frame(Measurement=c("Alkalinity"),
+                  Unit=c("ueq/L","meq/L","mg HCO3-C","mg CaCO3/L"),
+                  CF=c(1,1000,(1/(H.mw+C.mw+(O.mw*3)))*1000,(1/(Ca.mw+C.mw+(O.mw*3)))*1000))
 Na.cf=data.frame(Measurement=c("Na"),Unit=c("ueq/L","uM","mg/L"),CF=c(1,1,(1/Na.mw)*1000))
 K.cf=data.frame(Measurement=c("K"),Unit=c("ueq/L","uM","mg/L"),CF=c(1,1,(1/K.mw)*1000))
 Ca.cf=data.frame(Measurement=c("Ca"),Unit=c("ueq/L","uM","mg/L"),CF=c(1/2,1,(1/Ca.mw)*1000))
 Mg.cf=data.frame(Measurement=c("Mg"),Unit=c("ueq/L","uM","mg/L"),CF=c(1/2,1,(1/Mg.mw)*1000))
 SO4.cf=data.frame(Measurement=c("SO4"),Unit=c("ueq/L","uM","umols SO4","umols SO4-S","mg SO4/L","mg SO4-S/L","mg/L"),
-                  CF=c(SO4.mw/(2*S.mw),1,1,1,rep((1/SO4.mw)*1000,3)))
-Cl.cf=data.frame(Measurement=c("Cl"),Unit=c("ueq/L","uM","mg/L"),CF=c(1/2,1,(1/Cl.mw)*1000))
+                  CF=c(1/2,1,1,1,(1/SO4.mw)*1000,(1/S.mw)*1000,(1/SO4.mw)*1000))
+Cl.cf=data.frame(Measurement=c("Cl"),Unit=c("ueq/L","uM","mg/L"),CF=c(1,1,(1/Cl.mw)*1000))
+
+subset(unit.all,Measurement=="VSS")
+subset(unit.all,Measurement=="TSS")
+subset(unit.all,Measurement=="Chl a (suspended)")
+subset(unit.all,Measurement=="Chl a (benthic)")
+subset(unit.all,data.set=="umr")
 
 cf.all=rbind(Si.CF,N.cf,NOX.cf,NO3.cf,NO2.cf,NH4.cf,other.N,TP.cf,PO4.cf,SRP.cf,C.cf,Q.cf,
              alk.cf,Na.cf,K.cf,Ca.cf,Mg.cf,SO4.cf,Cl.cf)
@@ -538,6 +551,8 @@ umr.dat.melt$value=with(umr.dat.melt, ifelse(value<0,abs(value),value))
 umr.dat.melt$value=with(umr.dat.melt,value*CF)
 umr.dat.melt$LTER="UMR(Jankowski)"
 
+# nique(umr.dat.melt$variable)
+# plot(value~Sampling.Date,subset(umr.dat.melt,variable=="Suspended.Chl"))
 # Tanguro
 tango.dat=read.xlsx(paste0(data.path,"SiSyn_DataTemplate_Tanguro.xlsx"),sheet=1,startRow=2,na.strings = "NA")
 tango.dat$Sampling.Date=convertToDate(tango.dat$Sampling.Date)
@@ -645,13 +660,16 @@ subset(master.dat, value<0)
 # Added GRO higher frequency data
 # write.csv(master.dat,paste0(export.path,"20210907_masterdata.csv"),row.names=F)
 
+# Fixed Conversion factors
+# write.csv(master.dat,paste0(export.path,"20220419_masterdata.csv"),row.names=F)
+
 
 boxplot(value~site,subset(master.dat,variable=="DSi"),log="y",col="grey",ylab="DSi (uM)")
 
 # tiff(filename=paste0(plot.path,"site_DSi_boxplot.tiff"),width=7,height=4,units="in",res=200,type="windows",compression=c("lzw"),bg="white")
 # png(filename=paste0(plot.path,"site_DSi_boxplot.png"),width=7,height=4,units="in",res=200,type="windows",bg="white")
 par(family="serif",mar=c(6,4,0.75,0.5),oma=c(2,1,0.5,0.5));
-ylim.val=c(0.01,2e5);ymaj=log.scale.fun(ylim.val,"major");ymin=log.scale.fun(ylim.val,"minor")
+ylim.val=c(0.01,1e3);ymaj=log.scale.fun(ylim.val,"major");ymin=log.scale.fun(ylim.val,"minor")
 x=boxplot(value~LTER,subset(master.dat,variable=="DSi"),log="y",col="grey",pch=21,cex=0.5,bg=adjustcolor("grey",0.25),axes=F,ann=F,ylim=ylim.val)
 axis_fun(2,ymaj,ymin,format(ymaj,scientific = F),0.8,maj.tcl=-0.5,min.tcl=-0.25,line=-0.4)
 axis_fun(1,1:length(x$names),1:length(x$names),NA);box(lwd=1)

@@ -1,0 +1,119 @@
+---
+title: "SiSyn data exploration"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE)
+library(tidyverse)
+library(broom)
+library(ggridges)
+library(patchwork)
+library(growthrates)
+library(ggpubr)
+#library(rayshader)
+library(plotly)
+library(knitr)
+library(PerformanceAnalytics)
+library(car)
+library(MASS)
+library(vegan)
+library(lubridate)
+theme_set(theme_bw())
+```
+
+
+
+```{r}
+
+setwd("C:/Users/pktho/Dropbox/woodstoich 2.0")
+
+```
+
+
+```{r}
+sisyn <- read_csv("20201015_masterdata_RAW.csv")
+
+sisyn %>% count(variable, sort = TRUE) %>% print(n=100) %>% kable()
+sisyn <- sisyn %>% 
+  mutate(sample=paste(LTER, site, Site.Stream.Name, Sampling.Date, sep="_")) %>%
+  pivot_wider(names_from = variable,
+              values_from = value,
+              id_cols = c(sample, LTER, Sampling.Date),
+              values_fn=list(value=mean))
+
+sisyn <- sisyn %>% 
+  mutate(sample.date=mdy(Sampling.Date)) %>%  
+  mutate(year=year(sample.date))
+
+```
+
+
+```{r}
+#sisyn$DSi <- as.numeric(sisyn$DSi)
+#sisyn$Suspended.Chl <- as.numeric(sisyn$Suspended.Chl)
+
+ggplot(sisyn, aes(log(DSi), log(NOx)))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  facet_wrap(~LTER)
+
+ggplot(sisyn, aes(x=DSi, y=LTER))+
+  geom_density_ridges()+
+  scale_x_log10()
+
+ggplot(sisyn, aes(x=DSi, y=as.factor(year)))+
+  geom_density_ridges()+
+  scale_x_log10()+
+  facet_wrap(~LTER, scales = "free")
+#ggsave("Si-year-LTER.png", width = 13.52, height = 8.72)
+
+ggplot(sisyn, aes(x=PO4, y=as.factor(year)))+
+  geom_density_ridges()+
+  scale_x_log10()+
+  facet_wrap(~LTER, scales = "free")
+
+ggplot(sisyn, aes(x=DSi/NOx, y=as.factor(year)))+
+  geom_density_ridges()+
+  scale_x_log10()+
+  facet_wrap(~LTER, scales = "free")+
+  xlab("DSi:NOx ratio")
+#ggsave("Si:NOx-year-LTER.png", width = 13.52, height = 8.72)
+
+ggplot(sisyn, aes(x=DSi/DIN, y=as.factor(year)))+
+  geom_density_ridges()+
+  scale_x_log10()+
+  facet_wrap(~LTER, scales = "free")+
+  xlab("DSi:DIN ratio")
+
+#Warning message:
+#Values in `value` are not uniquely identified; output will contain list-cols.
+#* Use `values_fn = list(value = list)` to suppress this warning.
+#* Use `values_fn = list(value = length)` to identify where the duplicates arise
+#* Use `values_fn = list(value = summary_fun)` to summarise duplicates 
+
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+

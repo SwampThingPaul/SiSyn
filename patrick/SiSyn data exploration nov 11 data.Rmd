@@ -1,0 +1,274 @@
+---
+title: "SiSyn data exploration - Nov 11 2020 updated data"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(broom)
+library(ggridges)
+library(patchwork)
+library(growthrates)
+library(ggpubr)
+#library(rayshader)
+library(plotly)
+library(knitr)
+library(PerformanceAnalytics)
+library(car)
+library(MASS)
+library(vegan)
+library(lubridate)
+library(scales)
+library(lme4)
+library(nlme)
+
+theme_set(theme_bw()+
+            theme(axis.text=element_text(size=12),
+  axis.title.x = element_text(size = 16),
+  axis.title.y = element_text(size = 16)))
+```
+
+# Read in data and check out how many obervations of each variable we have to play with
+
+```{r}
+sisyn <- read_csv("20201111_masterdata_RAW.csv")
+
+sisyn %>% count(variable, sort = TRUE) %>% kable()
+```
+
+# Looking at how many observations we have for DSi per site and day - most only have one observation while others have many (with values that vary widely), but anyways for the following analysis I will take the mean per day/site and ignore this variation
+
+```{r}
+
+sisyn_wide_Si_dups <- sisyn %>% 
+  mutate(sample=paste(LTER, site, Sampling.Date, sep="_")) %>%
+  pivot_wider(names_from = variable, values_from = value, values_fn = length)
+
+sisyn_wide_Si_dups %>% count(DSi) %>% kable()
+
+#finding site/days where there are over 20 observations
+majordups <- sisyn_wide_Si_dups %>% filter(DSi>20)
+
+hmm <- sisyn %>% 
+    mutate(sample=paste(LTER, site, Sampling.Date, sep="_")) %>%
+  filter(sample == "LUQ_QG_1998-09-21")
+
+ggplot(hmm, aes(x=value, y=variable))+
+  geom_density_ridges()+
+  scale_x_log10()+
+  ggtitle("example of within-site/day variability: \n LUQ_QG_1998-09-21")
+
+```
+
+
+
+```{r}
+# Spreading data to give each variable a column, averaging values by date/site
+
+sisyn_wide <- sisyn %>% 
+  mutate(sample=paste(LTER, site, Sampling.Date, sep="_")) %>%
+  pivot_wider(names_from = variable, values_from = value, values_fn = mean, id_cols = c(sample, LTER, Sampling.Date, site, `Site/Stream.Name`))
+              #values_fn=list(value=mean))
+
+sisyn_wide <- sisyn_wide %>% 
+  mutate(sample.date=date(Sampling.Date)) %>%  
+  mutate(year=year(sample.date))
+
+```
+
+# Overall distribution of DSi by LTER site with no regard to time
+
+```{r}
+ggplot(sisyn_wide, aes(x=DSi, y=LTER))+
+  geom_density_ridges()+
+  scale_x_log10()
+```
+
+# And annual mean DSi, NOx, and PO4 by LTER
+
+```{r}
+sisyn_annual <- sisyn_wide %>% 
+  group_by(year, LTER, site) %>% 
+  summarize(DSi = mean(DSi, na.rm=TRUE),
+            NOx = mean(NOx, na.rm=TRUE),
+            PO4 = mean(PO4, na.rm=TRUE))
+
+
+ggplot(sisyn_annual, aes(year, DSi))+
+  geom_point()+
+  geom_line()+
+  #scale_y_log10()+
+  facet_wrap(~LTER, scales = "free")
+
+ggplot(sisyn_annual, aes(year, DSi))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  geom_line()+
+  #scale_y_log10()+
+  facet_wrap(~LTER, scales = "free")
+
+fit <- lmer(DSi~year + (DSi|LTER), data=sisyn_wide)
+summary(fit)
+
+fit <- lme(DSi~year, random=~year|LTER, data=sisyn_wide)
+summary(fit)
+
+ggplot(sisyn_annual, aes(year, PO4))+
+  geom_point()+
+  geom_line()+
+  #scale_y_log10()+
+  facet_wrap(~LTER, scales = "free")
+
+
+ggplot(sisyn_annual, aes(year, NOx))+
+  geom_point()+
+  geom_line()+
+  #scale_y_log10()+
+  facet_wrap(~LTER, scales = "free")
+```
+
+
+# And specifically looking at how eutrophication (N or P concentration) is related to reduced DSi:N and DSi:P ratios
+
+```{r}
+ggplot(sisyn_wide, aes(x=NOx, y=(DSi/NOx)))+
+  geom_point()+
+  scale_x_log10()+
+  scale_y_log10()+
+  facet_wrap(~LTER, scales = "free")
+```
+
+
+```{r}
+ggplot(sisyn_wide, aes(x=PO4, y=(DSi/PO4)))+
+  geom_point()+
+  scale_x_log10()+
+  scale_y_log10()+
+  facet_wrap(~LTER, scales = "free")
+```
+
+
+```{r}
+ggplot(sisyn_wide, aes(x=DSi, y=(DSi/NOx)))+
+  geom_point()+
+  scale_x_log10()+
+  scale_y_log10()+
+  facet_wrap(~LTER, scales = "free")
+
+
+```
+
+
+
+# Distributions of DSi and other nutrient concentrations or ratios by year and by LTER site (also shows where certain analytes are missing by sites, and obviously impossible to read for sites with many years of sampling)
+
+```{r}
+ggplot(sisyn_wide, aes(x=DSi, y=as.factor(year)))+
+  geom_density_ridges()+
+  scale_x_log10()+
+  facet_wrap(~LTER, scales = "free")
+#ggsave("Si-year-LTER.png", width = 13.52, height = 8.72)
+```
+
+
+```{r}
+ggplot(sisyn_wide, aes(x=PO4, y=as.factor(year)))+
+  geom_density_ridges()+
+  scale_x_log10()+
+  facet_wrap(~LTER, scales = "free")
+```
+
+
+```{r}
+ggplot(sisyn_wide, aes(x=Suspended.Chl, y=as.factor(year)))+
+  geom_density_ridges()+
+  scale_x_log10()+
+  facet_wrap(~LTER, scales = "free")
+```
+
+
+```{r}
+ggplot(sisyn_wide, aes(x=DSi/NOx, y=as.factor(year)))+
+  geom_density_ridges()+
+  scale_x_log10()+
+  facet_wrap(~LTER, scales = "free")+
+  xlab("DSi:NOx ratio")
+#ggsave("Si:NOx-year-LTER.png", width = 13.52, height = 8.72)
+```
+
+
+```{r}
+ggplot(sisyn_wide, aes(x=DSi/DIN, y=as.factor(year)))+
+  geom_density_ridges()+
+  scale_x_log10()+
+  facet_wrap(~LTER, scales = "free")+
+  xlab("DSi:DIN ratio")
+
+```
+
+
+# Exploring general relationships between DSi and other nutrient concentrations
+
+```{r}
+ggplot(sisyn_wide, aes(DSi, NOx))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  scale_x_log10()+
+  scale_y_log10()+
+  facet_wrap(~LTER, scales="free")
+```
+
+
+```{r}
+ggplot(sisyn_wide, aes(DSi, PO4))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  scale_x_log10()+
+  scale_y_log10()+
+  facet_wrap(~LTER, scales="free")
+```
+
+
+```{r}
+ggplot(sisyn_wide, aes(DSi, Suspended.Chl))+
+  geom_point()+
+  geom_smooth(method="lm")+
+  scale_x_log10()+
+  scale_y_log10()+
+  facet_wrap(~LTER, scales="free")
+
+```
+
+
+```{r}
+
+fit <- lm(DSi~year|LTER, data=sisyn_wide)
+summary(fit)
+avPlots(fit)
+
+#subset sites with >20 year record?
+
+```
+
+
+```{r}
+
+ggplot(sisyn_annual, aes(year, DSi))+
+  facet_wrap(~site, scales ="free")+
+  geom_smooth(method="lm", se=FALSE)
+  
+```
+
+
+```{r}
+```
+
+
+```{r}
+
+```
+
