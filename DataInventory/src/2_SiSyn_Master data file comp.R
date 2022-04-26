@@ -132,34 +132,45 @@ NH4.mw=(N.mw+(H.mw*4))
 PO4.mw=P.mw+(O.mw*4)
 SO4.mw=(S.mw+O.mw*4)
 NOX.val=1;# NOx valence
+NH4.val=1;# NH4 valence
 PO4.val=3;# PO4 valence
+Na.val=1;# Na valence
+K.val=1;# K valence
+Ca.val=2;# Ca valence
+Mg.val=2;# Mg valence
+Cl.val=1;# Cl valence
+SO4.val=2;#SO4 valence
 
 unique(unit.all$Measurement)
 subset(unit.all,Measurement=="Si")
+unique(subset(unit.all,Measurement=="Si")$Unit)
 Si.CF=data.frame(Measurement="Si",
-                 Unit=c("mg Si/L","mg SiO2/L","ug Si/L"),
-                 CF=c((1/Si.mw)*1000,(1/SiO2.mw)*1000,1/Si.mw))
-N.cf=data.frame(Measurement=c("TN","DIN","DIN","TN"),Unit=c(rep("mg N/L",2),"uM N","uM N"),CF=c(rep((1/N.mw)*1000,2),1,1))
+                 Unit=c("uM","mg Si/L","mg SiO2/L","ug Si/L"),
+                 CF=c(1,(1/Si.mw)*1000,(1/SiO2.mw)*1000,1/Si.mw))
+N.cf=data.frame(Measurement=c("TN","DIN","DIN","TN","DIN",'TN'),
+                Unit=c(rep("mg N/L",2),"uM N","uM N","uM","uM"),
+                CF=c(rep((1/N.mw)*1000,2),1,1,1,1))
 NOX.cf=data.frame(Measurement="NOX",
-                  Unit=c("uM NO3","mg NO3-N/L","ug NO3-N/L","ueq/L","uM NO3-N","mg NO3/L"),
-                  CF=c(1,(1/N.mw)*1000,1/N.mw,1,1,(1/NO3.mw)*1000))
-NO3.cf=data.frame(Measurement="NO3",Unit=c("ug/L"),CF=c(1/NO3.mw))
-NO2.cf=data.frame(Measurement="NO2",Unit=c("ug/L"),CF=c(1/NO2.mw))
+                  Unit=c("uM NO3","mg NO3-N/L","ug NO3-N/L","ueq/L","uM NO3-N","mg NO3/L","uM"),
+                  CF=c(1,(1/N.mw)*1000,1/N.mw,1/NOX.val,1,(1/NO3.mw)*1000,1))
+NO3.cf=data.frame(Measurement="NO3",Unit=c("ug/L","uM"),CF=c(1/NO3.mw,1))
+NO2.cf=data.frame(Measurement="NO2",Unit=c("ug/L","uM"),CF=c(1/NO2.mw,1))
 NH4.cf=data.frame(Measurement="NH4",
-                  Unit=c("ueq/L","ug NH4/L","mg NH4-N/L","ug NH4-N/L","uM NH4-N","uM NH4"),
-                  CF=c(1,((1/NH4.mw)),(1/N.mw)*1000,(1/N.mw),1,1))
+                  Unit=c("ueq/L","ug NH4/L","mg NH4-N/L","ug NH4-N/L","uM NH4-N","uM NH4","uM"),
+                  CF=c(1/NH4.val,((1/NH4.mw)),(1/N.mw)*1000,(1/N.mw),1,1,1))
+
 other.N=data.frame(Measurement=c(rep("TDN",3),"DON","DTN"),
                    Unit=c("mg N/L","mg/L","uM N","ug/L","ug/L"),
                    CF=c(rep((1/N.mw)*1000,2),1,rep(1/N.mw,2)))
-TP.cf=data.frame(Measurement=c("TP"),Unit=c("mg P/L","uM P"),CF=c((1/P.mw)*1000,1))
+TP.cf=data.frame(Measurement=c("TP"),Unit=c("mg P/L","uM P","uM"),CF=c((1/P.mw)*1000,1,1))
 
 PO4.cf=data.frame(Measurement=c("PO4"),
                   Unit=c("ueq/L","ug PO4-P/L","mg PO4-P/L","mg PO4/L","uM PO4-P","uM PO4"),
                   CF=c((1/PO4.val),(1/P.mw),(1/P.mw)*1000,((1/PO4.mw))*1000,1,1))
 SRP.cf=data.frame(Measurement=c("SRP"),
-                  Unit=c("ug P/L","mg P/L","uM P"),
-                  CF=c(1/P.mw,(1/P.mw)*1000,1))
-C.cf=data.frame(Measurement=c(rep("DOC",2),rep("TOC",2),rep("DIC",2)),Unit=c("mg C/L","uM C"),CF=c((1/C.mw)*1000,1))
+                  Unit=c("ug P/L","mg P/L","uM P","uM"),
+                  CF=c(1/P.mw,(1/P.mw)*1000,1,1))
+C.cf=data.frame(Measurement=c(rep("DOC",3),rep("TOC",3),rep("DIC",3)),Unit=c("mg C/L","uM C","uM"),CF=c((1/C.mw)*1000,1,1))
 Q.cf=data.frame(Measurement=c("Instantaneous Q","Daily Avg Q"),
                   Unit=c("cfs"),
                   CF=0.0283168)
@@ -170,13 +181,14 @@ subset(unit.all,Measurement=="Alkalinity")
 alk.cf=data.frame(Measurement=c("Alkalinity"),
                   Unit=c("ueq/L","meq/L","mg HCO3-C","mg CaCO3/L"),
                   CF=c(1,1000,(1/(H.mw+C.mw+(O.mw*3)))*1000,(1/(Ca.mw+C.mw+(O.mw*3)))*1000))
-Na.cf=data.frame(Measurement=c("Na"),Unit=c("ueq/L","uM","mg/L"),CF=c(1,1,(1/Na.mw)*1000))
-K.cf=data.frame(Measurement=c("K"),Unit=c("ueq/L","uM","mg/L"),CF=c(1,1,(1/K.mw)*1000))
-Ca.cf=data.frame(Measurement=c("Ca"),Unit=c("ueq/L","uM","mg/L"),CF=c(1/2,1,(1/Ca.mw)*1000))
-Mg.cf=data.frame(Measurement=c("Mg"),Unit=c("ueq/L","uM","mg/L"),CF=c(1/2,1,(1/Mg.mw)*1000))
+Na.cf=data.frame(Measurement=c("Na"),Unit=c("ueq/L","uM","mg/L"),CF=c(1/Na.val,1,(1/Na.mw)*1000))
+K.cf=data.frame(Measurement=c("K"),Unit=c("ueq/L","uM","mg/L"),CF=c(1/K.val,1,(1/K.mw)*1000))
+Ca.cf=data.frame(Measurement=c("Ca"),Unit=c("ueq/L","uM","mg/L"),CF=c(1/Ca.val,1,(1/Ca.mw)*1000))
+Mg.cf=data.frame(Measurement=c("Mg"),Unit=c("ueq/L","uM","mg/L"),CF=c(1/Mg.val,1,(1/Mg.mw)*1000))
 SO4.cf=data.frame(Measurement=c("SO4"),Unit=c("ueq/L","uM","umols SO4","umols SO4-S","mg SO4/L","mg SO4-S/L","mg/L"),
-                  CF=c(1/2,1,1,1,(1/SO4.mw)*1000,(1/S.mw)*1000,(1/SO4.mw)*1000))
-Cl.cf=data.frame(Measurement=c("Cl"),Unit=c("ueq/L","uM","mg/L"),CF=c(1,1,(1/Cl.mw)*1000))
+                  CF=c(1/SO4.val,1,1,1,(1/SO4.mw)*1000,(1/S.mw)*1000,(1/SO4.mw)*1000))
+Cl.cf=data.frame(Measurement=c("Cl"),Unit=c("ueq/L","uM","mg/L"),CF=c(1/Cl.val,1,(1/Cl.mw)*1000))
+
 subset(unit.all,Measurement%in%c("Chl a (suspended)","Chl a (benthic)"))
 Chla.cf=data.frame(Measurement=c(rep("Chl a (suspended)",2),"Chl a (benthic)"),
                    Unit=c("ug/mL","ug/L","ug/mL"),CF=c(1000,1,1000))
@@ -189,10 +201,12 @@ subset(unit.all,data.set=="umr")
 
 cf.all=rbind(Si.CF,N.cf,NOX.cf,NO3.cf,NO2.cf,NH4.cf,other.N,TP.cf,PO4.cf,SRP.cf,C.cf,Q.cf,
              alk.cf,Na.cf,K.cf,Ca.cf,Mg.cf,SO4.cf,Cl.cf,Chla.cf)
+subset(cf.all,substr(Unit,1,2)=="uM")
 
 unit.all=merge(unit.all,cf.all,all.x=T)
 #unit.all$CF=with(unit.all,ifelse(Unit=="mM",1000,CF))
-unit.all$CF=with(unit.all,ifelse(Unit=="uM",1,CF))
+subset(unit.all,Unit=="uM")
+# unit.all$CF=with(unit.all,ifelse(Unit=="uM",1,CF))
 unit.all$CF=with(unit.all,ifelse(Unit=="cms",1,CF))
 unit.all$CF=with(unit.all,ifelse(Measurement=="pH",1,CF))
 unit.all$CF=with(unit.all,ifelse(Measurement=="TDP"&Unit=="mM P",1000,CF))
@@ -641,6 +655,13 @@ master.dat=master.dat[,c( "LTER", "Site/Stream.Name","site", "Sampling.Date","va
 master.dat$value[master.dat$value==0]=NA
 master.dat=subset(master.dat,is.na(value)==F)
 subset(master.dat, value==0)
+unique(master.dat$variable)
+unique(subset(master.dat,variable=="Benthic.Chl")$LTER)
+unique(subset(master.dat,variable=="Suspended.Chl")$LTER)
+arc.unit
+carey.unit
+KRR.unit
+umr.unit
 
 summary(master.dat)
 subset(master.dat, value<0)
@@ -669,6 +690,9 @@ subset(master.dat, value<0)
 
 # Fixed Conversion factors
 # write.csv(master.dat,paste0(export.path,"20220419_masterdata.csv"),row.names=F)
+
+# Fixed Conversion factors#2
+# write.csv(master.dat,paste0(export.path,"20220426_masterdata.csv"),row.names=F)
 
 
 boxplot(value~site,subset(master.dat,variable=="DSi"),log="y",col="grey",ylab="DSi (uM)")
