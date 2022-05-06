@@ -37,7 +37,9 @@ WRTDS_files<-sub("*_Q_WRTDS.csv", "", WRTDS_files_List_Q)
 #long_term=read.csv("Data_Years_Streams_WRTDS_010522.csv")
 #long_term_sites=long_term$site
 
-i=i
+# for testing 
+#i=i
+
 #run WRTDS! output will be saved to the same file
 for (i in 1:length(WRTDS_files)) {
   
@@ -65,12 +67,12 @@ for (i in 1:length(WRTDS_files)) {
   savePath<-"C:/Users/kjankowski/OneDrive - DOI/Documents/Projects/Silica Synthesis/Results/WRTDS/WRTDS_Si_results_GFN"
   saveResults(savePath, eList)
   
-  #estimate continuous Si
+  #estimate continuous Si - no longer using
   #eList<-modelEstimation(eList, minNumObs=50)
   
   ### GFN - estimate continuous Si with Q and CQ components ("GFN" method)
-  #eListOut <- runPairs(eList, windowSide = 6, minNumObs=50, year1=minYP, year2=maxYP)
-  eListOut <- runSeries(eList, windowSide = 6, minNumObs=50)
+  eListOut <- runPairs(eList, windowSide = 7, minNumObs=50, year1=minYP, year2=maxYP)
+  #eListOut <- runSeries(eList, windowSide = 6, minNumObs=50)
   
   #CIAnnualResults <- ciCalculations(eListOut, 
    #                                 verbose = TRUE, 
@@ -78,8 +80,10 @@ for (i in 1:length(WRTDS_files)) {
      #                               blockLength = 200, 
       #                              widthCI = 90)
   
+  ###########
+  ##  Adjustments to period of analysis for specific sites
   # For Sagehen Site
-  eListOut <- blankTime(eListOut, startBlank = "1996-01-01", endBlank = "2001-01-01")
+  # eListOut <- blankTime(eListOut, startBlank = "1996-01-01", endBlank = "2001-01-01")
   
   # adjust for MCM 
   #eListOut <- setPA(eListOut, paStart=12, paLong=2)
@@ -90,6 +94,7 @@ for (i in 1:length(WRTDS_files)) {
   # Saddle
   #eListOut <- setPA(eListOut, paStart=5, paLong=3)
   
+  ############
   #write output to this folder
   setwd("C:/Users/kjankowski/OneDrive - DOI/Documents/Projects/Silica Synthesis/Results/WRTDS/WRTDS_Si_results_GFN")
   
@@ -101,20 +106,20 @@ for (i in 1:length(WRTDS_files)) {
   ContConc<-eListOut$Daily
   
   #write csv of continuous Si data
-  #write.csv(ContConc, paste0(WRTDS_files[i], "_ContSi_GFN_WRTDS.csv"))
+  write.csv(ContConc, paste0(WRTDS_files[i], "_ContSi_GFN_WRTDS.csv"))
   
   #average yearly stats
   Results<-tableResults(eListOut)
   
   #write csv of results dataframe
-  #write.csv(Results, paste0(WRTDS_files[i], "_ResultsTable_GFN_WRTDS.csv"))
+  write.csv(Results, paste0(WRTDS_files[i], "_ResultsTable_GFN_WRTDS.csv"))
   
   #make new column for year
   ContConc$Year<-format(as.Date(ContConc$Date), "%Y")
   
   # calculate monthly values
   months=calculateMonthlyResults(eListOut)
-  #write.csv(months, paste0(WRTDS_files[i], "_Monthly_GFN_WRTDS.csv"))
+  write.csv(months, paste0(WRTDS_files[i], "_Monthly_GFN_WRTDS.csv"))
   
   #find min year
   minYP<-as.numeric(min(ContConc$Year))+1
@@ -135,7 +140,7 @@ for (i in 1:length(WRTDS_files)) {
   Trends<-cbind(Conc, Flux)
   
   #write csv of trends dataframe
-  #write.csv(Trends, paste0(WRTDS_files[i], "_TrendsTable_GFN_WRTDS.csv"))
+  write.csv(Trends, paste0(WRTDS_files[i], "_TrendsTable_GFN_WRTDS.csv"))
   
   #open pdf for graphical output
   pdf(paste0(WRTDS_files[i], "_WRTDS_GFN_output.pdf"))
@@ -158,36 +163,28 @@ for (i in 1:length(WRTDS_files)) {
   dev.off()
   
   # For most streams that don't need monthly adjustment
-  #eListPairs <- runPairs(eList, windowSide = 6, 
-   #                      minNumObs=50, 
-    #                     year1=minYP, 
-     #                    year2=maxYP,
-      #                   )
-  
-# for MCM streams
   eListPairs <- runPairs(eList, windowSide = 6, 
                          minNumObs=50, 
                          year1=minYP, 
-                         year2=maxYP)
+                         year2=maxYP,
+                        )
+  
+# for MCM streams
+  #eListPairs <- runPairs(eList, windowSide = 6, 
+   #                      minNumObs=50, 
+    #                     year1=minYP, 
+     #                    year2=maxYP)
 
   write.csv(eListPairs, paste0(WRTDS_files[i], "_Si_GFN.csv"))
   
-  
-  ## EGRETCi Trends
-  #caseSetUp <- trendSetUp(eListOut, 
-                        #year1=minYP,
-                        #year2=maxYP,
-                        #nBoot = 100, 
-                        #bootBreak = 50,
-                        #blockLength = 200)
-  #eBoot<-wBT(eListOut, caseSetUp=caseSetUp)
-  
+ 
+## Trend uncertainty  
   # runPairsBoot
   eBoot<-runPairsBoot(eList,eListPairs, nBoot=100,blockLength = 200)
   bootResults <- cbind(eBoot$xConc, eBoot$xFlux, eBoot$pConc, eBoot$pFlux)
   bootSummary <- eBoot$bootOut
   
-## keep results
+## keep bootstrapped results
   CIs=as.data.frame(bootResults)
   CIs$solute=rep("Si", nrow(bootResults))
   colnames(CIs)=c("xConc", "xFlux", "pConc", "pFlux", "solute")
