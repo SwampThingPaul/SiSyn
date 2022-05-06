@@ -6,12 +6,13 @@ library(plyr)
 library(RColorBrewer)
 library(reshape2)
 library(PupillometryR)
+library(ggpubr)
 #install.packages("PupillometryR")
 
 setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
 
 #read in files
-results<-read.csv("WRTDS_GFN_AnnualResults_AllSites_030922.csv")
+results<-read.csv("WRTDS_GFN_AnnualResults_AllSites_050422.csv")
 names(results)[2]<-"Site"
 biome<-read.csv("Biome.csv")
 
@@ -36,17 +37,37 @@ raincloud_theme = theme(
   axis.line.y = element_line(colour = 'black', size=0.5, linetype='solid'))
 
 #reorder the names of Biome so that they plot in this order on axis and legens
-results$Biome2<-factor(results$Biome_new, levels = c("Tropical rainforest","Tropical savanna",
-                                                   "Temperate coniferous forest","Temperate deciduous forest", 
-                                                   "Temperate grassland", "Alpine tundra",
-                                                   "Boreal forest","Arctic tundra", "Polar desert"))
+results$Biome2<-factor(results$Biome_new, levels = c("Tropical rainforest","Temperate coniferous forest",
+                                                   "Temperate grassland","Boreal forest",
+                                                   "Temperate deciduous forest", 
+                                                   "Tropical savanna","Alpine tundra", 
+                                                   "Polar desert", "Arctic tundra"))
 
 #set color palette
-color_pal<-c("lawngreen", "goldenrod1", "darkgreen", "darkorange2", "firebrick1", "mediumpurple3", 
-             "royalblue3", "lightsteelblue3", "ivory3")
+#color_pal<-c("lawngreen", "goldenrod1", "darkgreen", "darkorange2", "firebrick1", "mediumpurple3", 
+             #"royalblue3", "lightsteelblue3", "ivory3")
 
 #assign color and fill (need to be different for points and boxplots) to one variable
-col_pal<-list(scale_color_manual(values = color_pal),scale_fill_manual(values = color_pal))
+col_pal<-list(scale_color_manual(values = col_values),scale_fill_manual(values = col_values))
+
+f <- function(pal) brewer.pal(brewer.pal.info[pal, "maxcolors"], pal)
+cols <- f("Set2")
+
+cols_final<-c(cols, "#A46B5C")
+show_col(cols_final)
+
+#assign colors
+col_values<-c("Boreal forest" = cols_final[1],
+              "Temperate deciduous forest" = cols_final[2],
+              "Alpine tundra" = cols_final[3],
+              "Arctic tundra" = cols_final[4],
+              "Tropical rainforest" = cols_final[5],
+              "Tropical savanna" = cols_final[6],
+              "Temperate grassland" = cols_final[7],
+              "Polar desert" = cols_final[8],
+              "Temperate coniferous forest" = cols_final[9])
+
+#results$Yield<-results$Yield*10^6
 
 #plot
 pdf("Avg_Biome_Fig.pdf", height = 5, width = 12)
@@ -84,11 +105,12 @@ pdf("Avg_Biome_Fig.pdf", height = 5, width = 12)
     guides(fill = FALSE, color=guide_legend(override.aes = list(size=5))) +
     guides(color = FALSE) +
     theme_bw() +
-    labs(y="Yield (10^6kg/km2/yr)", x="", color="Biome")+
+    labs(y="Yield (kg/km2/yr)", x="", color="Biome")+
     raincloud_theme+
     coord_flip()+
     theme(axis.text.y = element_blank())+
     scale_x_discrete(limits = rev)+
+    scale_y_continuous(labels = function(x) format(x, scientific = FALSE))+
     col_pal
   
   #combine plots
