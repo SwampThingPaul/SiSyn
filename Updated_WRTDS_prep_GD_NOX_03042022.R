@@ -89,6 +89,10 @@ DateList<-c("Date", "dateTime", "dates", "date")
 #start loop - will replicate code inside for each unique site
 for (i in 1:length(StreamList)) {
   
+  setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
+  
+  print(i)
+  
   #extract name from site list
   stream<-StreamList[i]
   
@@ -99,7 +103,8 @@ for (i in 1:length(StreamList)) {
   csv<-subset(csv_files, csv_files$files==ref$files)
   
   #read in proper discharge file
-  Q<-read.csv(drive_download(file = as_id(csv$id), overwrite = TRUE)$name)
+  #Q<-read.csv(drive_download(file = as_id(csv$id), overwrite = TRUE)$name)
+  Q<-read.csv(csv$name)
   
   #name discharge column "Q"
   names(Q)[which(colnames(Q) %in% DischargeList)]<-"Q"
@@ -129,20 +134,32 @@ for (i in 1:length(StreamList)) {
   
   #find minimum date of NOX file
   NOXmin<-min(NOX$Date)
-  #convert to day of water year
-  MinDay<-as.numeric(hydro.day.new(NOXmin))
   
-  #find maximum date of NOX file
-  NOXmax<-max(NOX$Date)
-  #convert to day of water year
-  MaxDay<-as.numeric(hydro.day.new(NOXmax))
+  #convert to days since 1970
+  NOXmin_julian<-as.numeric(NOXmin)
   
-  #find difference between beginning of next water year and end of NOX file
-  si_water_year_diff<-365-MaxDay
+  #subtract 10 years from Si min to get Q min
+  Qmin<-(NOXmin_julian-10*365.25)-1
   
-  #subset Q file associated with NOX file starting at beginning of water year of start of NOX file and ending at end
-  #of water year of last NOX file date
-  Qshort<-Q[Q$Date > (NOXmin - MinDay) & Q$Date < (NOXmax + si_water_year_diff),]
+  #subset Q file associated with Si file starting 10 years before Si file starts 
+  #and ending when the Q file ends
+  #extra space of Q file on ends of Si help moving flow weighted average for flux perform better
+  Qshort<-Q[Q$Date > Qmin,]
+  
+  # #convert to day of water year
+  # MinDay<-as.numeric(hydro.day.new(NOXmin))
+  # 
+  # #find maximum date of NOX file
+  # NOXmax<-max(NOX$Date)
+  # #convert to day of water year
+  # MaxDay<-as.numeric(hydro.day.new(NOXmax))
+  # 
+  # #find difference between beginning of next water year and end of NOX file
+  # si_water_year_diff<-365-MaxDay
+  # 
+  # #subset Q file associated with NOX file starting at beginning of water year of start of NOX file and ending at end
+  # #of water year of last NOX file date
+  # Qshort<-Q[Q$Date > (NOXmin - MinDay) & Q$Date < (NOXmax + si_water_year_diff),]
   
   #extract date and discharge columns
   Qshort<-Qshort %>%
@@ -155,7 +172,8 @@ for (i in 1:length(StreamList)) {
   write.csv(Qshort, paste0(StreamList[i], "_NOX_Q_WRTDS.csv"), row.names = FALSE)
   
   #find minimum date of NOX file
-  Qmin<-min(Qshort$Date)
+  Qmin<-min(Q$Date)
+  
   #convert to day of water year
   QMinDay<-as.numeric(hydro.day.new(Qmin))
   
