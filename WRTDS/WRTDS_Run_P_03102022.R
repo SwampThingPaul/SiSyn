@@ -156,13 +156,13 @@ for (i in 1:length(WRTDS_files)) {
   write.csv(error, paste0(WRTDS_files[i], "_P_ErrorStats_WRTDS.csv"), row.names=FALSE)
   
   #extract continuous Si file from eList
-  ContConc<-eList$Daily
+  ContConc<-eListOut$Daily
   
   #write csv of continuous Si data
   write.csv(ContConc, paste0(WRTDS_files[i], "_P_Cont_WRTDS.csv"))
   
   #average yearly stats
-  Results<-tableResults(eList)
+  Results<-tableResults(eListOut)
   
   #write csv of results dataframe
   write.csv(Results, paste0(WRTDS_files[i], "_P_ResultsTable_WRTDS.csv"))
@@ -171,7 +171,7 @@ for (i in 1:length(WRTDS_files)) {
   ContConc$Year<-format(as.Date(ContConc$Date), "%Y")
   
   # calculate monthly values
-  months=calculateMonthlyResults(eList)
+  months=calculateMonthlyResults(eListOut)
   write.csv(months, paste0(WRTDS_files[i], "_P_Monthly_WRTDS.csv"))
   
   #find min year
@@ -184,10 +184,10 @@ for (i in 1:length(WRTDS_files)) {
   yearPoints<-c(minYP, maxYP)
   
   #calculate concentration trend
-  Conc<-tableChangeSingle(eList, fluxUnit = 8, yearPoints)
+  Conc<-tableChangeSingle(eListOut, fluxUnit = 8, yearPoints)
   
   #calculate flux trend
-  Flux<-tableChangeSingle(eList, fluxUnit = 8, yearPoints, flux = TRUE)
+  Flux<-tableChangeSingle(eListOut, fluxUnit = 8, yearPoints, flux = TRUE)
   
   #bind into one dataframe
   Trends<-cbind(Conc, Flux)
@@ -205,13 +205,13 @@ for (i in 1:length(WRTDS_files)) {
   plotConcTimeDaily(eList)
   
   #plot concentration
-  plotConcHist(eList) # minYP, maxYP)
+  plotConcHist(eListOut) # minYP, maxYP)
   
   #plot flux
-  plotFluxHist(eList) #, minYP, maxYP)
+  plotFluxHist(eListOut) #, minYP, maxYP)
   
   #plot data
-  multiPlotDataOverview(eList)
+  multiPlotDataOverview(eListOut)
   
   dev.off()
   
