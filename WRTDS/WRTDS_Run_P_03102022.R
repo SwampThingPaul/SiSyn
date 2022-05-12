@@ -136,8 +136,11 @@ for (i in 1:length(WRTDS_files)) {
   savePath<-"/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/WRTDS_P_Results_Updated/workspaces"
   saveResults(savePath, eList)
   
-  #estimate continuous Si
-  eList<-modelEstimation(eList, minNumObs=50)
+  # fit original WRTDS model 
+  eList1<-modelEstimation(eList, minNumObs=50)
+  
+  # fit GFN - estimate continuous Si with Q and CQ components ("GFN" method)
+  eListOut <- runSeries(eList, windowSide = 11, minNumObs=50)
   
   # adjust for MCM 
   #eList <- setPA(eList, paStart=12, paLong=2)
@@ -150,26 +153,26 @@ for (i in 1:length(WRTDS_files)) {
   
   # extract error statistics
   error <- errorStats(eList)
-  write.csv(error, paste0(WRTDS_files[i], "_ErrorStats_WRTDS.csv"), row.names=FALSE)
+  write.csv(error, paste0(WRTDS_files[i], "_P_ErrorStats_WRTDS.csv"), row.names=FALSE)
   
   #extract continuous Si file from eList
   ContConc<-eList$Daily
   
   #write csv of continuous Si data
-  write.csv(ContConc, paste0(WRTDS_files[i], "_ContP_WRTDS.csv"))
+  write.csv(ContConc, paste0(WRTDS_files[i], "_P_Cont_WRTDS.csv"))
   
   #average yearly stats
   Results<-tableResults(eList)
   
   #write csv of results dataframe
-  write.csv(Results, paste0(WRTDS_files[i], "_ResultsTable_WRTDS.csv"))
+  write.csv(Results, paste0(WRTDS_files[i], "_P_ResultsTable_WRTDS.csv"))
   
   #make new column for year
   ContConc$Year<-format(as.Date(ContConc$Date), "%Y")
   
   # calculate monthly values
   months=calculateMonthlyResults(eList)
-  write.csv(months, paste0(WRTDS_files[i], "_Monthly_WRTDS.csv"))
+  write.csv(months, paste0(WRTDS_files[i], "_P_Monthly_WRTDS.csv"))
   
   #find min year
   minYP<-as.numeric(min(ContConc$Year))+1
@@ -190,13 +193,13 @@ for (i in 1:length(WRTDS_files)) {
   Trends<-cbind(Conc, Flux)
   
   #write csv of trends dataframe
-  write.csv(Trends, paste0(WRTDS_files[i], "_TrendsTable_WRTDS.csv"))
+  write.csv(Trends, paste0(WRTDS_files[i], "_P_TrendsTable_WRTDS.csv"))
   
   #open pdf for graphical output
-  pdf(paste0(WRTDS_files[i], "_WRTDS_output.pdf"))
+  pdf(paste0(WRTDS_files[i], "_P_WRTDS_output.pdf"))
   
-  #residual plots
-  fluxBiasMulti(eList)
+  #residual plots - this function only works on original model file - not sure why
+  fluxBiasMulti(eList1)
   
   #examine model fit
   plotConcTimeDaily(eList)
@@ -212,16 +215,45 @@ for (i in 1:length(WRTDS_files)) {
   
   dev.off()
   
-  ## EGRETCi Trends
-  caseSetUp <- trendSetUp(eList, 
-                          year1=minYP,
-                          year2=maxYP,
-                          nBoot = 100, 
-                          bootBreak = 50,
-                          blockLength = 200)
-  eBoot<-wBT(eList, caseSetUp=caseSetUp, saveOutput = TRUE, jitterOn = FALSE)
+  # Set up for bootstrapping for WRTDS GFN - For most streams that don't need monthly adjustment
+  # units - conc = mg/L; flux = million kg/year
+  eListPairs <- runPairs(eList, windowSide = 11, 
+                         minNumObs=50, 
+                         year1=minYP, 
+                         year2=maxYP)
+  
+  # for streams with month adjustment
+  #eListPairs <- runPairs(eList, windowSide = 11, 
+  #                      minNumObs=50, 
+  #                     year1=minYP, 
+  #                    year2=maxYP, paStart=5, paLong=3)
+  
+  write.csv(eListPairs, paste0(WRTDS_files[i], "_Si_GFN.csv"))
+  
+  # Bootstrapping - runPairsBoot
+  eBoot<-runPairsBoot(eList,eListPairs, nBoot=100,blockLength = 200)
   bootResults <- cbind(eBoot$xConc, eBoot$xFlux, eBoot$pConc, eBoot$pFlux)
   bootSummary <- eBoot$bootOut
+  
+  ## keep results
+  CIs=as.data.frame(bootResults)
+  CIs$solute=rep("P", nrow(bootResults))
+  colnames(CIs)=c("xConc", "xFlux", "pConc", "pFlux", "solute")
+  write.csv(CIs, paste0(WRTDS_files[i], "_P_EGRETCi_GFN_bootstraps.csv"), row.names=FALSE)
+  
+  Summary=as.data.frame(bootSummary)
+  write.csv(Summary, paste0(WRTDS_files[i], "_P_EGRETCi_GFN_Trend.csv"))
+  
+  ## OLD - EGRETCi Trends
+  #caseSetUp <- trendSetUp(eList, 
+   #                       year1=minYP,
+    #                      year2=maxYP,
+     #                     nBoot = 100, 
+      #                    bootBreak = 50,
+       #                   blockLength = 200)
+  #eBoot<-wBT(eList, caseSetUp=caseSetUp, saveOutput = TRUE, jitterOn = FALSE)
+  #bootResults <- cbind(eBoot$xConc, eBoot$xFlux, eBoot$pConc, eBoot$pFlux)
+  #bootSummary <- eBoot$bootOut
   # calculates CI around model fit - TAKES FOREVER
   #CIAnnualResults <- ciCalculations(eList,nBoot=100,blockLength=200)
   
@@ -229,7 +261,7 @@ for (i in 1:length(WRTDS_files)) {
   CIs=as.data.frame(bootResults)
   CIs$solute=rep("P", nrow(bootResults))
   colnames(CIs)=c("xConc", "xFlux", "pConc", "pFlux", "solute")
-  write.csv(CIs, paste0(WRTDS_files[i], "_EGRETCi_bootstraps.csv"), row.names=FALSE)
+  write.csv(CIs, paste0(WRTDS_files[i], "_P_EGRETCi_bootstraps.csv"), row.names=FALSE)
   
   Summary=as.data.frame(bootSummary)
   write.csv(Summary, paste0(WRTDS_files[i], "_P_EGRETCi_Trend.csv"))
@@ -238,14 +270,6 @@ for (i in 1:length(WRTDS_files)) {
   
   #plotContours(eList,yearStart=2000,yearEnd=2019, qBottom=1000, qTop=50000, qUnit=2)
   
-  ### GFN - estimate continuous Si with Q and CQ components ("GFN" method)
-  eListOut <- runPairs(eList, windowSide = 6, minNumObs=50, year1=minYP, year2=maxYP)
-  write.csv(eListOut, paste0(WRTDS_files[i], "_P_GFN.csv"))
-  
-  #tableResults(eListOut)
-  #plotConcHist(eListOut)
-  #plotFluxHist(eListOut)
-  #tableChange(eListOut, yearPoints = c(2002, 2010, 2019))
   
 #}
 
