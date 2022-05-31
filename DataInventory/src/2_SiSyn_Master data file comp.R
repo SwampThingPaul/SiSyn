@@ -625,6 +625,8 @@ GRO.dat[,c("TDN","TDP","NO3","NO2","DON")]=as.numeric(NA);
 GRO.dat.melt=melt(GRO.dat[,c(idvars,param.vars)],id.vars=idvars)
 GRO.dat.melt=subset(GRO.dat.melt,is.na(value)==F)
 GRO.dat.melt$site=GRO.dat.melt$'Site/Stream.Name'
+unique(GRO.dat.melt$site)
+GRO.dat.melt$site=with(GRO.dat.melt,ifelse(site%in%c( "Ob", "Ob'"),"Ob",site))
 GRO.dat.melt$variable=as.character(GRO.dat.melt$variable)
 
 head(sort(unique(GRO.dat.melt$value)))
@@ -694,6 +696,8 @@ subset(master.dat, value<0)
 # Fixed Conversion factors#2
 # write.csv(master.dat,paste0(export.path,"20220426_masterdata.csv"),row.names=F)
 
+# Adjusted GRO site Ob and Ob' to Ob
+# write.csv(master.dat,paste0(export.path,"20220531_masterdata.csv"),row.names=F)
 
 boxplot(value~site,subset(master.dat,variable=="DSi"),log="y",col="grey",ylab="DSi (uM)")
 
