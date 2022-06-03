@@ -1,6 +1,7 @@
 #get number of Si-Q measurements per site and year
 library(lubridate)
 Si_Q_WRTDS_sites$year = year(Si_Q_WRTDS_sites$Date)
+Si_Q_WRTDS_sites = na.omit(Si_Q_WRTDS_sites)
 
 library(dplyr)
 Si_Q_WRTDS_sites_stats = 
@@ -112,7 +113,7 @@ for (i in 1:length(site_list)){
 annual_site_slopes_mblm = ldply(annual_site_slopes_mblm, data.frame)
 annual_site_slopes_mblm = merge(annual_site_slopes_mblm, LTERsitelist, all=T)
 annual_site_slopes_mblm$mblm_sig = ifelse(annual_site_slopes_mblm$mblm_pvalue<=0.055, "sig","not sig")
-write.csv(annual_site_slopes_mblm, file="LTERsites_CQmblm.csv")
+write.csv(annual_site_slopes_mblm, file="LTERsites_CQmblm_3Jun22.csv")
 
 annual_site_slopes_stats$sig_slopes = ifelse(annual_site_slopes_stats$sig=="sig",annual_site_slopes_stats$slope,0)
 annual_site_slopes_mblm_stats = merge(annual_site_slopes_stats, annual_site_slopes_mblm,all=T)

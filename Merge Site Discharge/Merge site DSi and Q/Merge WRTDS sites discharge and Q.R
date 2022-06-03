@@ -2,7 +2,7 @@
 WRTDS_DSi_Q = merge(WRTDS_discharge_allsites,WRTDS_DSi_mergedsites, by=c("site.name","Date"), all=T)
 length(unique(WRTDS_DSi_Q$site.name))
 
-write.csv(WRTDS_DSi_Q, file="merged_DSi_Q_WRTDSlongterm_11Aug21.csv")
+write.csv(WRTDS_DSi_Q, file="merged_DSi_Q_WRTDSlongterm_3Jun22.csv")
 
 #filter merged file by sites run in WRTDS
 WRTDS_longterm_site_list = Data_years_streams_WRTDS$Stream.Site
