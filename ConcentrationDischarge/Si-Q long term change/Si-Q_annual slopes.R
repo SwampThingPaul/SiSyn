@@ -92,13 +92,16 @@ summary(mblm(slope~year, annual_site_slopes_stats[annual_site_slopes_stats$site.
 #change insignificant annual slopes to 0
 annual_site_slopes$sig_slopes = ifelse(annual_site_slopes$sig=="sig",annual_site_slopes$slope,0)
 
+#save as .csv
+write.csv(annual_site_slopes,file="LongTerm_annualCQ_slopes.csv")
+
 #loop through annual slopes, run mblm for long term change over time
 annual_site_slopes_mblm = list()
 for (i in 1:length(site_list)){
   tryCatch({
     annual_site_slope = subset(annual_site_slopes, annual_site_slopes$site.name==site_list[i])
     
-    mblm_slope=as.numeric(mblm(sig_slopes~year, annual_site_slope)$coefficients[2])
+    mblm_slope=mblm(sig_slopes~year, annual_site_slope)$coefficients[2]
     mblm_intercept=summary(mblm(sig_slopes~year, annual_site_slope))$coefficients[1,1]
     mblm_pvalue=summary(mblm(sig_slopes~year, annual_site_slope))$coefficients[2,4]
   }, error=function(e){cat("ERROR: ",conditionMessage(e),"\n")})
@@ -111,9 +114,10 @@ for (i in 1:length(site_list)){
 }
 
 annual_site_slopes_mblm = ldply(annual_site_slopes_mblm, data.frame)
-annual_site_slopes_mblm = merge(annual_site_slopes_mblm, LTERsitelist, all=T)
+annual_site_slopes_mblm_list = annual_site_slopes_mblm #make a copy
+annual_site_slopes_mblm = merge(annual_site_slopes_mblm, LTERsitelist)
 annual_site_slopes_mblm$mblm_sig = ifelse(annual_site_slopes_mblm$mblm_pvalue<=0.055, "sig","not sig")
-write.csv(annual_site_slopes_mblm, file="LTERsites_CQmblm_3Jun22.csv")
+write.csv(annual_site_slopes_mblm, file="LTERsites_CQmblm_9Jun22.csv")
 
 annual_site_slopes_stats$sig_slopes = ifelse(annual_site_slopes_stats$sig=="sig",annual_site_slopes_stats$slope,0)
 annual_site_slopes_mblm_stats = merge(annual_site_slopes_stats, annual_site_slopes_mblm,all=T)
