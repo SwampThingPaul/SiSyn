@@ -7,15 +7,21 @@ length(intersect(cryo_sites,AnnualCQslopes_mlbmresults$site.name))
 setdiff(cryo_sites,AnnualCQslopes_mlbmresults$site.name)
 
 #filter mblm results to cryo sites alone
-cryo_mblm = subset(AnnualCQslopes_mlbmresults,AnnualCQslopes_mlbmresults$site.name%in%cryo_sites)
+cryo_annualCQ_mblm = subset(AnnualCQslopes_mlbmresults,AnnualCQslopes_mlbmresults$site.name%in%cryo_sites)
+cryo_mblm = subset(LTERsites_CQmblm_9Jun22, LTERsites_CQmblm_9Jun22$site.name%in%cryo_sites)
+cryo_annualCQ = subset(LongTerm_annualCQ_slopes_9Jun22,LongTerm_annualCQ_slopes_9Jun22$site.name%in%cryo_sites)
 
 #plot annual CQ slope for each cryo site
-head(cryo_mblm,aes(x=year, y=slope, color=sig))
-ggplot(cryo_mblm)+
-  geom_point()+
+head(cryo_mblm)
+ggplot()+
+  geom_point(data=cryo_annualCQ_mblm, aes(x=year, y=slope))+
+  geom_abline(data=cryo_mblm,aes(intercept=mblm_intercept,slope=mblm_slope,color=mblm_sig,lty=mblm_sig))+
   scale_color_manual(values=c("gray","black"))+
-  geom_abline(yintercept=mblm_intercept,slope=mblm_slope)+
+  scale_linetype_manual(values=c("dashed","solid"))+
   scale_x_continuous(limits=c(1980,2020))+
   geom_hline(yintercept=0, lty="dashed")+
   facet_wrap(~site.name,scales="free_y")+
   theme_bw()
+
+write.csv(cryo_annualCQ,file="cryo_annualCQ_results.csv")
+write.csv(cryo_mblm,file="cryo_mblm_results.csv")
