@@ -169,11 +169,11 @@ for (i in 1:length(WRTDS_files)) {
                          year2=maxYP,
                         )
   
-# for MCM streams
-  #eListPairs <- runPairs(eList, windowSide = 6, 
-   #                      minNumObs=50, 
-    #                     year1=minYP, 
-     #                    year2=maxYP)
+  # for streams with month adjustment
+  #eListPairs <- runPairs(eList, windowSide = 11, 
+  #                      minNumObs=50, 
+  #                     year1=minYP, 
+  #                    year2=maxYP, paStart=5, paLong=3)
 
   write.csv(eListPairs, paste0(WRTDS_files[i], "_Si_GFN.csv"))
   
