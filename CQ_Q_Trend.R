@@ -40,6 +40,11 @@ GFN_cast$Biome2<-factor(GFN_cast$Biome, levels = c("Tropical rainforest","Temper
                                                      "Polar desert", "Arctic tundra"))
 
 #quatify quadrant based on Q and CQ positive vs negative plot
+GFN_cast$quadrant<-ifelse(GFN_cast$Yield_CQ > 0 & abs(GFN_cast$Yield_CQ) > abs(GFN_cast$Yield_Q), "1",
+                          ifelse(GFN_cast$Yield_Q > 0 & abs(GFN_cast$Yield_Q) > abs(GFN_cast$Yield_CQ), "2",
+                                 ifelse(GFN_cast$Yield_CQ < 0 & abs(GFN_cast$Yield_CQ) > abs(GFN_cast$Yield_Q), "3",
+                                        ifelse(GFN_cast$Yield_Q < 0 & abs(GFN_cast$Yield_Q) > abs(GFN_cast$Yield_CQ), "4", NA))))
+
 GFN_cast$quadrant<-ifelse(GFN_cast$Yield_Q < 0 & GFN_cast$Yield_CQ > 0, "1",
                           ifelse(GFN_cast$Yield_Q > 0 & GFN_cast$Yield_CQ > 0, "2",
                                  ifelse(GFN_cast$Yield_Q < 0 & GFN_cast$Yield_CQ < 0, "4",
@@ -84,7 +89,7 @@ ggplot(GFN_cast)+geom_abline(slope = 1, lty="dashed")+geom_abline(slope = -1, lt
   labs(x="Percent change in yield attributed to discharge", 
        y="Percent change in yield attributed to biogeochemical changes",
        size="Overall Yield Percent Change",shape="Slope Direction", fill="Biome")+
-  col_pal+lims(x=c(-150, 150), y=c(-150,150))+
+  col_pal+
   scale_shape_manual(values = c(24,25))+
   guides(fill=guide_legend(override.aes=list(shape=24, size=5)), 
          size=guide_legend(override.aes = list(shape=24)),
@@ -102,7 +107,7 @@ pdf("BarChart_Yield.pdf", width = 7, height = 7)
 #since it is the only Arctic Tundra site, if Imnaviat is removed it messes up the legend
 ggplot(quantrant_plot, mapping=aes(x=quadrant, fill=Biome2, na.rm=TRUE), 
        position="stack")+geom_bar(col="black", na.rm = TRUE)+
-  theme_classic()+scale_fill_brewer(palette = "Set1")+
+  theme_classic()+
   col_pal+
   labs(x="Quadrant", y="Count", fill="Biome")+
   theme(text=element_text(size = 20), legend.position = "none")
@@ -129,10 +134,11 @@ GFN_cast$neg<-ifelse(GFN_cast$Conc_Tot < 0, "Negative percent change in yield", 
 
 GFN_cast$neg<-factor(GFN_cast$neg, levels = c("Positive percent change in yield", "Negative percent change in yield"))
 
-GFN_cast$quadrant<-ifelse(GFN_cast$Conc_Q < 0 & GFN_cast$Conc_CQ > 0, "1",
-                          ifelse(GFN_cast$Conc_Q > 0 & GFN_cast$Conc_CQ > 0, "2",
-                                 ifelse(GFN_cast$Conc_Q < 0 & GFN_cast$Conc_CQ < 0, "4",
-                                        ifelse(GFN_cast$Conc_Q > 0 &GFN_cast$Conc_CQ < 0, "3", NA))))
+GFN_cast$quadrant<-ifelse(GFN_cast$Conc_CQ > 0 & abs(GFN_cast$Conc_CQ) > abs(GFN_cast$Conc_Q), "1",
+                          ifelse(GFN_cast$Conc_Q > 0 & abs(GFN_cast$Conc_Q) > abs(GFN_cast$Conc_CQ), "2",
+                                 ifelse(GFN_cast$Conc_CQ < 0 & abs(GFN_cast$Conc_CQ) > abs(GFN_cast$Conc_Q), "3",
+                                        ifelse(GFN_cast$Conc_Q < 0 & abs(GFN_cast$Conc_Q) > abs(GFN_cast$Conc_CQ), "4", NA))))
+
 
 GFN_cast$quadrant<-ifelse(is.na(GFN_cast$quadrant), "No change in Q", GFN_cast$quadrant)
 
@@ -145,9 +151,10 @@ GFN_cast$Biome2<-factor(GFN_cast$Biome, levels = c("Tropical rainforest","Temper
 #reassign variable
 quantrant_plot<-GFN_cast
 
-pdf("QuadrantChart_Concentration.pdf", width = 14, height = 9)
+pdf("QuadrantChart_Concentration.pdf", width = 18, height = 10)
 
 ggplot(GFN_cast, aes(Conc_Q, Conc_CQ, fill=Biome2, shape=neg, size=abs(Conc_Tot)))+
+  geom_abline(slope = 1, lty="dashed")+geom_abline(slope = -1, lty="dashed")+
   geom_hline(yintercept=0)+geom_vline(xintercept=0)+geom_point()+theme_classic()+
   labs(x="Percent change in concentration attributed to discharge", 
       y="Percent change in concentration attributed to biogeochemical changes",
@@ -157,7 +164,7 @@ ggplot(GFN_cast, aes(Conc_Q, Conc_CQ, fill=Biome2, shape=neg, size=abs(Conc_Tot)
   guides(fill=guide_legend(override.aes=list(shape=24, size=5)), 
          size=guide_legend(override.aes = list(shape=24)),
          shape=guide_legend(override.aes = list(size=5)))+
-  theme(text=element_text(size = 20))+ylim(-50, 250)+
+  theme(text=element_text(size = 20))+
   scale_size_continuous(range=c(3,8), limits=c(0,250), breaks = c(0,50,100,150,200,250))
 
 dev.off()

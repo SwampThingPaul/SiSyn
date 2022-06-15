@@ -17,9 +17,6 @@ folder<-drive_get(as_id(folder_url))
 #get list of csv files from folder
 csv_files<-drive_ls(folder, type="csv")
 
-# not sure what this is removing... 
-# csv_files<-csv_files[-c(26),]
-
 #split ".csv" from document names
 csv_files$files<-word(csv_files$name, 1, sep = "\\.csv")
 
@@ -30,9 +27,10 @@ QLog<-read.csv("DischargeLog_All_011422.csv")
 
 names(QLog)[3]<-"files"
 
-years_20<-read.csv("Data_years_streams_WRTDS.csv")
+years_20<-read.csv("NH4_MDL.csv")
+NH4_MDL<-read.csv("NH4_MDL.csv")
 
-names(years_20)[2]<-"Stream"
+names(years_20)[1]<-"Stream"
 
 #merge discharge log and list of csv files in google drive
 RefTable<-merge(QLog, csv_files, by="files")
@@ -52,34 +50,23 @@ RefTable<-RefTable[,c(1,2,4)]
 #read in master chemistry data
 #setwd("U:/Jankowski/My Documents/Projects/Silica Synthesis/Data/Chem Data")
 
-MDL<-read.csv("WRTDS_MDL_N_P.csv")
-
-MDL_N<-MDL[,c(1:3)]
-
 master<-read.csv("20210907_masterdata.csv")
 
 #rename column
 names(master)[2]<-"Stream"
 #subset Si data
-masterNOX<-subset(master, master$variable=="NOx")
+masterNH4<-subset(master, master$variable=="NH4")
 
 # convert NOX to mgL from uM
-masterNOX$value_mgL = ((masterNOX$value/1000000)*14.0067)*1000
-
-# remove dates before 1982 for HJ Andrews sites
-earlyAND = filter(masterNOX, LTER == "AND" & year(Sampling.Date) < 1983)
-
-# NOTE - this overwrites new data file as "masterNOX" without early data
-# did that way to avoid re-writing and messing up later code
-masterNOX=anti_join(masterNOX, earlyAND)
+masterNH4$value_mgL = ((masterNH4$value/1000000)*14.0067)*1000
 
 #rename columns
-names(masterNOX)[4]<-"Date"
+names(masterNH4)[4]<-"Date"
 # value [6] = mM concentration, # value_mgL [7] = mg/L concentration
-names(masterNOX)[7]<-"NOX"
+names(masterNH4)[7]<-"NH4"
 
 #convert date to date format
-masterNOX$Date<-as.Date(masterNOX$Date, "%Y-%m-%d")
+masterNH4$Date<-as.Date(masterNH4$Date, "%Y-%m-%d")
 
 #make list of unique sites from reference table
 StreamList<-unique(RefTable$Stream)
@@ -97,7 +84,7 @@ DischargeList<-c("MEAN_Q", "Q_m3sec","Q_cms","Discharge", "InstantQ", "Q", "disc
 DateList<-c("Date", "dateTime", "dates", "date")
 
 #start loop - will replicate code inside for each unique site
-for (i in 49:length(StreamList)) {
+for (i in 1:length(StreamList)) {
   
   setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
   
@@ -112,7 +99,7 @@ for (i in 49:length(StreamList)) {
   #extract row of csv list table corresponding discharge file (extract discharge site)
   csv<-subset(csv_files, csv_files$files==ref$files)
   
-  MDL_N_value<-subset(MDL_N, MDL_N$site==stream)
+  MDL<-subset(NH4_MDL, NH4_MDL$site==stream)
   
   #read in proper discharge file
   #Q<-read.csv(drive_download(file = as_id(csv$id), overwrite = TRUE)$name)
@@ -142,16 +129,16 @@ for (i in 49:length(StreamList)) {
                                ifelse(Q$Units=="cmd", Q$Q*1.15741e-5, ""))))
   
   #subset master silica file to individual site
-  NOX<-subset(masterNOX, masterNOX$Stream==StreamList[i])
+  NH4<-subset(masterNH4, masterNH4$Stream==StreamList[i])
   
   #find minimum date of NOX file
-  NOXmin<-min(NOX$Date)
+  NH4min<-min(NH4$Date)
   
   #convert to days since 1970
-  NOXmin_julian<-as.numeric(NOXmin)
+  NH4min_julian<-as.numeric(NH4min)
   
   #subtract 10 years from Si min to get Q min
-  Qmin<-(NOXmin_julian-10*365.25)-1
+  Qmin<-(NH4min_julian-10*365.25)-1
   
   #subset Q file associated with Si file starting 10 years before Si file starts 
   #and ending when the Q file ends
@@ -178,10 +165,10 @@ for (i in 49:length(StreamList)) {
     dplyr::select(Date, Qcms) ### NEED TO CHANGE "Q" to Qcms - correct??? ####
   
   #write to new folder
-  setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/NPrepWRTDS_Updated")
+  setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/NH4PrepWRTDS")
   
   #write csv of discharge file
-  write.csv(Qshort, paste0(StreamList[i], "_NOX_Q_WRTDS.csv"), row.names = FALSE)
+  write.csv(Qshort, paste0(StreamList[i], "_NH4_Q_WRTDS.csv"), row.names = FALSE)
   
   #find minimum date of NOX file
   Qmin<-min(Q$Date)
@@ -199,22 +186,22 @@ for (i in 49:length(StreamList)) {
   
   #subset Q file associated with NOX file starting at beginning of water year of start of NOX file and ending at end
   #of water year of last NOX file date
-  NOXShort<-NOX[NOX$Date > (Qmin) & NOX$Date < (Qmax),]
+  NH4Short<-NH4[NH4$Date > (Qmin) & NH4$Date < (Qmax),]
   
   #extract date and NOX columns of NOX file
-  NOXdata<-NOXShort %>%
-    dplyr::select(Date, NOX)
+  NH4data<-NH4Short %>%
+    dplyr::select(Date, NH4)
   
   #create remarks variable
   remarks<-""
   
   #add remarks column between date and NOX columns - required for WRTDS
-  NOXdata<-add_column(NOXdata, remarks, .after = "Date")
+  NH4data<-add_column(NH4data, remarks, .after = "Date")
   
   #add < when value is less than MDL
-  NOXdata$remarks<-ifelse(NOXdata$NOX < MDL_N_value$NO3_MDL, "<", "")
+  NH4data$remarks<-ifelse(NH4data$NH4 < MDL$MDL..mg.L., "<", "")
   
   #write NOX file for WRTDS
-  write.csv(NOXdata, paste0(StreamList[i], "_NOX_WRTDS.csv"), row.names = FALSE)
+  write.csv(NH4data, paste0(StreamList[i], "_NH4_WRTDS.csv"), row.names = FALSE)
   
 }
