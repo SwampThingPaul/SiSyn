@@ -98,6 +98,10 @@ DateList<-c("Date", "dateTime", "dates", "date")
 #start loop - will replicate code inside for each unique site
 for (i in 1:length(StreamList)) {
   
+  setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
+  
+  print(i)
+  
   #extract name from site list
   stream<-StreamList[i]
   
@@ -108,7 +112,8 @@ for (i in 1:length(StreamList)) {
   csv<-subset(csv_files, csv_files$files==ref$files)
   
   #read in proper discharge file
-  Q<-read.csv(drive_download(file = as_id(csv$id), overwrite = TRUE)$name)
+  #Q<-read.csv(drive_download(file = as_id(csv$id), overwrite = TRUE)$name)
+  Q<-read.csv(csv$name)
   
   #name discharge column "Q"
   names(Q)[which(colnames(Q) %in% DischargeList)]<-"Q"
@@ -137,20 +142,32 @@ for (i in 1:length(StreamList)) {
   
   #find minimum date of PO4 file
   Pmin<-min(P$Date)
+  
+  #convert to days since 1970
+  Pmin_julian<-as.numeric(Pmin)
+  
+  #subtract 10 years from Si min to get Q min
+  Qmin<-(Pmin_julian-10*365.25)-1
+  
+  #subset Q file associated with Si file starting 10 years before Si file starts 
+  #and ending when the Q file ends
+  #extra space of Q file on ends of Si help moving flow weighted average for flux perform better
+  Qshort<-Q[Q$Date > Qmin,]
+  
   #convert to day of water year
-  MinDay<-as.numeric(hydro.day.new(Pmin))
+  #MinDay<-as.numeric(hydro.day.new(Pmin))
   
   #find maximum date of PO4 file
-  Pmax<-max(P$Date)
+  #Pmax<-max(P$Date)
   #convert to day of water year
-  MaxDay<-as.numeric(hydro.day.new(Pmax))
+  #MaxDay<-as.numeric(hydro.day.new(Pmax))
   
   #find difference between beginning of next water year and end of P file
-  P_water_year_diff<-365-MaxDay
+  #P_water_year_diff<-365-MaxDay
   
   #subset Q file associated with P file starting at beginning of water year of start of P file and ending at end
   #of water year of last P file date
-  Qshort<-Q[Q$Date > (Pmin - MinDay) & Q$Date < (Pmax + P_water_year_diff),]
+  #Qshort<-Q[Q$Date > (Pmin - MinDay) & Q$Date < (Pmax + P_water_year_diff),]
   
   #extract date and discharge columns
   Qshort<-Qshort %>%
@@ -163,7 +180,7 @@ for (i in 1:length(StreamList)) {
   write.csv(Qshort, paste0(StreamList[i], "_Q_WRTDS.csv"), row.names = FALSE)
   
   #find minimum date of P file
-  Qmin<-min(Qshort$Date)
+  Qmin<-min(Q$Date)
   #convert to day of water year
   QMinDay<-as.numeric(hydro.day.new(Qmin))
   

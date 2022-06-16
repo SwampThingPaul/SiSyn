@@ -30,21 +30,31 @@ QLog<-read.csv("DischargeLog_All_011422.csv")
 
 names(QLog)[3]<-"files"
 
+years_20<-read.csv("Data_years_streams_WRTDS.csv")
+
+names(years_20)[2]<-"Stream"
+
 #merge discharge log and list of csv files in google drive
 RefTable<-merge(QLog, csv_files, by="files")
 
+RefTable<-merge(RefTable, years_20, by="Stream")
+
 # look for files that aren't merging
-test=anti_join(QLog, RefTable)
+test=anti_join(years_20, RefTable)
 
 #extract columns of the google drive files and site name
 # files, Stream, Units
-RefTable<-RefTable[,c(1,3,4)]
+RefTable<-RefTable[,c(1,2,4)]
 
 # not sure what this is removing...  
 # RefTable<-RefTable[-c(132),]
 
 #read in master chemistry data
 #setwd("U:/Jankowski/My Documents/Projects/Silica Synthesis/Data/Chem Data")
+
+MDL<-read.csv("WRTDS_MDL_N_P.csv")
+
+MDL_N<-MDL[,c(1:3)]
 
 master<-read.csv("20210907_masterdata.csv")
 
@@ -87,7 +97,11 @@ DischargeList<-c("MEAN_Q", "Q_m3sec","Q_cms","Discharge", "InstantQ", "Q", "disc
 DateList<-c("Date", "dateTime", "dates", "date")
 
 #start loop - will replicate code inside for each unique site
-for (i in 1:length(StreamList)) {
+for (i in 49:length(StreamList)) {
+  
+  setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
+  
+  print(i)
   
   #extract name from site list
   stream<-StreamList[i]
@@ -98,8 +112,11 @@ for (i in 1:length(StreamList)) {
   #extract row of csv list table corresponding discharge file (extract discharge site)
   csv<-subset(csv_files, csv_files$files==ref$files)
   
+  MDL_N_value<-subset(MDL_N, MDL_N$site==stream)
+  
   #read in proper discharge file
-  Q<-read.csv(drive_download(file = as_id(csv$id), overwrite = TRUE)$name)
+  #Q<-read.csv(drive_download(file = as_id(csv$id), overwrite = TRUE)$name)
+  Q<-read.csv(csv$name)
   
   #name discharge column "Q"
   names(Q)[which(colnames(Q) %in% DischargeList)]<-"Q"
@@ -129,20 +146,32 @@ for (i in 1:length(StreamList)) {
   
   #find minimum date of NOX file
   NOXmin<-min(NOX$Date)
-  #convert to day of water year
-  MinDay<-as.numeric(hydro.day.new(NOXmin))
   
-  #find maximum date of NOX file
-  NOXmax<-max(NOX$Date)
-  #convert to day of water year
-  MaxDay<-as.numeric(hydro.day.new(NOXmax))
+  #convert to days since 1970
+  NOXmin_julian<-as.numeric(NOXmin)
   
-  #find difference between beginning of next water year and end of NOX file
-  si_water_year_diff<-365-MaxDay
+  #subtract 10 years from Si min to get Q min
+  Qmin<-(NOXmin_julian-10*365.25)-1
   
-  #subset Q file associated with NOX file starting at beginning of water year of start of NOX file and ending at end
-  #of water year of last NOX file date
-  Qshort<-Q[Q$Date > (NOXmin - MinDay) & Q$Date < (NOXmax + si_water_year_diff),]
+  #subset Q file associated with Si file starting 10 years before Si file starts 
+  #and ending when the Q file ends
+  #extra space of Q file on ends of Si help moving flow weighted average for flux perform better
+  Qshort<-Q[Q$Date > Qmin,]
+  
+  # #convert to day of water year
+  # MinDay<-as.numeric(hydro.day.new(NOXmin))
+  # 
+  # #find maximum date of NOX file
+  # NOXmax<-max(NOX$Date)
+  # #convert to day of water year
+  # MaxDay<-as.numeric(hydro.day.new(NOXmax))
+  # 
+  # #find difference between beginning of next water year and end of NOX file
+  # si_water_year_diff<-365-MaxDay
+  # 
+  # #subset Q file associated with NOX file starting at beginning of water year of start of NOX file and ending at end
+  # #of water year of last NOX file date
+  # Qshort<-Q[Q$Date > (NOXmin - MinDay) & Q$Date < (NOXmax + si_water_year_diff),]
   
   #extract date and discharge columns
   Qshort<-Qshort %>%
@@ -155,7 +184,8 @@ for (i in 1:length(StreamList)) {
   write.csv(Qshort, paste0(StreamList[i], "_NOX_Q_WRTDS.csv"), row.names = FALSE)
   
   #find minimum date of NOX file
-  Qmin<-min(Qshort$Date)
+  Qmin<-min(Q$Date)
+  
   #convert to day of water year
   QMinDay<-as.numeric(hydro.day.new(Qmin))
   
@@ -180,6 +210,9 @@ for (i in 1:length(StreamList)) {
   
   #add remarks column between date and NOX columns - required for WRTDS
   NOXdata<-add_column(NOXdata, remarks, .after = "Date")
+  
+  #add < when value is less than MDL
+  NOXdata$remarks<-ifelse(NOXdata$NOX < MDL_N_value$NO3_MDL, "<", "")
   
   #write NOX file for WRTDS
   write.csv(NOXdata, paste0(StreamList[i], "_NOX_WRTDS.csv"), row.names = FALSE)

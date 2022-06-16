@@ -32,10 +32,11 @@ csv_files$files<-word(csv_files$name, 1, sep = "\\.csv")
 
 # load discharge data
 # google drive link: https://drive.google.com/file/d/1onCHASglPwxMR2ZmE44a5xBM4K2OBIO8/view?usp=sharing
-setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
+# setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
+setwd("U:/Jankowski/My Documents/Projects/Silica Synthesis/Data/Discharge")
 
-QLog<-read.csv("DischargeLog_All_011422.csv")
-
+#read in discharge log
+QLog<-read.csv("DischargeLog_030221.csv")
 names(QLog)[3]<-"files"
 
 #merge discharge log and list of csv files in google drive
@@ -52,9 +53,9 @@ RefTable<-RefTable[,c(1,3,4)]
 # RefTable<-RefTable[-c(132),]
 
 #read in master chemistry data
-#setwd("U:/Jankowski/My Documents/Projects/Silica Synthesis/Data/Chem Data")
+setwd("U:/Jankowski/My Documents/Projects/Silica Synthesis/Data/Chem Data")
 
-master<-read.csv("20210907_masterdata.csv")
+master<-read.csv("20210304_masterdata.csv")
 
 #rename column
 names(master)[2]<-"Stream"
@@ -92,15 +93,11 @@ hydro.day.new = function(x, start.month = 10L){
 }
 
 #create lists of Q and Date names used in different files
-DischargeList<-c("MEAN_Q", "Q_m3sec","Q_cms","Discharge", "InstantQ", "Q", "discharge")
-DateList<-c("Date", "dateTime", "dates", "date")
+DischargeList<-c("MEAN_Q", "Discharge", "InstantQ", "Q")
+DateList<-c("Date", "dateTime")
 
 #start loop - will replicate code inside for each unique site
 for (i in 1:length(StreamList)) {
-  
-  setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
-  
-  print(i)
   
   #extract name from site list
   stream<-StreamList[i]
@@ -112,8 +109,7 @@ for (i in 1:length(StreamList)) {
   csv<-subset(csv_files, csv_files$files==ref$files)
   
   #read in proper discharge file
-  #Q<-read.csv(drive_download(file = as_id(csv$id), overwrite = TRUE)$name)
-  Q<-read.csv(csv$name)
+  Q<-read.csv(drive_download(file = as_id(csv$id), overwrite = TRUE)$name)
   
   #name discharge column "Q"
   names(Q)[which(colnames(Q) %in% DischargeList)]<-"Q"
@@ -142,45 +138,33 @@ for (i in 1:length(StreamList)) {
   
   #find minimum date of PO4 file
   Pmin<-min(P$Date)
-  
-  #convert to days since 1970
-  Pmin_julian<-as.numeric(Pmin)
-  
-  #subtract 10 years from Si min to get Q min
-  Qmin<-(Pmin_julian-10*365.25)-1
-  
-  #subset Q file associated with Si file starting 10 years before Si file starts 
-  #and ending when the Q file ends
-  #extra space of Q file on ends of Si help moving flow weighted average for flux perform better
-  Qshort<-Q[Q$Date > Qmin,]
-  
   #convert to day of water year
-  #MinDay<-as.numeric(hydro.day.new(Pmin))
+  MinDay<-as.numeric(hydro.day.new(Pmin))
   
   #find maximum date of PO4 file
-  #Pmax<-max(P$Date)
+  Pmax<-max(P$Date)
   #convert to day of water year
-  #MaxDay<-as.numeric(hydro.day.new(Pmax))
+  MaxDay<-as.numeric(hydro.day.new(Pmax))
   
   #find difference between beginning of next water year and end of P file
-  #P_water_year_diff<-365-MaxDay
+  P_water_year_diff<-365-MaxDay
   
   #subset Q file associated with P file starting at beginning of water year of start of P file and ending at end
   #of water year of last P file date
-  #Qshort<-Q[Q$Date > (Pmin - MinDay) & Q$Date < (Pmax + P_water_year_diff),]
+  Qshort<-Q[Q$Date > (Pmin - MinDay) & Q$Date < (Pmax + P_water_year_diff),]
   
   #extract date and discharge columns
   Qshort<-Qshort %>%
-    dplyr::select(Date, Qcms)
+    dplyr::select(Date, Q)
   
   #write to new folder
-  setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/PPrepWRTDS_Updated")
+  setwd("C:/Users/kjankowski/Desktop/WRTDS_prep_P")
   
   #write csv of discharge file
   write.csv(Qshort, paste0(StreamList[i], "_Q_WRTDS.csv"), row.names = FALSE)
   
   #find minimum date of P file
-  Qmin<-min(Q$Date)
+  Qmin<-min(Qshort$Date)
   #convert to day of water year
   QMinDay<-as.numeric(hydro.day.new(Qmin))
   
@@ -210,4 +194,3 @@ for (i in 1:length(StreamList)) {
   write.csv(Pdata, paste0(StreamList[i], "_P_WRTDS.csv"), row.names = FALSE)
   
 }
-  
