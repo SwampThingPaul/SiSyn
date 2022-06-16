@@ -56,7 +56,7 @@ MDL<-read.csv("WRTDS_MDL_N_P.csv")
 
 MDL_N<-MDL[,c(1:3)]
 
-master<-read.csv("20210907_masterdata.csv")
+master<-read.csv("20220531_masterdata.csv")
 
 #rename column
 names(master)[2]<-"Stream"
