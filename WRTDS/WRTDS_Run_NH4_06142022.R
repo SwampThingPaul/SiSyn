@@ -171,7 +171,9 @@ for (i in 1:length(WRTDS_files)) {
   #get LTER for given site
   LTER<-ref$LTER
   
-  #adjust PA based on LTER
+  #adjust PA based on LTER - 
+  # KJo - these may need to be adjusted by stream for NWT
+  # KJo - Albion - all 12 months; Martinelli - OK as is; Saddle - paStart = 5, paLong = 3 
   if(LTER == "NWT") {
     
     eList <- setPA(eList, paStart=5, paLong=5)
@@ -215,7 +217,9 @@ for (i in 1:length(WRTDS_files)) {
   months=calculateMonthlyResults(eListOut)
   write.csv(months, paste0(WRTDS_files[i], "_NH4_Monthly_WRTDS.csv"))
   
-  #find min year
+  #find min year 
+  # KJ - I had an issue with this when the discharge data were extended, changed to: 
+  # e.g., minYP<-as.numeric(min(ContConc$Year))+1
   minYP<-as.numeric(min(Sample$waterYear))+1
   
   #find max year
@@ -243,7 +247,7 @@ for (i in 1:length(WRTDS_files)) {
   fluxBiasMulti(eList)
   
   #examine model fit
-  plotConcTimeDaily(eList)
+  plotConcTimeDaily(eListOut)
   
   #plot concentration
   plotConcHist(eListOut) # minYP, maxYP)
@@ -264,6 +268,8 @@ for (i in 1:length(WRTDS_files)) {
                          year2=maxYP)
   
   # for streams with month adjustment
+  # KJ - paStart and paLong should be adjusted as you did above! 
+  
   #eListPairs <- runPairs(eList, windowSide = 11, 
   #                      minNumObs=50, 
   #                     year1=minYP, 
@@ -278,7 +284,7 @@ for (i in 1:length(WRTDS_files)) {
   
   ## keep results
   CIs=as.data.frame(bootResults)
-  CIs$solute=rep("P", nrow(bootResults))
+  CIs$solute=rep("NH4", nrow(bootResults))
   colnames(CIs)=c("xConc", "xFlux", "pConc", "pFlux", "solute")
   write.csv(CIs, paste0(WRTDS_files[i], "_NH4_EGRETCi_GFN_bootstraps.csv"), row.names=FALSE)
   
@@ -299,10 +305,10 @@ for (i in 1:length(WRTDS_files)) {
   #CIAnnualResults <- ciCalculations(eList,nBoot=100,blockLength=200)
   
   ## keep results
-  CIs=as.data.frame(bootResults)
-  CIs$solute=rep("NH4", nrow(bootResults))
-  colnames(CIs)=c("xConc", "xFlux", "pConc", "pFlux", "solute")
-  write.csv(CIs, paste0(WRTDS_files[i], "_NH4_EGRETCi_bootstraps.csv"), row.names=FALSE)
+  #CIs=as.data.frame(bootResults)
+  #CIs$solute=rep("NH4", nrow(bootResults))
+  #colnames(CIs)=c("xConc", "xFlux", "pConc", "pFlux", "solute")
+  #write.csv(CIs, paste0(WRTDS_files[i], "_NH4_EGRETCi_bootstraps.csv"), row.names=FALSE)
   
   Summary=as.data.frame(bootSummary)
   write.csv(Summary, paste0(WRTDS_files[i], "_NH4_EGRETCi_Trend.csv"))
