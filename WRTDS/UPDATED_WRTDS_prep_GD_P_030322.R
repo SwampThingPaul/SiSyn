@@ -54,7 +54,11 @@ RefTable<-RefTable[,c(1,3,4)]
 #read in master chemistry data
 #setwd("U:/Jankowski/My Documents/Projects/Silica Synthesis/Data/Chem Data")
 
-master<-read.csv("20210907_masterdata.csv")
+MDL<-read.csv("WRTDS_MDL_N_P.csv")
+
+MDL_P<-MDL[,c(1,2,4)]
+
+master<-read.csv("20220531_masterdata.csv")
 
 #rename column
 names(master)[2]<-"Stream"
@@ -110,6 +114,9 @@ for (i in 1:length(StreamList)) {
   
   #extract row of csv list table corresponding discharge file (extract discharge site)
   csv<-subset(csv_files, csv_files$files==ref$files)
+  
+  #get MDL for given stream
+  MDL_P_value<-subset(MDL_P, MDL_P$site==stream)
   
   #read in proper discharge file
   #Q<-read.csv(drive_download(file = as_id(csv$id), overwrite = TRUE)$name)
@@ -177,7 +184,7 @@ for (i in 1:length(StreamList)) {
   setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/PPrepWRTDS_Updated")
   
   #write csv of discharge file
-  write.csv(Qshort, paste0(StreamList[i], "_Q_WRTDS.csv"), row.names = FALSE)
+  write.csv(Qshort, paste0(StreamList[i], "_P_Q_WRTDS.csv"), row.names = FALSE)
   
   #find minimum date of P file
   Qmin<-min(Q$Date)
@@ -205,6 +212,9 @@ for (i in 1:length(StreamList)) {
   
   #add remarks column between date and P columns - required for WRTDS
   Pdata<-add_column(Pdata, remarks, .after = "Date")
+  
+  #add < when value is less than MDL
+  Pdata$remarks<-ifelse(Pdata$P < MDL_P_value$P_MDL, "<", "")
   
   #write P file for WRTDS
   write.csv(Pdata, paste0(StreamList[i], "_P_WRTDS.csv"), row.names = FALSE)
