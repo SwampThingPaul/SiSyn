@@ -1,6 +1,7 @@
 ## Code to create files for running WRTDS model
 # written by Keira Johnson Nov 2020
 # modified by Kathi Jo Jankowski April 2021
+# modified by Keira Johnson June 2022
 
 ### Code matches sample data to discharge data by date range
 ### generates discharge and nutrient data files formatted for input into WRTDS model 
