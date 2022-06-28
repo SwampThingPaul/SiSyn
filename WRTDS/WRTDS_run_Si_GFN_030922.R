@@ -68,30 +68,32 @@ for (i in 1:length(WRTDS_files)) {
   saveResults(savePath, eList)
   
   #estimate continuous Si - no longer using
-  #eList<-modelEstimation(eList, minNumObs=50)
+  eList1<-modelEstimation(eList, minNumObs=50)
+  
   
   ### GFN - estimate continuous Si with Q and CQ components ("GFN" method)
-  eListOut <- runPairs(eList, windowSide = 7, minNumObs=50, year1=minYP, year2=maxYP)
-  #eListOut <- runSeries(eList, windowSide = 6, minNumObs=50)
-  
-  #CIAnnualResults <- ciCalculations(eListOut, 
-   #                                 verbose = TRUE, 
-    #                                nBoot = 100,
-     #                               blockLength = 200, 
-      #                              widthCI = 90)
+  eListOut <- runPairs(eList, windowSide = 11, minNumObs=50, year1=minYP, year2=maxYP)
+
   
   ###########
   ##  Adjustments to period of analysis for specific sites
+  ## should do for eList1 and eListOut 
+  
   # For Sagehen Site
+  # eList1 <- blankTime(eList1, startBlank = "1996-01-01", endBlank = "2001-01-01")
   # eListOut <- blankTime(eListOut, startBlank = "1996-01-01", endBlank = "2001-01-01")
   
   # adjust for MCM 
+  #eList1 <- setPA(eList1, paStart=12, paLong=2)
   #eListOut <- setPA(eListOut, paStart=12, paLong=2)
   
   # Adjust for NWT
   # Martinelli
+  #eList1 <- setPA(eList1, paStart=5, paLong=5)
   #eListOut <- setPA(eListOut, paStart=5, paLong=5)
+  
   # Saddle
+  #eList1 <- setPA(eList1, paStart=5, paLong=3)
   #eListOut <- setPA(eListOut, paStart=5, paLong=3)
   
   ############
@@ -99,8 +101,8 @@ for (i in 1:length(WRTDS_files)) {
   setwd("C:/Users/kjankowski/OneDrive - DOI/Documents/Projects/Silica Synthesis/Results/WRTDS/WRTDS_Si_results_GFN")
   
   # extract error statistics
-  #error <- errorStats(eListOut)
-  #write.csv(error, paste0(WRTDS_files[i], "_ErrorStats_WRTDS.csv"), row.names=FALSE)
+  error <- errorStats(eList1)
+  write.csv(error, paste0(WRTDS_files[i], "_ErrorStats_WRTDS.csv"), row.names=FALSE)
   
   #extract continuous Si file from eList
   ContConc<-eListOut$Daily
@@ -146,7 +148,7 @@ for (i in 1:length(WRTDS_files)) {
   pdf(paste0(WRTDS_files[i], "_WRTDS_GFN_output.pdf"))
   
   #residual plots
-  #fluxBiasMulti(eListOut)
+  fluxBiasMulti(eList1)
   
   #examine model fit
   plotConcTimeDaily(eListOut)
@@ -163,7 +165,7 @@ for (i in 1:length(WRTDS_files)) {
   dev.off()
   
   # For most streams that don't need monthly adjustment
-  eListPairs <- runPairs(eList, windowSide = 6, 
+  eListPairs <- runPairs(eList, windowSide = 11, 
                          minNumObs=50, 
                          year1=minYP, 
                          year2=maxYP,
