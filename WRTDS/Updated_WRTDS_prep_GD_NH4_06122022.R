@@ -50,7 +50,7 @@ RefTable<-RefTable[,c(1,2,4)]
 #read in master chemistry data
 #setwd("U:/Jankowski/My Documents/Projects/Silica Synthesis/Data/Chem Data")
 
-master<-read.csv("20210907_masterdata.csv")
+master<-read.csv("20220531_masterdata.csv")
 
 #rename column
 names(master)[2]<-"Stream"

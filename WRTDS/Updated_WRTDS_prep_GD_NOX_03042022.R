@@ -97,7 +97,7 @@ DischargeList<-c("MEAN_Q", "Q_m3sec","Q_cms","Discharge", "InstantQ", "Q", "disc
 DateList<-c("Date", "dateTime", "dates", "date")
 
 #start loop - will replicate code inside for each unique site
-for (i in 49:length(StreamList)) {
+for (i in 1:length(StreamList)) {
   
   setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
   

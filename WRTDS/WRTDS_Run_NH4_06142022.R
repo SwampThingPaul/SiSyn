@@ -129,7 +129,7 @@ WRTDS_files_List_NH4<-WRTDS_files_List[WRTDS_files_List %like% "NH4_WRTDS"]
 WRTDS_files<-sub("_NH4_WRTDS.csv", "", WRTDS_files_List_NH4)
 
 #run WRTDS! output will be saved to the same file
-for (i in 1:length(WRTDS_files)) {
+for (i in 6:length(WRTDS_files)) {
   
   #read in Q file
   Daily<-readUserDaily("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/NH4PrepWRTDS", WRTDS_files_List_Q[i],
@@ -160,7 +160,7 @@ for (i in 1:length(WRTDS_files)) {
   saveResults(savePath, eList)
   
   # fit original WRTDS model 
-  eList<-modelEstimation(eList, minNumObs=50)
+  eList1<-modelEstimation(eList, minNumObs=50)
   
   # fit GFN - estimate continuous Si with Q and CQ components ("GFN" method)
   eListOut <- runSeries(eList, windowSide = 11, minNumObs=50)
@@ -168,25 +168,27 @@ for (i in 1:length(WRTDS_files)) {
   #pull out stream ref information
   ref<-subset(RefTable, RefTable$Stream==WRTDS_files[i])
   
-  #get LTER for given site
-  LTER<-ref$LTER
-  
   #adjust PA based on LTER - 
   # KJo - these may need to be adjusted by stream for NWT
   # KJo - Albion - all 12 months; Martinelli - OK as is; Saddle - paStart = 5, paLong = 3 
-  if(LTER == "NWT") {
+  if(ref$Stream == "MARTINELLI") {
     
-    eList <- setPA(eList, paStart=5, paLong=5)
+    eList1 <- setPA(eList1, paStart=5, paLong=5)
     eListOut <- setPA(eListOut, paStart=5, paLong=5)
     
-  } else if(LTER == "MCM") {
+  } else if(ref$Stream == "SADDLE STREAM 007") {
     
-    eList <- setPA(eList, paStart=12, paLong=2)
+    eList1 <- setPA(eList1, paStart=5, paLong=3)
+    eListOut <- setPA(eListOut, paStart=5, paLong=3)
+    
+  } else if(ref$LTER == "MCM") {
+    
+    eList1 <- setPA(eList1, paStart=12, paLong=2)
     eListOut <- setPA(eListOut, paStart=12, paLong=2)
     
   } else {
     
-    eList <- eList
+    eList1 <- eList1
     eListOut <- eListOut
     
   }
@@ -195,7 +197,7 @@ for (i in 1:length(WRTDS_files)) {
   setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/WRTDS_NH4_Results")
   
   # extract error statistics
-  error <- errorStats(eList)
+  error <- errorStats(eList1)
   write.csv(error, paste0(WRTDS_files[i], "_NH4_ErrorStats_WRTDS.csv"), row.names=FALSE)
   
   #extract continuous Si file from eList
@@ -220,10 +222,10 @@ for (i in 1:length(WRTDS_files)) {
   #find min year 
   # KJ - I had an issue with this when the discharge data were extended, changed to: 
   # e.g., minYP<-as.numeric(min(ContConc$Year))+1
-  minYP<-as.numeric(min(Sample$waterYear))+1
+  minYP<-as.numeric(min(ContConc$waterYear))+1
   
   #find max year
-  maxYP<-as.numeric(max(Sample$waterYear))-1
+  maxYP<-as.numeric(max(ContConc$waterYear))-1
   
   #set year points for 
   yearPoints<-c(minYP, maxYP)
@@ -244,7 +246,7 @@ for (i in 1:length(WRTDS_files)) {
   pdf(paste0(WRTDS_files[i], "_NH4_WRTDS_output.pdf"))
   
   #residual plots - this function only works on original model file - not sure why
-  fluxBiasMulti(eList)
+  fluxBiasMulti(eList1)
   
   #examine model fit
   plotConcTimeDaily(eListOut)
@@ -266,6 +268,25 @@ for (i in 1:length(WRTDS_files)) {
                          minNumObs=50, 
                          year1=minYP, 
                          year2=maxYP)
+  
+  if(ref$Stream == "MARTINELLI") {
+    
+    eListPairs <- setPA(eListPairs, paStart=5, paLong=5)
+    
+  } else if(ref$Stream == "SADDLE STREAM 007") {
+    
+    eListPairs <- setPA(eListPairs, paStart=5, paLong=3)
+    
+  } else if(ref$LTER == "MCM") {
+    
+    eListPairs <- setPA(eListPairs, paStart=12, paLong=2)
+    
+  } else {
+    
+    eListPairs <- eListPairs
+    
+  }
+  
   
   # for streams with month adjustment
   # KJ - paStart and paLong should be adjusted as you did above! 

@@ -115,3 +115,26 @@ ggplot(dates_df_10, aes(LTER))+geom_histogram(stat = "count")+theme_classic()+
   ggtitle("10 years")
 
 dev.off()
+
+
+##make plots of monthly distribution of samples
+
+si_5_year<-master_si[master_si$Site.Stream.Name %in% dates_df_5$Stream,]
+si_5_year$month<-format(as.Date(si_5_year$Sampling.Date), "%m")
+
+pdf("Seasonality_Distribution.pdf", width = 15, height = 10)
+
+si_5_year %>%
+  group_by(site, month) %>%
+  tally() %>%
+  ggplot(aes(x=month, y=n))+geom_point()+facet_wrap(~site, scales = "free_y")+theme_bw()
+  
+dev.off()
+  
+
+
+
+
+
+
+

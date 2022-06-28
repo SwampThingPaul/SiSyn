@@ -68,7 +68,7 @@ for (i in 1:length(WRTDS_files)) {
   saveResults(savePath, eList)
   
   #estimate continuous Si - no longer using
-  #eList<-modelEstimation(eList, minNumObs=50)
+  eList<-modelEstimation(eList, minNumObs=50)
   
   ### GFN - estimate continuous Si with Q and CQ components ("GFN" method)
   eListOut <- runPairs(eList, windowSide = 7, minNumObs=50, year1=minYP, year2=maxYP)
