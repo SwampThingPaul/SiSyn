@@ -160,7 +160,7 @@ for (i in 1:length(WRTDS_files)) {
   saveResults(savePath, eList)
   
   # fit original WRTDS model 
-  eList<-modelEstimation(eList, minNumObs=50)
+  eList1<-modelEstimation(eList, minNumObs=50)
   
   # fit GFN - estimate continuous Si with Q and CQ components ("GFN" method)
   eListOut <- runSeries(eList, windowSide = 11, minNumObs=50)
@@ -195,7 +195,7 @@ for (i in 1:length(WRTDS_files)) {
   setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/WRTDS_NH4_Results")
   
   # extract error statistics
-  error <- errorStats(eList)
+  error <- errorStats(eList1)
   write.csv(error, paste0(WRTDS_files[i], "_NH4_ErrorStats_WRTDS.csv"), row.names=FALSE)
   
   #extract continuous Si file from eList
@@ -244,7 +244,7 @@ for (i in 1:length(WRTDS_files)) {
   pdf(paste0(WRTDS_files[i], "_NH4_WRTDS_output.pdf"))
   
   #residual plots - this function only works on original model file - not sure why
-  fluxBiasMulti(eList)
+  fluxBiasMulti(eList1)
   
   #examine model fit
   plotConcTimeDaily(eListOut)
@@ -291,32 +291,10 @@ for (i in 1:length(WRTDS_files)) {
   Summary=as.data.frame(bootSummary)
   write.csv(Summary, paste0(WRTDS_files[i], "_NH4_EGRETCi_GFN_Trend.csv"))
   
-  ## OLD - EGRETCi Trends
-  #caseSetUp <- trendSetUp(eList, 
-   #                       year1=minYP,
-    #                      year2=maxYP,
-     #                     nBoot = 100, 
-      #                    bootBreak = 50,
-       #                   blockLength = 200)
-  #eBoot<-wBT(eList, caseSetUp=caseSetUp, saveOutput = TRUE, jitterOn = FALSE)
-  #bootResults <- cbind(eBoot$xConc, eBoot$xFlux, eBoot$pConc, eBoot$pFlux)
-  #bootSummary <- eBoot$bootOut
-  # calculates CI around model fit - TAKES FOREVER
-  #CIAnnualResults <- ciCalculations(eList,nBoot=100,blockLength=200)
-  
-  ## keep results
-  #CIs=as.data.frame(bootResults)
-  #CIs$solute=rep("NH4", nrow(bootResults))
-  #colnames(CIs)=c("xConc", "xFlux", "pConc", "pFlux", "solute")
-  #write.csv(CIs, paste0(WRTDS_files[i], "_NH4_EGRETCi_bootstraps.csv"), row.names=FALSE)
-  
   Summary=as.data.frame(bootSummary)
   write.csv(Summary, paste0(WRTDS_files[i], "_NH4_EGRETCi_Trend.csv"))
-  # saves bootstrapped CI values calculated above to file
-  #write.csv(CIAnnualResults, paste0(WRTDS_files[i], "_Si_EGRETCi_TrendCIs.csv"), row.names=FALSE)
   
-  #plotContours(eList,yearStart=2000,yearEnd=2019, qBottom=1000, qTop=50000, qUnit=2)
-  
+
   
 }
 
