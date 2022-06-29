@@ -237,10 +237,34 @@ unit.all$CF=with(unit.all,ifelse(Measurement%in%other.vars,1,CF))
 
 subset(unit.all,Measurement=="Instantaneous Q")
 subset(unit.all,Measurement=="Daily Avg Q")
+subset(unit.all,Measurement=="Stage.Height")
+subset(unit.all,Measurement=="Conductivity")
 
 subset(unit.all,Measurement=="Alkalinity")
+subset(unit.all,Measurement=="ANC")
+subset(unit.all,Measurement=="Cl")
+subset(unit.all,Measurement=="K")
+subset(unit.all,Measurement=="VSS")
 
 unit.all2=unit.all[,c("variable","data.set","CF")]
+
+dput(unique(unit.all2$variable))
+
+param.unit=data.frame(variable=
+  c("alkalinity", "ANC", "Ca", "Benthic.Chl", "Suspended.Chl", 
+  "Cl", "Conductivity", "Daily.Avg.Q.(Discharge)", "DIC", "DIN", 
+  "DOC", "DON", "DTN", "Instantaneous.Q.(Discharge)", "K", "Mg", 
+  "Na", "NH4", "NO3", "NOx", "pH", "PO4", "DSi", "SO4", "Spec.Cond", 
+  "SRP", "Stage.Height", "TDN", "TDP", "Temp.C", "TN", "TOC", "TP", 
+  "TSS", "Turbidity", "VSS"),
+  units=
+  c("uM","ueq/L","uM","ug/L","ug/L",
+  "uM","uS/cm","cms","uM","uM",
+  "uM","uM","uM","cms","uM","uM",
+  "uM","uM","uM","uM","SU","uM","uM","uM","uS/cm",
+  "uM","cm","uM","DegC","uM","uM","uM","uM",
+  "mg/L","NTU","mg/L"))
+
 ##
 data.filelist=list.files(data.path)
 
@@ -648,6 +672,8 @@ GRO.dat.melt$value=with(GRO.dat.melt, ifelse(variable!="Temp.C"&value<0,abs(valu
 GRO.dat.melt$value=with(GRO.dat.melt,value*CF)
 GRO.dat.melt$LTER="GRO"
 
+unique(GRO.dat.melt$`Site/Stream.Name`)
+
 # Combine all data 
 master.dat=rbind(arc.dat.melt,bczo.dat.melt,carey.dat.melt,coal.dat.melt,cpcrw.dat.melt,
                  konza.dat.melt,KRR.dat.melt,MCM.dat.melt,NWT.dat.melt,LMP.dat.melt,
@@ -667,6 +693,12 @@ umr.unit
 
 summary(master.dat)
 subset(master.dat, value<0)
+
+head(master.dat)
+master.dat=merge(master.dat,param.unit,"variable",all.x=T)
+unique(master.dat$units)
+unique(master.dat$variable)
+
 # write.csv(master.dat,paste0(export.path,"20201015_masterdata.csv"),row.names=F)
 
 # Chlorophyll data should be in master data
@@ -699,6 +731,9 @@ subset(master.dat, value<0)
 # Adjusted GRO site Ob and Ob' to Ob
 # write.csv(master.dat,paste0(export.path,"20220531_masterdata.csv"),row.names=F)
 
+# Added parameter unites
+# write.csv(master.dat,paste0(export.path,"20220629_masterdata.csv"),row.names=F)
+shell.exec(export.path)
 boxplot(value~site,subset(master.dat,variable=="DSi"),log="y",col="grey",ylab="DSi (uM)")
 
 # tiff(filename=paste0(plot.path,"site_DSi_boxplot.tiff"),width=7,height=4,units="in",res=200,type="windows",compression=c("lzw"),bg="white")
