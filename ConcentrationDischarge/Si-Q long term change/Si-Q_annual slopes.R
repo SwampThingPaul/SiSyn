@@ -1,6 +1,7 @@
 #get number of Si-Q measurements per site and year
 library(lubridate)
 Si_Q_WRTDS_sites$year = year(Si_Q_WRTDS_sites$Date)
+Si_Q_WRTDS_sites = na.omit(Si_Q_WRTDS_sites)
 
 library(dplyr)
 Si_Q_WRTDS_sites_stats = 
@@ -59,7 +60,10 @@ for (i in 1:length(site_list)){
 annual_site_slopes = unlist(site_slope, recursive=F) #expand list
 library(plyr)
 annual_site_slopes = ldply(annual_site_slopes, data.frame) #move all site slopes to one data frame
-annual_site_slopes$sig = ifelse(annual_site_slopes$pvalue<=0.05, "sig","not sig") #are slopes significant?
+#merge site stats with lm output
+annual_site_slopes_stats = merge(annual_site_slopes, Si_Q_WRTDS_sites_stats)
+#are slopes significant?
+annual_site_slopes_stats$sig = ifelse(annual_site_slopes_stats$pvalue<=0.1, "sig","not sig") 
 
 #plot slopes by year, facet by site
 library(ggplot2)
@@ -68,9 +72,6 @@ ggplot(annual_site_slopes, aes(x=year, y=slope))+
   geom_point(aes(color=sig))+
   geom_smooth(color="black")+
   facet_wrap(~site.name, scales="free")
-
-#merge site stats with lm output; write to csv
-annual_site_slopes_stats = merge(annual_site_slopes, Si_Q_WRTDS_sites_stats)
 
 #plot by LTER?
 ggplot(annual_site_slopes_stats, aes(x=year, y=slope))+
@@ -88,14 +89,28 @@ as.numeric(mblm(slope~year, annual_site_slopes_stats[annual_site_slopes_stats$si
 summary(mblm(slope~year, annual_site_slopes_stats[annual_site_slopes_stats$site.name=="ALBION",]))$coefficients[1,1] #intercept
 summary(mblm(slope~year, annual_site_slopes_stats[annual_site_slopes_stats$site.name=="ALBION",]))$coefficients[2,4] #pvalue
 
-#change insignificant annual slopes to 0
-annual_site_slopes$sig_slopes = ifelse(annual_site_slopes$sig=="sig",annual_site_slopes$slope,0)
+#change insignificant annual slopes to NA
+annual_site_slopes_stats$sig_slopes = ifelse(annual_site_slopes_stats$sig=="sig",annual_site_slopes$slope,NA)
+
+#save as .csv
+write.csv(annual_site_slopes_stats,file="LongTerm_annualCQ_slopes_9Jun22.csv")
 
 #loop through annual slopes, run mblm for long term change over time
 annual_site_slopes_mblm = list()
+annual_site_slopes_na = annual_site_slopes_stats
+annual_site_slopes_stats = na.omit(annual_site_slopes_stats)
+
+#get n for annual C-Q slopes fed into mblm
+mblm_stats = 
+  annual_site_slopes_stats %>%
+  group_by(site.name) %>%
+  summarize(
+    mblm_n=n()
+  )
+
 for (i in 1:length(site_list)){
   tryCatch({
-    annual_site_slope = subset(annual_site_slopes, annual_site_slopes$site.name==site_list[i])
+    annual_site_slope = subset(annual_site_slopes_stats, annual_site_slopes_stats$site.name==site_list[i])
     
     mblm_slope=as.numeric(mblm(sig_slopes~year, annual_site_slope)$coefficients[2])
     mblm_intercept=summary(mblm(sig_slopes~year, annual_site_slope))$coefficients[1,1]
@@ -110,12 +125,15 @@ for (i in 1:length(site_list)){
 }
 
 annual_site_slopes_mblm = ldply(annual_site_slopes_mblm, data.frame)
-annual_site_slopes_mblm = merge(annual_site_slopes_mblm, LTERsitelist, all=T)
-annual_site_slopes_mblm$mblm_sig = ifelse(annual_site_slopes_mblm$mblm_pvalue<=0.055, "sig","not sig")
-write.csv(annual_site_slopes_mblm, file="LTERsites_CQmblm.csv")
+annual_site_slopes_mblm_list = annual_site_slopes_mblm #make a copy
+annual_site_slopes_mblm = merge(annual_site_slopes_mblm, LTERsitelist)
+annual_site_slopes_mblm$mblm_sig = ifelse(annual_site_slopes_mblm$mblm_pvalue<=0.1, "sig","not sig")
+annual_site_slopes_mblm = merge(annual_site_slopes_mblm, mblm_stats)
+write.csv(annual_site_slopes_mblm, file="LTERsites_CQmblm_9Jun22.csv")
 
 annual_site_slopes_stats$sig_slopes = ifelse(annual_site_slopes_stats$sig=="sig",annual_site_slopes_stats$slope,0)
 annual_site_slopes_mblm_stats = merge(annual_site_slopes_stats, annual_site_slopes_mblm,all=T)
+write.csv(annual_site_slopes_mblm_stats, file="AnnualCQslopes_mlbmresults.csv")
 
 #plot mblm slopes by site/LTER
 annual_site_slopes_mblm_stats = na.omit(annual_site_slopes_mblm_stats)

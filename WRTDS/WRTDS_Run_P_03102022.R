@@ -80,14 +80,7 @@ WRTDS_files_List_Info<-INFO_files_List[INFO_files_List %like% "INFO"]
 
 WRTDS_files<-sub("*_INFO.csv", "", INFO_files_List)
 
-
-#make list of all files that you just downloaded to local folder
-WRTDS_files_List<-list.files(path = "/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/PPrepWRTDS_Updated")
-
-#make list of only Q files
-WRTDS_files_List_Q<-WRTDS_files_List[WRTDS_files_List %like% "Q_WRTDS"]
-WRTDS_file_Q<-sub("_Q_WRTDS.csv", "", WRTDS_files_List_Q)
-
+#run through list 
 WRTDS_files_List_Q<-list()
 
 for (i in 1:length(WRTDS_files)) {
