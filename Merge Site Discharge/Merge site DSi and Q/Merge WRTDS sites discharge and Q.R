@@ -21,9 +21,13 @@ difs = setdiff(WRTDS_site_list, WRTDS_data_list)
 
 #add in Toolik Inlet and TW Weir from masterdata
 unique(X20220531_masterdata$variable)
-ARCsites = subset(X20220531_masterdata, X20220531_masterdata$site=="Toolik Inlet"|X20220531_masterdata$site=="TW Weir")
+unique(X20220531_masterdata$LTER)
+
+ARCsites_masterdata = subset(X20220531_masterdata, X20220531_masterdata$LTER=="ARC")
+ARCsites = unique(ARCsites_masterdata$site)
+
 ARCsites_DSi = subset(ARCsites, ARCsites$variable=="DSi")
-ARCsites_Q = subset(X03042022_discharge_master, X03042022_discharge_master$site.name=="Toolik Inlet"|X03042022_discharge_master$site.name=="TW Weir")
+ARCsites_Q = subset(X03042022_discharge_master, X03042022_discharge_master$site.name%in%ARCsites)
 #merge ARC sites DSi and Q, add to WRTDS DSi-Q data
 colnames(ARCsites_DSi) = c("LTER","site","site.name","Date","variable","Si")
 ARCsites_DSi = ARCsites_DSi[,c(1,3,4,6)]
@@ -31,3 +35,11 @@ ARCsites_DSi = ARCsites_DSi[,c(1,3,4,6)]
 ARCsites_DSi_nodups = aggregate(ARCsites_DSi,by=c("LTER","site.name","Date"),FUN=mean)
 colnames(ARCsites_Q)[2] = "Q"
 ARC_DSi_Q = merge(ARCsites_DSi,ARCsites_Q)
+
+#merge ARC DSi, Q dat with WRTDS data
+colnames(WRTDS_DSi_Q)
+colnames(ARC_DSi_Q)
+ARC_WRTDS_DSi_Q = merge(WRTDS_DSi_Q, ARC_DSi_Q, all=T)
+
+#export to .csv
+write.csv(ARC_WRTDS_DSi_Q, file="DSi_Q_dat_allsites_13Jul22.csv")
