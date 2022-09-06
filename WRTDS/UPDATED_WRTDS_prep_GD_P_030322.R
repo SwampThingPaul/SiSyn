@@ -39,15 +39,24 @@ QLog<-read.csv("DischargeLog_All_011422.csv")
 
 names(QLog)[3]<-"files"
 
+years_20<-read.csv("Data_years_streams_WRTDS.csv")
+
+years_20<-years_20[!years_20$Stream.Site=="Toolik Inlet",]
+years_20<-years_20[!years_20$Stream.Site=="TW Weir",]
+
+names(years_20)[2]<-"Stream"
+
 #merge discharge log and list of csv files in google drive
 RefTable<-merge(QLog, csv_files, by="files")
+
+RefTable<-merge(RefTable, years_20, by="Stream")
 
 # look for files that aren't merging - ignored if they weren't WRTDS sites!
 test=anti_join(QLog, RefTable)
 
 #extract columns of the google drive files and site name
 # columns = files, Stream, Units
-RefTable<-RefTable[,c(1,3,4)]
+RefTable<-RefTable[,c(1,2,4)]
 
 # not sure what this is removing...  
 # RefTable<-RefTable[-c(132),]

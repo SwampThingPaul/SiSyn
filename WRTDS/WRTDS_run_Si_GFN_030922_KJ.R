@@ -15,17 +15,17 @@ require(EGRETci)
 ### start here if not downloading from Google Drive
 ## set up files for loop
 #setwd("C:/Users/kjankowski/OneDrive - DOI/Documents/Projects/Silica Synthesis/Data/WRTDS/WRTDS_prep_Si_01162022")
-setwd("C:/Users/kjankowski/Desktop/WRTDS_prep_special")
+setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/MacroSiPrepWRTDS")
 
 #make list of all files that you just downloaded to local folder
 #WRTDS_files_List<-list.files(path = "C:/Users/kjankowski/OneDrive - DOI/Documents/Projects/Silica Synthesis/Data/WRTDS/WRTDS_prep_Si_01162022")
-WRTDS_files_List<-list.files(path = "C:/Users/kjankowski/Desktop/WRTDS_prep_special")
+WRTDS_files_List<-list.files(path = "/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/MacroSiPrepWRTDS")
 
 #make list of only Q files
 WRTDS_files_List_Q<-WRTDS_files_List[WRTDS_files_List %like% "Q_WRTDS"]
 
 #make list of only Si files
-WRTDS_files_List_Si<-WRTDS_files_List[WRTDS_files_List %like% "Si"]
+WRTDS_files_List_Si<-WRTDS_files_List[WRTDS_files_List %like% "Si_WRTDS"]
 
 #make list of only INFO files
 WRTDS_files_List_Info<-WRTDS_files_List[WRTDS_files_List %like% "INFO"]
@@ -44,14 +44,14 @@ WRTDS_files<-sub("*_Q_WRTDS.csv", "", WRTDS_files_List_Q)
 for (i in 1:length(WRTDS_files)) {
   
   #read in Q file
-  Daily<-readUserDaily("C:/Users/kjankowski/Desktop/WRTDS_prep_special", WRTDS_files_List_Q[i],
+  Daily<-readUserDaily("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/MacroSiPrepWRTDS", WRTDS_files_List_Q[i],
                        qUnit = 2)
   
   #read in Si file
-  Sample<-readUserSample("C:/Users/kjankowski/Desktop/WRTDS_prep_special", WRTDS_files_List_Si[i])
+  Sample<-readUserSample("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/MacroSiPrepWRTDS", WRTDS_files_List_Si[i])
   
   #read in Info file
-  Info<-readUserInfo("C:/Users/kjankowski/Desktop/WRTDS_prep_special", WRTDS_files_List_Info[i])
+  Info<-readUserInfo("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/MacroSiPrepWRTDS", WRTDS_files_List_Info[i])
   
   #remove duplicates from sample file
   Sample<-removeDuplicates(Sample)
@@ -64,42 +64,44 @@ for (i in 1:length(WRTDS_files)) {
   eList<-mergeReport(Info, Daily, Sample)
   
   #save workspace so it can be accessed later
-  savePath<-"C:/Users/kjankowski/OneDrive - DOI/Documents/Projects/Silica Synthesis/Results/WRTDS/WRTDS_Si_results_GFN"
+  savePath<-"/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/WRTDS_Si_MacroSheds_Results"
   saveResults(savePath, eList)
   
   #estimate continuous Si - no longer using
-<<<<<<< HEAD
   eList<-modelEstimation(eList, minNumObs=50)
-=======
   eList1<-modelEstimation(eList, minNumObs=50)
->>>>>>> 5c2f92222ff6b683dfbae5414b576b8a219e0e4f
-  
   
   ### GFN - estimate continuous Si with Q and CQ components ("GFN" method)
   eListOut <- runPairs(eList, windowSide = 11, minNumObs=50, year1=minYP, year2=maxYP)
 
+  ### make site-specific adjustments to PA list
+  if(ref$Stream == "MARTINELLI") {
+
+    eList1 <- setPA(eList1, paStart=5, paLong=5)
+    eListOut <- setPA(eListOut, paStart=5, paLong=5)
+
+  } else if(ref$Stream == "SADDLE STREAM 007") {
+
+    eList1 <- setPA(eList1, paStart=5, paLong=3)
+    eListOut <- setPA(eListOut, paStart=5, paLong=3)
+
+  } else if(ref$LTER == "MCM") {
+
+    eList1 <- setPA(eList1, paStart=12, paLong=2)
+    eListOut <- setPA(eListOut, paStart=12, paLong=2)
+
+  } else if(ref$Stream == "Sagehen") {
   
-  ###########
-  ##  Adjustments to period of analysis for specific sites
-  ## should do for eList1 and eListOut 
-  
-  # For Sagehen Site
-  # eList1 <- blankTime(eList1, startBlank = "1996-01-01", endBlank = "2001-01-01")
-  # eListOut <- blankTime(eListOut, startBlank = "1996-01-01", endBlank = "2001-01-01")
-  
-  # adjust for MCM 
-  #eList1 <- setPA(eList1, paStart=12, paLong=2)
-  #eListOut <- setPA(eListOut, paStart=12, paLong=2)
-  
-  # Adjust for NWT
-  # Martinelli
-  #eList1 <- setPA(eList1, paStart=5, paLong=5)
-  #eListOut <- setPA(eListOut, paStart=5, paLong=5)
-  
-  # Saddle
-  #eList1 <- setPA(eList1, paStart=5, paLong=3)
-  #eListOut <- setPA(eListOut, paStart=5, paLong=3)
-  
+    eList1 <- blankTime(eList1, startBlank = "1996-01-01", endBlank = "2001-01-01")
+    eListOut <- blankTime(eListOut, startBlank = "1996-01-01", endBlank = "2001-01-01")
+    
+  } else {
+
+    eList1 <- eList1
+    eListOut <- eListOut
+
+  }
+
   ############
   #write output to this folder
   setwd("C:/Users/kjankowski/OneDrive - DOI/Documents/Projects/Silica Synthesis/Results/WRTDS/WRTDS_Si_results_GFN")

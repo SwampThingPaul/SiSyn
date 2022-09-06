@@ -129,7 +129,7 @@ WRTDS_files_List_NH4<-WRTDS_files_List[WRTDS_files_List %like% "NH4_WRTDS"]
 WRTDS_files<-sub("_NH4_WRTDS.csv", "", WRTDS_files_List_NH4)
 
 #run WRTDS! output will be saved to the same file
-for (i in 6:length(WRTDS_files)) {
+for (i in 13:length(WRTDS_files)) {
   
   #read in Q file
   Daily<-readUserDaily("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/NH4PrepWRTDS", WRTDS_files_List_Q[i],
@@ -222,10 +222,10 @@ for (i in 6:length(WRTDS_files)) {
   #find min year 
   # KJ - I had an issue with this when the discharge data were extended, changed to: 
   # e.g., minYP<-as.numeric(min(ContConc$Year))+1
-  minYP<-as.numeric(min(ContConc$waterYear))+1
+  minYP<-as.numeric(min(Sample$waterYear))+1
   
   #find max year
-  maxYP<-as.numeric(max(ContConc$waterYear))-1
+  maxYP<-as.numeric(max(Sample$waterYear))-1
   
   #set year points for 
   yearPoints<-c(minYP, maxYP)
@@ -264,27 +264,37 @@ for (i in 6:length(WRTDS_files)) {
   
   # Set up for bootstrapping for WRTDS GFN - For most streams that don't need monthly adjustment
   # units - conc = mg/L; flux = million kg/year
-  eListPairs <- runPairs(eList, windowSide = 11, 
-                         minNumObs=50, 
-                         year1=minYP, 
-                         year2=maxYP)
   
   if(ref$Stream == "MARTINELLI") {
     
-    eListPairs <- setPA(eListPairs, paStart=5, paLong=5)
+    eListPairs <- runPairs(eList, windowSide = 11, 
+                           minNumObs=50, 
+                           year1=minYP, 
+                           year2=maxYP,
+                           paStart=5, paLong=5)
     
   } else if(ref$Stream == "SADDLE STREAM 007") {
     
-    eListPairs <- setPA(eListPairs, paStart=5, paLong=3)
+    eListPairs <- runPairs(eList, windowSide = 11, 
+                           minNumObs=50, 
+                           year1=minYP, 
+                           year2=maxYP,
+                           paStart=5, paLong=3)
     
   } else if(ref$LTER == "MCM") {
     
-    eListPairs <- setPA(eListPairs, paStart=12, paLong=2)
+    eListPairs <- runPairs(eList, windowSide = 11, 
+                           minNumObs=50, 
+                           year1=minYP, 
+                           year2=maxYP,
+                           paStart=12, paLong=2)
     
   } else {
     
-    eListPairs <- eListPairs
-    
+    eListPairs <- runPairs(eList, windowSide = 11, 
+                           minNumObs=50, 
+                           year1=minYP, 
+                           year2=maxYP)
   }
   
   
@@ -299,7 +309,7 @@ for (i in 6:length(WRTDS_files)) {
   write.csv(eListPairs, paste0(WRTDS_files[i], "_NH4_GFN.csv"))
   
   # Bootstrapping - runPairsBoot
-  eBoot<-runPairsBoot(eList,eListPairs, nBoot=100,blockLength = 200)
+  eBoot<-runPairsBoot(eList, eListPairs, nBoot=100,blockLength = 200)
   bootResults <- cbind(eBoot$xConc, eBoot$xFlux, eBoot$pConc, eBoot$pFlux)
   bootSummary <- eBoot$bootOut
   
@@ -314,8 +324,6 @@ for (i in 6:length(WRTDS_files)) {
   
   Summary=as.data.frame(bootSummary)
   write.csv(Summary, paste0(WRTDS_files[i], "_NH4_EGRETCi_Trend.csv"))
-  
-
   
 }
 
