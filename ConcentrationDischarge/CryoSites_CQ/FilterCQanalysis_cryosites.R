@@ -3,13 +3,17 @@ library(ggplot2)
 
 #check if all cryo sites are in CQ MBLM analysis file
 cryo_sites = unique(ObsDSi_sumstats_6_2_22$site)
+
 length(intersect(cryo_sites,AnnualCQslopes_mlbmresults$site.name))
 setdiff(cryo_sites,AnnualCQslopes_mlbmresults$site.name)
 
+#add TW Weir & Toolik Inlet to list of cryo sites
+cryo_sites[19:20] = c("Toolik Inlet", "TW Weir")
+
 #filter mblm results to cryo sites alone
 cryo_annualCQ_mblm = subset(AnnualCQslopes_mlbmresults,AnnualCQslopes_mlbmresults$site.name%in%cryo_sites)
-cryo_mblm = subset(LTERsites_CQmblm_9Jun22, LTERsites_CQmblm_9Jun22$site.name%in%cryo_sites)
-cryo_annualCQ = subset(LongTerm_annualCQ_slopes_9Jun22,LongTerm_annualCQ_slopes_9Jun22$site.name%in%cryo_sites)
+cryo_mblm = subset(LTERsites_CQmblm_13Jul22, LTERsites_CQmblm_13Jul22$site.name%in%cryo_sites)
+cryo_annualCQ = subset(LongTerm_annualCQ_slopes_13Jul22,LongTerm_annualCQ_slopes_13Jul22$site.name%in%cryo_sites)
 
 #plot annual CQ slope for each cryo site
 head(cryo_mblm)
