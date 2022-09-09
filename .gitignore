@@ -53,3 +53,7 @@ vignettes/*.pdf
 # Test WRTDS folders
 WRTDS Content/
 WRTDS_test/
+
+# Minimum Detection Limit folder
+MDL_Prep/
+
