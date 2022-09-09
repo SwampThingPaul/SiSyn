@@ -4,7 +4,7 @@
 # WRTDS = Weighted Regressions on Time, Discharge, and Season
 
 ## ---------------------------------------------- ##
-# Housekeeping
+                # Housekeeping ----
 ## ---------------------------------------------- ##
 # Load libraries
 # install.packages("librarian")
@@ -53,8 +53,13 @@ mdl_info <- read.csv(file = file.path("WRTDS Content", chem_files[1,1]))
 ## Above line removes any objects *other* than those specified
 
 ## ---------------------------------------------- ##
-                    # Prep ----
+                  # Initial Prep ----
 ## ---------------------------------------------- ##
+# Includes:
+## Column name standardization
+## Removal of unnecessary columns
+## Unit standardization (by conversion)
+
 # Wrangle the discharge data objects to standardize naming somewhat
 disc_v2 <- disc_main %>%
   # Drop row number column
@@ -62,7 +67,9 @@ disc_v2 <- disc_main %>%
   # Rename site column as it appears in the discharge log file
   dplyr::rename(Stream = site.name) %>%
   # Convert date to true date format
-  dplyr::mutate(Date = as.Date(Date, "%Y-%m-%d"))
+  dplyr::mutate(Date = as.Date(Date, "%Y-%m-%d")) %>%
+  # Reorder columns
+  dplyr::select(Stream, Date, Qcms)
 
 # Check that out
 dplyr::glimpse(disc_v2)
@@ -92,16 +99,93 @@ chem_v2 <- chem_main %>%
     variable_simp == "P" ~ (((value / 10^6) * 30.973762) * 1000),
     variable_simp == "DSi" ~ (((value / 10^6) * 28.0855) * 1000),
     variable_simp == "NOx" ~ (((value / 10^6) * 14.0067) * 1000),
-    variable_simp == "NH4" ~ ((value / 10^6) * 14.0067) * 1000 )) %>%
+    variable_simp == "NH4" ~ (((value / 10^6) * 14.0067) * 1000))) %>%
   # Rename some columns
   dplyr::rename(Stream = Site.Stream.Name, Date = Sampling.Date) %>%
   # Convert date to true date format
-  dplyr::mutate(Date = as.Date(Date, "%Y-%m-%d"))
-  # For Andrews sites, remove pree-1982
+  dplyr::mutate(Date = as.Date(Date, "%Y-%m-%d")) %>%
+  # Pare down to needed columns
+  dplyr::select(Stream, variable_simp, Date, value_mgL)
 
-
+# Examine that as well
 dplyr::glimpse(chem_v2)
 
+# Wrangle minimum detection limit file too
+mdl_v2 <- mdl_info %>%
+  # Drop unneeded columns
+  dplyr::select(site, dplyr::ends_with("_MDL"), -NH4_uM_MDL) %>%
+  # Rename the stream column and remaining NH4 column
+  dplyr::rename(Stream = site, NH4_MDL = NH4_mgL_MDL) %>%
+  # Pivot longer
+  tidyr::pivot_longer(cols = dplyr::ends_with("MDL"),
+                      names_to = "variable",
+                      values_to = "MDL") %>%
+  # Drop any NAs that result from the pivoting
+  dplyr::filter(!is.na(MDL)) %>%
+  # Simplify the variable column
+  dplyr::mutate(variable_simp = dplyr::case_when(
+    variable == "P_MDL" ~ "P",
+    variable == "NO3_MDL" ~ "NOx",
+    variable == "NH4_MDL" ~ "NH4",
+    TRUE ~ variable), .after = variable) %>%
+  # And drop the old one
+  dplyr::select(-variable)
+
+# Check it
+dplyr::glimpse(mdl_v2)  
+
+## ---------------------------------------------- ##
+    # Prep - Wrangle *Discharge* for WRTDS ----
+## ---------------------------------------------- ##
+# Includes:
+## If multiple discharge values for a given day/stream, averages values
+## Cropping to relevant time period
+
+# Wrangle the discharge information
+discharge <- disc_v2 %>%
+  # Average discharge if more than one measurement per day/site
+  dplyr::group_by(Stream, Date) %>%
+  dplyr::summarize(Qcms = mean(Qcms, na.rm = T)) %>%
+  dplyr::ungroup()
+
+
+# cropping of included dates will be done here:
+
+
+
+# [...Under Construction...]
+
+
+# Take a last look
+dplyr::glimpse(discharge)
+
+## ---------------------------------------------- ##
+     # Prep - Wrangle *Chemistry* for WRTDS ----
+## ---------------------------------------------- ##
+# Includes:
+## Incorporation of minimum detection limit (MDL) info (where available)
+
+# Wrangle the chemistry data
+chemistry <- chem_v2 %>%
+  # Attach the minimum detection limit information where it is known
+  dplyr::left_join(y = mdl_v2, by = c("Stream", "variable_simp")) %>%
+  # Using this, create a "remarks" column that indicates whether a value is below the MDL
+  dplyr::mutate(remarks = ifelse(test = (value_mgL < MDL), yes = "<", no = ""),
+                .after = Date) %>%
+  # Now we can safely drop the MDL information because we have what we need
+  dplyr::select(-MDL)
+
+
+# cropping of included dates will be done here:
+
+
+
+# [...Under Construction...]
+
+
+
+# Take a quick look
+glimpse(chemistry)
 
 ## ---------------------------------------------- ##
                       # Run ----
