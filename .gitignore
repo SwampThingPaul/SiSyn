@@ -49,3 +49,7 @@ vignettes/*.pdf
 
 # DS_Store
 .DS_Store
+
+# Test WRTDS folders
+WRTDS Content/
+WRTDS_test/
