@@ -7,6 +7,8 @@ require(lubridate)
 require(reshape)
 require(gtools)
 
+# Make an experimental folder to export/import to/from
+dir.create(path = "WRTDS_test", showWarnings = F)
 
 #get folder URL from google drive with discharge data
 folder_url<-"https://drive.google.com/drive/folders/19lemMC09T1kajzryEx5RUoOs3KDSbeAX"
@@ -20,7 +22,8 @@ csv_files<-drive_ls(folder, type="csv", pattern="Discharge.csv")
 #split ".csv" from document names
 csv_files$files<-word(csv_files$name, 1, sep = "\\.csv")
 
-setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
+# setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
+# 
 
 # add check that its the most recent date?
 QLog<-read.csv("DischargeLog_All_081622.csv")
