@@ -54,9 +54,36 @@ rm(list = setdiff(ls(), c("disc_main", "disc_log", "chem_main")))
 ## ---------------------------------------------- ##
                     # Prep ----
 ## ---------------------------------------------- ##
+# Wrangle the discharge data objects to standardize naming somewhat
+disc_v2 <- disc_main %>%
+  # Drop row number column
+  dplyr::select(-X) %>%
+  # Rename site column as it appears in the discharge log file
+  dplyr::rename(Stream = site.name)
+
+# Check that out
+dplyr::glimpse(disc_v2)
+
+# Clean up the chemistry data
+chem_v2 <- chem_main %>%
+  # Simplify phosphorous for later
+  dplyr::mutate(
+    variable_simp = ifelse(variable == "SRP" | variable == "PO4",
+                           yes = "P", no = variable)) %>%
+  # That done, drop all chemicals other than the core ones we're interested in
+  dplyr::filter(variable_simp %in% c("P", "DSi", "NOx", "NH4")) %>%
+  # Calculate the mg/L for each of these chemicals
+  dplyr::mutate(value_mgL = dplyr::case_when(
+    variable_simp == "P" ~ (((value / 10^6) * 30.973762) * 1000),
+    variable_simp == "DSi" ~ (((value / 10^6) * 28.0855) * 1000),
+    variable_simp == "NOx" ~ (((value / 10^6) * 14.0067) * 1000),
+    variable_simp == "NH4" ~ ((value / 10^6) * 14.0067) * 1000 )) %>%
+  # Rename date column
+  dplyr::rename(Date = Sampling.Date)
+  # For Andrews sites, remove pree-1982
 
 
-
+dplyr::glimpse(chem_v2)
 
 
 ## ---------------------------------------------- ##
