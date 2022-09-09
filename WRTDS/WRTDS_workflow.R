@@ -26,7 +26,7 @@ chem_folder <- "https://drive.google.com/drive/folders/1BAs0y1hHArW8BANUFJrXOXco
 
 # Identify their IDs
 disc_files <- googledrive::drive_ls(path = as_id(disc_folder), type = "csv")
-chem_files <- googledrive::drive_ls(path = as_id(chem_folder), type = "csv", pattern = "masterdata")
+chem_files <- googledrive::drive_ls(path = as_id(chem_folder), type = "csv", pattern = "master")
 
 # Combine all of the wanted files in a single object
 needed_files <- rbind(disc_files, chem_files)
@@ -45,10 +45,11 @@ for(file in needed_files$name){
 # Read in each of these CSV files
 disc_main <- read.csv(file = file.path("WRTDS Content", disc_files[1,1]))
 disc_log <- read.csv(file = file.path("WRTDS Content", disc_files[2,1]))
-chem_main <- read.csv(file = file.path("WRTDS Content", chem_files[1,1]))
+chem_main <- read.csv(file = file.path("WRTDS Content", chem_files[2,1]))
+mdl_info <- read.csv(file = file.path("WRTDS Content", chem_files[1,1]))
 
 # Clean up the environment before continuing
-# rm(list = setdiff(ls(), c("disc_main", "disc_log", "chem_main")))
+# rm(list = setdiff(ls(), c("disc_main", "disc_log", "chem_main", "mdl_info")))
 ## Above line removes any objects *other* than those specified
 
 ## ---------------------------------------------- ##
