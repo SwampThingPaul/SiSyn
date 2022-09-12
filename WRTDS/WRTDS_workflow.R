@@ -13,10 +13,6 @@ librarian::shelf(tidyverse, googledrive, lubridate, gtools)
 # Clear environment
 # rm(list = ls())
 
-# Authenticate with GoogleDrive so we can down/upload directly
-my_email <- "lyon@nceas.ucsb.edu"
-googledrive::drive_auth(email = my_email)
-
 # Create a folder for exporting/importing
 dir.create(path = "WRTDS Content", showWarnings = F)
 
@@ -180,10 +176,10 @@ disc_v3 <- disc_v2 %>%
 dplyr::glimpse(disc_v3)
 
 ## ---------------------------------------------- ##
-         # Prep - Crop Included Years ----
+       # Prep - Identify Years to Exclude ----
 ## ---------------------------------------------- ##
-# Includes:
-## ...
+# WRTDS runs best when there are 10 years of discharge data *before* the first chemistry datapoint. Similarly, we can't have more chemistry data than we have discharge data.
+# So we need to identify the min/max dates of discharge and chemistry (separately) to be able to use them to crop the actual data as WRTDS requires
 
 # Identify earliest chemical data at each site
 min_chem <- chem_v3 %>%
@@ -193,63 +189,85 @@ min_chem <- chem_v3 %>%
   dplyr::ungroup() %>%
   # Filter to only those dates
   dplyr::filter(Date == min_date) %>%
-  # Pare down columns
-  dplyr::select(Stream, Date, min_date) %>%
-  # Convert minimum date to Julian day
-  dplyr::mutate(min_julian = as.numeric(min_date)) %>%
+  # Pare down columns (drop date now that we have `min_date`)
+  dplyr::select(Stream, min_date) %>%
   # Subtract 10 years to crop the discharge data to 10 yrs per chemistry data
-  dplyr::mutate(disc_stencil = (min_julian - (10 * 365.25)) - 1)
+  dplyr::mutate(disc_start = (min_date - (10 * 365.25)) - 1)
 
+# Check that
 dplyr::glimpse(min_chem)
 
-## ---------------------------------------------- ##
-    # Prep - Wrangle *Chemistry* for WRTDS ----
-## ---------------------------------------------- ##
-# Includes:
-## Incorporation of minimum detection limit (MDL) info (where available)
-## Removal of pre-1982 data at Andrews' sites
-## Pares down to only needed columns
+# Identify min/max of discharge data
+bookends_disc <- disc_v3 %>%
+  # Group by stream and identify the first and last days of sampling
+  dplyr::group_by(Stream) %>%
+  dplyr::summarize(min_date = min(Date, na.rm = T),
+                   max_date = max(Date, na.rm = T)) %>%
+  dplyr::ungroup() %>%
+  # Using the custom function supplied by the Silica team, convert to hydro day
+  dplyr::mutate(min_hydro = as.numeric(hydro.day.new(x = min_date)),
+                max_hydro = as.numeric(hydro.day.new(x = max_date))) %>%
+  # Find difference between beginning of next water year and end of chem file
+  dplyr::mutate(water_year_diff = 365 - max_hydro)
 
-
-
-
-# cropping of included dates will be done here:
-
-
-
-# [...Under Construction...]
-
-
-
-
+# Look at that outcome
+dplyr::glimpse(bookends_disc)
 
 ## ---------------------------------------------- ##
-    # Prep - Wrangle *Discharge* for WRTDS ----
+              # Prep - Crop Years ----
 ## ---------------------------------------------- ##
 # Includes:
+## Uses the identified start and end dates from the previous section
+## Crops discharge and chemistry data to necessary years for WRTDS
 
-## Cropping to relevant time period
+# Begin with discharge
+discharge <- disc_v3 %>%
+  # Left join on the start date from the chemistry data
+  dplyr::left_join(y = min_chem, by = "Stream") %>%
+  # Identify whether each date is greater than the minimum (per stream!)
+  dplyr::group_by(Stream) %>%
+  dplyr::mutate(retain = ifelse(Date > disc_start,
+                                yes = "keep",
+                                no = "drop")) %>%
+  dplyr::ungroup() %>%
+  # Drop any years before the ten year buffer suggested by WRTDS
+  dplyr::filter(retain == "keep") %>%
+  # Remove unneeded columns (implicitly)
+  dplyr::select(Stream, Date, Qcms)
 
-# Identify earliest sample of chemical data at a given site
+# Take another look
+dplyr::glimpse(discharge)
 
-
-
+# Now crop chemistry to the min and max dates of discharge
+chemistry <- chem_v3 %>%
+  # Attach important discharge dates
+  dplyr::left_join(y = bookends_disc, by = "Stream") %>%
+  # Use those to crop the dataframe
+  dplyr::filter(Date > min_date & Date < max_date) %>%
+  # Drop to only needed columns
+  dplyr::select(Stream:value_mgL)
   
+# Glimpse it
+dplyr::glimpse(chemistry)
 
+## ---------------------------------------------- ##
+       # Prep - Export Prepared Products ----
+## ---------------------------------------------- ##
 
+# Write these final products out for posterity
+write.csv(x = discharge, row.names = F, na = "",
+          file = file.path("WRTDS Content", "WRTDS-input_discharge.csv"))
+write.csv(x = chemistry, row.names = F, na = "",
+          file = file.path("WRTDS Content", "WRTDS-input_chemistry.csv"))
 
+# Clean up environment again
+rm(list = setdiff(ls(), c("disc_main", "disc_log", "chem_main", "mdl_info",
+                          "chemistry", "discharge")))
 
-# cropping of included dates will be done here:
-
-
-
-# [...Under Construction...]
-
-
-# Take a last look
-
-summary(discharge)
-
+# Check out mismatched stream IDs
+sort(unique(chem_v2$Stream))
+sort(unique(disc_v2$Stream))
+## Is this a problem?
 
 ## ---------------------------------------------- ##
                       # Run ----
