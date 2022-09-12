@@ -11,7 +11,7 @@
 librarian::shelf(tidyverse, googledrive, lubridate, gtools)
 
 # Clear environment
-# rm(list = ls())
+rm(list = ls())
 
 # Create a folder for exporting/importing
 dir.create(path = "WRTDS Content", showWarnings = F)
@@ -45,7 +45,7 @@ chem_main <- read.csv(file = file.path("WRTDS Content", chem_files[2,1]))
 mdl_info <- read.csv(file = file.path("WRTDS Content", chem_files[1,1]))
 
 # Clean up the environment before continuing
-# rm(list = setdiff(ls(), c("disc_main", "disc_log", "chem_main", "mdl_info")))
+rm(list = setdiff(ls(), c("disc_main", "disc_log", "chem_main", "mdl_info")))
 ## Above line removes any objects *other* than those specified
 
 # Load in the custom function for converting calendar dates to hydro dates
@@ -263,11 +263,6 @@ write.csv(x = chemistry, row.names = F, na = "",
 # Clean up environment again
 rm(list = setdiff(ls(), c("disc_main", "disc_log", "chem_main", "mdl_info",
                           "chemistry", "discharge")))
-
-# Check out mismatched stream IDs
-sort(unique(chem_v2$Stream))
-sort(unique(disc_v2$Stream))
-## Is this a problem?
 
 ## ---------------------------------------------- ##
                       # Run ----
