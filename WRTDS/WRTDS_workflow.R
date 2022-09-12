@@ -8,7 +8,7 @@
 ## ---------------------------------------------- ##
 # Load libraries
 # install.packages("librarian")
-librarian::shelf(tidyverse, googledrive, lubridate, reshape, gtools)
+librarian::shelf(tidyverse, googledrive, lubridate, gtools)
 
 # Clear environment
 # rm(list = ls())
@@ -52,8 +52,14 @@ mdl_info <- read.csv(file = file.path("WRTDS Content", chem_files[1,1]))
 # rm(list = setdiff(ls(), c("disc_main", "disc_log", "chem_main", "mdl_info")))
 ## Above line removes any objects *other* than those specified
 
+# Load in the custom function for converting calendar dates to hydro dates
+hydro.day.new = function(x, start.month = 10L){
+  start.yr = lubridate::year(x) - (lubridate::month(x) < start.month)
+  start.date = lubridate::make_date(start.yr, start.month, 1L)
+  as.integer(x - start.date + 1L) }
+
 ## ---------------------------------------------- ##
-                  # Initial Prep ----
+            # General Prep / Tidying ----
 ## ---------------------------------------------- ##
 # Includes:
 ## Column name standardization
@@ -70,7 +76,7 @@ disc_v2 <- disc_main %>%
   dplyr::mutate(Date = as.Date(Date, "%Y-%m-%d")) %>%
   # Reorder columns
   dplyr::select(Stream, Date, Qcms)
-
+  
 # Check that out
 dplyr::glimpse(disc_v2)
 
@@ -103,9 +109,7 @@ chem_v2 <- chem_main %>%
   # Rename some columns
   dplyr::rename(Stream = Site.Stream.Name, Date = Sampling.Date) %>%
   # Convert date to true date format
-  dplyr::mutate(Date = as.Date(Date, "%Y-%m-%d")) %>%
-  # Pare down to needed columns
-  dplyr::select(Stream, variable_simp, Date, value_mgL)
+  dplyr::mutate(Date = as.Date(Date, "%Y-%m-%d"))
 
 # Examine that as well
 dplyr::glimpse(chem_v2)
@@ -135,18 +139,104 @@ mdl_v2 <- mdl_info %>%
 dplyr::glimpse(mdl_v2)  
 
 ## ---------------------------------------------- ##
-    # Prep - Wrangle *Discharge* for WRTDS ----
+    # Prep - Wrangle Response Dataframes ----
 ## ---------------------------------------------- ##
 # Includes:
-## If multiple discharge values for a given day/stream, averages values
-## Cropping to relevant time period
+## Chem - Incorporation of minimum detection limit (MDL) info (where available)
+## Chem - Removal of pre-1982 data at Andrews' sites
+## Disc - Averages Qcms if multiple discharge values for a given day/stream
+
+# Identify Andrews (AND) sites pre-1982
+early_AND <- chem_v2 %>%
+  dplyr::filter(LTER == "AND" & lubridate::year(Date) < 1983)
+
+# Wrangle the chemistry data
+chem_v3 <- chem_v2 %>%
+  # Remove pre-1982 data at Andrews
+  dplyr::anti_join(y = early_AND) %>%
+  # Pare down to needed columns (implicitly removes unspecified columns)
+  dplyr::select(Stream, variable_simp, Date, value_mgL) %>%
+  # Attach the minimum detection limit information where it is known
+  dplyr::left_join(y = mdl_v2, by = c("Stream", "variable_simp")) %>%
+  # Using this, create a "remarks" column that indicates whether a value is below the MDL
+  dplyr::mutate(remarks = ifelse(test = (value_mgL < MDL), yes = "<", no = ""),
+                .after = Date) %>%
+  # Now we can safely drop the MDL information because we have what we need
+  dplyr::select(-MDL)
+
+# Take a quick look
+glimpse(chem_v3)
 
 # Wrangle the discharge information
-discharge <- disc_v2 %>%
+disc_v3 <- disc_v2 %>%
+  # Drop any NAs in the discharge column
+  dplyr::filter(!is.na(Qcms)) %>%
   # Average discharge if more than one measurement per day/site
   dplyr::group_by(Stream, Date) %>%
   dplyr::summarize(Qcms = mean(Qcms, na.rm = T)) %>%
   dplyr::ungroup()
+
+# Glimpse it
+dplyr::glimpse(disc_v3)
+
+## ---------------------------------------------- ##
+         # Prep - Crop Included Years ----
+## ---------------------------------------------- ##
+# Includes:
+## ...
+
+# Identify earliest chemical data at each site
+min_chem <- chem_v3 %>%
+  # Make a new column of earliest days per stream
+  dplyr::group_by(Stream) %>%
+  dplyr::mutate(min_date = min(Date, na.rm = T)) %>%
+  dplyr::ungroup() %>%
+  # Filter to only those dates
+  dplyr::filter(Date == min_date) %>%
+  # Pare down columns
+  dplyr::select(Stream, Date, min_date) %>%
+  # Convert minimum date to Julian day
+  dplyr::mutate(min_julian = as.numeric(min_date)) %>%
+  # Subtract 10 years to crop the discharge data to 10 yrs per chemistry data
+  dplyr::mutate(disc_stencil = (min_julian - (10 * 365.25)) - 1)
+
+dplyr::glimpse(min_chem)
+
+## ---------------------------------------------- ##
+    # Prep - Wrangle *Chemistry* for WRTDS ----
+## ---------------------------------------------- ##
+# Includes:
+## Incorporation of minimum detection limit (MDL) info (where available)
+## Removal of pre-1982 data at Andrews' sites
+## Pares down to only needed columns
+
+
+
+
+# cropping of included dates will be done here:
+
+
+
+# [...Under Construction...]
+
+
+
+
+
+## ---------------------------------------------- ##
+    # Prep - Wrangle *Discharge* for WRTDS ----
+## ---------------------------------------------- ##
+# Includes:
+
+## Cropping to relevant time period
+
+# Identify earliest sample of chemical data at a given site
+
+
+
+  
+
+
 
 
 # cropping of included dates will be done here:
@@ -157,35 +247,9 @@ discharge <- disc_v2 %>%
 
 
 # Take a last look
-dplyr::glimpse(discharge)
 
-## ---------------------------------------------- ##
-     # Prep - Wrangle *Chemistry* for WRTDS ----
-## ---------------------------------------------- ##
-# Includes:
-## Incorporation of minimum detection limit (MDL) info (where available)
+summary(discharge)
 
-# Wrangle the chemistry data
-chemistry <- chem_v2 %>%
-  # Attach the minimum detection limit information where it is known
-  dplyr::left_join(y = mdl_v2, by = c("Stream", "variable_simp")) %>%
-  # Using this, create a "remarks" column that indicates whether a value is below the MDL
-  dplyr::mutate(remarks = ifelse(test = (value_mgL < MDL), yes = "<", no = ""),
-                .after = Date) %>%
-  # Now we can safely drop the MDL information because we have what we need
-  dplyr::select(-MDL)
-
-
-# cropping of included dates will be done here:
-
-
-
-# [...Under Construction...]
-
-
-
-# Take a quick look
-glimpse(chemistry)
 
 ## ---------------------------------------------- ##
                       # Run ----
