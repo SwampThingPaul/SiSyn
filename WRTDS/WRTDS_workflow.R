@@ -8,7 +8,7 @@
 ## ---------------------------------------------- ##
 # Load libraries
 # install.packages("librarian")
-librarian::shelf(tidyverse, googledrive, lubridate, gtools)
+librarian::shelf(tidyverse, googledrive, lubridate)
 
 # Clear environment
 rm(list = ls())
