@@ -39,8 +39,8 @@ for(file in needed_files$name){
 }
 
 # Read in each of these CSV files
-disc_main <- read.csv(file = file.path("WRTDS Content", disc_files[1,1]))
-disc_log <- read.csv(file = file.path("WRTDS Content", disc_files[2,1]))
+disc_main <- read.csv(file = file.path("WRTDS Content", disc_files[2,1]))
+disc_log <- read.csv(file = file.path("WRTDS Content", disc_files[1,1]))
 chem_main <- read.csv(file = file.path("WRTDS Content", chem_files[2,1]))
 mdl_info <- read.csv(file = file.path("WRTDS Content", chem_files[1,1]))
 
@@ -67,11 +67,11 @@ disc_v2 <- disc_main %>%
   # Drop row number column
   dplyr::select(-X) %>%
   # Rename site column as it appears in the discharge log file
-  dplyr::rename(Stream = site.name) %>%
+  dplyr::rename(Discharge_Stream = DischargeFileName) %>%
   # Convert date to true date format
   dplyr::mutate(Date = as.Date(Date, "%Y-%m-%d")) %>%
   # Reorder columns
-  dplyr::select(Stream, Date, Qcms)
+  dplyr::select(Discharge_Stream, Date, Qcms)
   
 # Check that out
 dplyr::glimpse(disc_v2)
@@ -79,11 +79,9 @@ dplyr::glimpse(disc_v2)
 # Wrangle the discharge log information as well
 ref_table <- disc_log %>%
   # Rename file name columns
-  dplyr::rename(files = DischargeFileName) %>%
+  dplyr::rename(Discharge_Stream = DischargeFileName) %>%
   # Crop down to only needed columns
-  dplyr::select(files, Stream, Units) %>%
-  # Keep only streams in the discharge dataset
-  dplyr::filter(Stream %in% disc_v2$Stream)
+  dplyr::select(Discharge_Stream, Stream)
 
 # Check it
 dplyr::glimpse(ref_table)
@@ -142,6 +140,12 @@ dplyr::glimpse(mdl_v2)
 ## Chem - Removal of pre-1982 data at Andrews' sites
 ## Disc - Averages Qcms if multiple discharge values for a given day/stream
 
+
+# HERE NOW (vvv) ----
+
+## Retrieval of matched "stream" name with "discharge stream name" and "chemistry stream name"
+
+
 # Identify Andrews (AND) sites pre-1982
 early_AND <- chem_v2 %>%
   dplyr::filter(LTER == "AND" & lubridate::year(Date) < 1983)
@@ -158,7 +162,11 @@ chem_v3 <- chem_v2 %>%
   dplyr::mutate(remarks = ifelse(test = (value_mgL < MDL), yes = "<", no = ""),
                 .after = Date) %>%
   # Now we can safely drop the MDL information because we have what we need
-  dplyr::select(-MDL)
+  dplyr::select(-MDL) %>%
+  # Now left join on the name for the stream in the discharge file
+  dplyr::left_join(ref_table, by = "Stream") %>%
+  # And move the discharge stream name column to the left
+  dplyr::select(Discharge_Stream, Stream:value_mgL)
 
 # Take a quick look
 glimpse(chem_v3)
@@ -168,9 +176,13 @@ disc_v3 <- disc_v2 %>%
   # Drop any NAs in the discharge column
   dplyr::filter(!is.na(Qcms)) %>%
   # Average discharge if more than one measurement per day/site
-  dplyr::group_by(Stream, Date) %>%
+  dplyr::group_by(Discharge_Stream, Date) %>%
   dplyr::summarize(Qcms = mean(Qcms, na.rm = T)) %>%
-  dplyr::ungroup()
+  dplyr::ungroup() %>%
+  # Bring in the ref table stream names as well
+  dplyr::left_join(ref_table, by = "Discharge_Stream") %>%
+  # And move the column to the right of the Dicharge Stream name
+  dplyr::select(Discharge_Stream, Stream, Date, Qcms)
 
 # Glimpse it
 dplyr::glimpse(disc_v3)
@@ -184,13 +196,13 @@ dplyr::glimpse(disc_v3)
 # Identify earliest chemical data at each site
 min_chem <- chem_v3 %>%
   # Make a new column of earliest days per stream
-  dplyr::group_by(Stream) %>%
+  dplyr::group_by(Discharge_Stream, Stream) %>%
   dplyr::mutate(min_date = min(Date, na.rm = T)) %>%
   dplyr::ungroup() %>%
   # Filter to only those dates
   dplyr::filter(Date == min_date) %>%
   # Pare down columns (drop date now that we have `min_date`)
-  dplyr::select(Stream, min_date) %>%
+  dplyr::select(Discharge_Stream, Stream, min_date) %>%
   # Subtract 10 years to crop the discharge data to 10 yrs per chemistry data
   dplyr::mutate(disc_start = (min_date - (10 * 365.25)) - 1)
 
@@ -200,7 +212,7 @@ dplyr::glimpse(min_chem)
 # Identify min/max of discharge data
 bookends_disc <- disc_v3 %>%
   # Group by stream and identify the first and last days of sampling
-  dplyr::group_by(Stream) %>%
+  dplyr::group_by(Discharge_Stream, Stream) %>%
   dplyr::summarize(min_date = min(Date, na.rm = T),
                    max_date = max(Date, na.rm = T)) %>%
   dplyr::ungroup() %>%
@@ -223,9 +235,9 @@ dplyr::glimpse(bookends_disc)
 # Begin with discharge
 discharge <- disc_v3 %>%
   # Left join on the start date from the chemistry data
-  dplyr::left_join(y = min_chem, by = "Stream") %>%
+  dplyr::left_join(y = min_chem, by = c("Discharge_Stream", "Stream")) %>%
   # Identify whether each date is greater than the minimum (per stream!)
-  dplyr::group_by(Stream) %>%
+  dplyr::group_by(Discharge_Stream, Stream) %>%
   dplyr::mutate(retain = ifelse(Date > disc_start,
                                 yes = "keep",
                                 no = "drop")) %>%
@@ -233,7 +245,7 @@ discharge <- disc_v3 %>%
   # Drop any years before the ten year buffer suggested by WRTDS
   dplyr::filter(retain == "keep") %>%
   # Remove unneeded columns (implicitly)
-  dplyr::select(Stream, Date, Qcms)
+  dplyr::select(Discharge_Stream, Stream, Date, Qcms)
 
 # Take another look
 dplyr::glimpse(discharge)
@@ -241,11 +253,12 @@ dplyr::glimpse(discharge)
 # Now crop chemistry to the min and max dates of discharge
 chemistry <- chem_v3 %>%
   # Attach important discharge dates
-  dplyr::left_join(y = bookends_disc, by = "Stream") %>%
+  dplyr::left_join(y = bookends_disc, by = c("Discharge_Stream", "Stream")) %>%
   # Use those to crop the dataframe
+  ## !!! Note that this removes streams where "Discharge_Stream" is NA !!!
   dplyr::filter(Date > min_date & Date < max_date) %>%
   # Drop to only needed columns
-  dplyr::select(Stream:value_mgL)
+  dplyr::select(Discharge_Stream:value_mgL)
   
 # Glimpse it
 dplyr::glimpse(chemistry)
