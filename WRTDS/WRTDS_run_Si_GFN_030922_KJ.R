@@ -61,8 +61,8 @@ i <- 1
   eList<-mergeReport(Info, Daily, Sample)
   
   #save workspace so it can be accessed later
-  savePath<-"WRTDS_test"
-  saveResults(savePath, eList)
+  # savePath<-"WRTDS_test"
+  # saveResults(savePath, eList)
   
   # Run original model
   eList1<-modelEstimation(eList, minNumObs=50)
