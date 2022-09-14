@@ -11,7 +11,7 @@
 librarian::shelf(tidyverse, googledrive, lubridate, EGRET, EGRETci)
 
 # Clear environment
-# rm(list = ls())
+rm(list = ls())
 
 # Create a folder for (1) source files, (2) direct inputs, and (3) outputs
 dir.create(path = "WRTDS Source Files", showWarnings = F)
@@ -50,7 +50,7 @@ chem_main <- read.csv(file = file.path("WRTDS Source Files", chem_files[2,1]))
 mdl_info <- read.csv(file = file.path("WRTDS Source Files", chem_files[1,1]))
 
 # Clean up the environment before continuing
-# rm(list = setdiff(ls(), c("disc_main", "disc_log", "chem_main", "mdl_info")))
+rm(list = setdiff(ls(), c("disc_main", "disc_log", "chem_main", "mdl_info")))
 ## Above line removes anything *other* than objects specified
 
 # Load in the custom function for converting calendar dates to hydro dates
@@ -341,12 +341,40 @@ write.csv(x = information, row.names = F, na = "",
                            "WRTDS-input_information.csv"))
 
 # Clean up environment again
-# rm(list = setdiff(ls(), c("disc_main", "disc_log", "chem_main", "mdl_info",
-#                           "chemistry", "discharge")))
+rm(list = setdiff(ls(), c("disc_main", "disc_log", "chem_main", "mdl_info", "chemistry", "discharge", "information")))
 
 ## ---------------------------------------------- ##
                       # Run ----
 ## ---------------------------------------------- ##
+
+# Pick a single "Discharge_Stream" to run through this with
+river <- "KRR_S65_Q"
+
+# Pick a single chemical as well
+element <- "DSi"
+
+# Subset discharge to correct river
+river_disc <- dplyr::filter(discharge, Discharge_Stream == river) %>%
+  dplyr::select(Date, Qcms)
+
+# Subset chemistry to right river *and* right element
+river_chem <- chemistry %>%
+  dplyr::filter(Discharge_Stream == river & variable_simp == element) %>%
+  dplyr::select(Date, remarks, value_mgL)
+
+# Information also subseted to right river + element
+river_info <- information %>%
+  dplyr::filter(Discharge_Stream == river & param.nm == element) %>%
+  dplyr::select(param.units, shortName, paramShortName, constitAbbrev,
+                drainSqKm, station.nm, param.nm, staAbbrev)
+
+
+
+# NEXT:
+## 1) save each of the "river_" objects as temp files
+## 2) Read them back in using EGRET's special functions
+## 3-?) adapt rest of workflow!
+
 
 
 
