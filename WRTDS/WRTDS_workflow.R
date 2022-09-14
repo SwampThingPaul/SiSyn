@@ -11,21 +11,25 @@
 librarian::shelf(tidyverse, googledrive, lubridate, EGRET, EGRETci)
 
 # Clear environment
-rm(list = ls())
+# rm(list = ls())
 
-# Create a folder for exporting/importing
-dir.create(path = "WRTDS Content", showWarnings = F)
+# Create a folder for (1) source files, (2) direct inputs, and (3) outputs
+dir.create(path = "WRTDS Source Files", showWarnings = F)
+dir.create(path = "WRTDS Inputs", showWarnings = F)
+dir.create(path = "WRTDS Outputs", showWarnings = F)
 
 # Identify Google links to relevant folders
 disc_folder <- "https://drive.google.com/drive/folders/1HQtpWYoq_YQwj_bDNNbv8D-0swi00o_s"
 chem_folder <- "https://drive.google.com/drive/folders/1BAs0y1hHArW8BANUFJrXOXcoMHIk25Pp"
+info_folder <- "https://drive.google.com/drive/u/1/folders/1q92ee9nKct_nCJ3NVD2-tm8KCuRBfm2U"
 
 # Identify their IDs
 disc_files <- googledrive::drive_ls(path = as_id(disc_folder), type = "csv")
 chem_files <- googledrive::drive_ls(path = as_id(chem_folder), type = "csv", pattern = "master")
+info_files <- googledrive::drive_ls(path = as_id(info_folder), type = "csv", pattern = "INFO_all_PO4")
 
 # Combine all of the wanted files in a single object
-needed_files <- rbind(disc_files, chem_files)
+needed_files <- rbind(disc_files, chem_files, info_files)
 
 # Download these files
 for(file in needed_files$name){
@@ -34,19 +38,20 @@ for(file in needed_files$name){
   
   # Download file
   googledrive::drive_download(file = as_id(file_id), 
-                              path = file.path("WRTDS Content", file),
+                              path = file.path("WRTDS Source Files", file),
                               overwrite = T)
 }
 
 # Read in each of these CSV files
-disc_main <- read.csv(file = file.path("WRTDS Content", disc_files[2,1]))
-disc_log <- read.csv(file = file.path("WRTDS Content", disc_files[1,1]))
-chem_main <- read.csv(file = file.path("WRTDS Content", chem_files[2,1]))
-mdl_info <- read.csv(file = file.path("WRTDS Content", chem_files[1,1]))
+disc_main <- read.csv(file = file.path("WRTDS Source Files", disc_files[2,1]))
+disc_log <- read.csv(file = file.path("WRTDS Source Files", disc_files[1,1]))
+info_v1 <- read.csv(file = file.path("WRTDS Source Files", info_files[1,1]))
+chem_main <- read.csv(file = file.path("WRTDS Source Files", chem_files[2,1]))
+mdl_info <- read.csv(file = file.path("WRTDS Source Files", chem_files[1,1]))
 
 # Clean up the environment before continuing
-rm(list = setdiff(ls(), c("disc_main", "disc_log", "chem_main", "mdl_info")))
-## Above line removes any objects *other* than those specified
+# rm(list = setdiff(ls(), c("disc_main", "disc_log", "chem_main", "mdl_info")))
+## Above line removes anything *other* than objects specified
 
 # Load in the custom function for converting calendar dates to hydro dates
 hydro.day.new = function(x, start.month = 10L){
@@ -61,6 +66,7 @@ hydro.day.new = function(x, start.month = 10L){
 ## Column name standardization
 ## Removal of unnecessary columns
 ## Unit standardization (by conversion)
+## Streamlining of information file
 
 # Wrangle the discharge data objects to standardize naming somewhat
 disc_v2 <- disc_main %>%
@@ -75,16 +81,6 @@ disc_v2 <- disc_main %>%
   
 # Check that out
 dplyr::glimpse(disc_v2)
-
-# Wrangle the discharge log information as well
-ref_table <- disc_log %>%
-  # Rename file name columns
-  dplyr::rename(Discharge_Stream = DischargeFileName) %>%
-  # Crop down to only needed columns
-  dplyr::select(Discharge_Stream, Stream)
-
-# Check it
-dplyr::glimpse(ref_table)
 
 # Clean up the chemistry data
 chem_v2 <- chem_main %>%
@@ -108,6 +104,16 @@ chem_v2 <- chem_main %>%
 # Examine that as well
 dplyr::glimpse(chem_v2)
 
+# Wrangle the discharge log information as well
+ref_table <- disc_log %>%
+  # Rename file name columns
+  dplyr::rename(Discharge_Stream = DischargeFileName) %>%
+  # Crop down to only needed columns
+  dplyr::select(Discharge_Stream, Stream)
+
+# Check it
+dplyr::glimpse(ref_table)
+
 # Wrangle minimum detection limit file too
 mdl_v2 <- mdl_info %>%
   # Drop unneeded columns
@@ -130,7 +136,53 @@ mdl_v2 <- mdl_info %>%
   dplyr::select(-variable)
 
 # Check it
-dplyr::glimpse(mdl_v2)  
+dplyr::glimpse(mdl_v2)
+
+# Wrangle the information dataframe as well
+info_v2_p <- info_v1 %>%
+  # Make a new column to match with ref_table later
+  dplyr::mutate(Stream = station.nm) %>%
+  # Pivot longer to build in other compounds
+  tidyr::pivot_longer(cols = c(paramShortName, constitAbbrev, param.nm), names_to = "param_col", values_to = "values")
+
+# Cumbersome, but duplicate this dataframe for each chemical
+## Silica
+info_v2_si <- info_v2_p %>%
+  dplyr::mutate(values = dplyr::case_when(
+    values == "Phosphate" ~ "Silicon",
+    values == "PO4" ~ "DSi")) %>%
+  # Once fixed, pivot back to wide format
+  tidyr::pivot_wider(names_from = param_col,
+                     values_from = values)
+## Ammonium
+info_v2_nh4 <- info_v2_p %>%
+  dplyr::mutate(values = dplyr::case_when(
+    values == "Phosphate" ~ "Ammonium",
+    values == "PO4" ~ "NH4")) %>%
+  tidyr::pivot_wider(names_from = param_col,
+                     values_from = values)
+## Nitrate
+info_v2_nox <- info_v2_p %>%
+  dplyr::mutate(values = dplyr::case_when(
+    values == "Phosphate" ~ "Nitrate",
+    values == "PO4" ~ "NOx")) %>%
+  tidyr::pivot_wider(names_from = param_col,
+                     values_from = values)
+## Pivot phosphorous wider too
+info_v2_p_v2 <- info_v2_p %>%
+  tidyr::pivot_wider(names_from = param_col,
+                     values_from = values)
+
+# Bind all four chemicals together
+info_v2 <- info_v2_p_v2 %>%
+  dplyr::bind_rows(info_v2_si) %>%
+  dplyr::bind_rows(info_v2_nh4) %>%
+  dplyr::bind_rows(info_v2_nox) %>%
+  # And reorder columns to original order
+  dplyr::select(Stream, param.units, shortName, paramShortName, constitAbbrev, drainSqKm, station.nm, param.nm, staAbbrev)
+
+# Look at it
+dplyr::glimpse(info_v2)
 
 ## ---------------------------------------------- ##
     # Prep - Wrangle Response Dataframes ----
@@ -139,12 +191,7 @@ dplyr::glimpse(mdl_v2)
 ## Chem - Incorporation of minimum detection limit (MDL) info (where available)
 ## Chem - Removal of pre-1982 data at Andrews' sites
 ## Disc - Averages Qcms if multiple discharge values for a given day/stream
-
-
-# HERE NOW (vvv) ----
-
-## Retrieval of matched "stream" name with "discharge stream name" and "chemistry stream name"
-
+## Both - Retrieval of matched "stream" name with "discharge stream name" and "chemistry stream name"
 
 # Identify Andrews (AND) sites pre-1982
 early_AND <- chem_v2 %>%
@@ -186,6 +233,14 @@ disc_v3 <- disc_v2 %>%
 
 # Glimpse it
 dplyr::glimpse(disc_v3)
+
+# Now information
+info_v3 <- info_v2 %>%
+  # And bring on discharge stream from the chemistry data
+  dplyr::mutate(Discharge_Stream = chem_v3$Discharge_Stream[match(Stream, chem_v3$Stream)], .before = Stream)
+
+# Glimpse
+dplyr::glimpse(info_v3)
 
 ## ---------------------------------------------- ##
        # Prep - Identify Years to Exclude ----
@@ -263,19 +318,31 @@ chemistry <- chem_v3 %>%
 # Glimpse it
 dplyr::glimpse(chemistry)
 
+# Finally, clean up the information dataframe however is needed
+information <- info_v3
+## Currently no wrangling needed here
+
+# Take a look
+dplyr::glimpse(information)
+
 ## ---------------------------------------------- ##
        # Prep - Export Prepared Products ----
 ## ---------------------------------------------- ##
 
 # Write these final products out for posterity
 write.csv(x = discharge, row.names = F, na = "",
-          file = file.path("WRTDS Content", "WRTDS-input_discharge.csv"))
+          file = file.path("WRTDS Inputs",
+                           "WRTDS-input_discharge.csv"))
 write.csv(x = chemistry, row.names = F, na = "",
-          file = file.path("WRTDS Content", "WRTDS-input_chemistry.csv"))
+          file = file.path("WRTDS Inputs",
+                           "WRTDS-input_chemistry.csv"))
+write.csv(x = information, row.names = F, na = "",
+          file = file.path("WRTDS Inputs",
+                           "WRTDS-input_information.csv"))
 
 # Clean up environment again
-rm(list = setdiff(ls(), c("disc_main", "disc_log", "chem_main", "mdl_info",
-                          "chemistry", "discharge")))
+# rm(list = setdiff(ls(), c("disc_main", "disc_log", "chem_main", "mdl_info",
+#                           "chemistry", "discharge")))
 
 ## ---------------------------------------------- ##
                       # Run ----
