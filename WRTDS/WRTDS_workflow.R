@@ -50,7 +50,7 @@ chem_main <- read.csv(file = file.path("WRTDS Source Files", chem_files[2,1]))
 mdl_info <- read.csv(file = file.path("WRTDS Source Files", chem_files[1,1]))
 
 # Clean up the environment before continuing
-rm(list = setdiff(ls(), c("disc_main", "disc_log", "chem_main", "mdl_info")))
+rm(list = setdiff(ls(), c("disc_main", "disc_log", "chem_main", "mdl_info", "info_v1")))
 ## Above line removes anything *other* than objects specified
 
 # Load in the custom function for converting calendar dates to hydro dates
@@ -341,7 +341,7 @@ write.csv(x = information, row.names = F, na = "",
                            "WRTDS-input_information.csv"))
 
 # Clean up environment again
-rm(list = setdiff(ls(), c("disc_main", "disc_log", "chem_main", "mdl_info", "chemistry", "discharge", "information")))
+rm(list = setdiff(ls(), c("disc_main", "disc_log", "chem_main", "mdl_info", "info_v1", "chemistry", "discharge", "information")))
 
 ## ---------------------------------------------- ##
                       # Run ----
