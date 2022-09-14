@@ -8,7 +8,7 @@
 ## ---------------------------------------------- ##
 # Load libraries
 # install.packages("librarian")
-librarian::shelf(tidyverse, googledrive, lubridate)
+librarian::shelf(tidyverse, googledrive, lubridate, EGRET, EGRETci)
 
 # Clear environment
 rm(list = ls())
