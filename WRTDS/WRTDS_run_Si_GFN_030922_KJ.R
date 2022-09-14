@@ -1,33 +1,33 @@
 ## Running GFN Version of EGRET/WRTDS
 
-require(tidyverse)
-require(googledrive)
-require(stringr)
-require(lubridate)
-require(reshape)
-require(gtools)
-require(data.table)
-require(dataRetrieval)
-require(EGRET)
-require(EGRETci)
+library(tidyverse)
+library(googledrive)
+library(stringr)
+library(lubridate)
+library(reshape)
+library(gtools)
+library(data.table)
+library(dataRetrieval)
+library(EGRET)
+library(EGRETci)
 
 #################################################################################
 ### 
 
 #make list of all "prep" files in local folder
-setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/MacroSiPrepWRTDS")
+# setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/MacroSiPrepWRTDS")
 
 #WRTDS_files_List<-list.files(path = "C:/Users/kjankowski/OneDrive - DOI/Documents/Projects/Silica Synthesis/Data/WRTDS/WRTDS_prep_Si_01162022")
-WRTDS_files_List<-list.files(path = "/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/MacroSiPrepWRTDS")
+WRTDS_files_List <- list.files(path = file.path("WRTDS_test"))
 
 #make list of only Q files
-WRTDS_files_List_Q<-WRTDS_files_List[WRTDS_files_List %like% "Q_WRTDS"]
+WRTDS_files_List_Q<-WRTDS_files_List[WRTDS_files_List %like% "ALBION_Q_WRTDS"]
 
 #make list of only Si files
-WRTDS_files_List_Si<-WRTDS_files_List[WRTDS_files_List %like% "Si_WRTDS"]
+WRTDS_files_List_Si<-WRTDS_files_List[WRTDS_files_List %like% "ALBION_Si_WRTDS"]
 
 #make list of only INFO files
-WRTDS_files_List_Info<-WRTDS_files_List[WRTDS_files_List %like% "INFO"]
+WRTDS_files_List_Info<-WRTDS_files_List[WRTDS_files_List %like% "ALBION_INFO"]
 
 WRTDS_files<-sub("*_Q_WRTDS.csv", "", WRTDS_files_List_Q)
 
@@ -35,17 +35,20 @@ WRTDS_files<-sub("*_Q_WRTDS.csv", "", WRTDS_files_List_Q)
 #i=i
 
 #run WRTDS! output will be saved to the same file
-for (i in 1:length(WRTDS_files)) {
+# for (i in 1:length(WRTDS_files)) {
   
+# Set i to 1
+i <- 1
+
   #read in Q file
-  Daily<-readUserDaily("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/MacroSiPrepWRTDS", WRTDS_files_List_Q[i],
+  Daily<-readUserDaily(filePath = "WRTDS_test", WRTDS_files_List_Q[i],
                        qUnit = 2)
   
   #read in Si file
-  Sample<-readUserSample("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/MacroSiPrepWRTDS", WRTDS_files_List_Si[i])
+  Sample<-readUserSample(filePath = "WRTDS_test", WRTDS_files_List_Si[i])
   
   #read in Info file
-  Info<-readUserInfo("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/MacroSiPrepWRTDS", WRTDS_files_List_Info[i])
+  Info<-readUserInfo(filePath = "WRTDS_test", WRTDS_files_List_Info[i])
   
   #remove duplicates from sample file
   Sample<-removeDuplicates(Sample)
@@ -58,7 +61,7 @@ for (i in 1:length(WRTDS_files)) {
   eList<-mergeReport(Info, Daily, Sample)
   
   #save workspace so it can be accessed later
-  savePath<-"/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/WRTDS_Si_MacroSheds_Results"
+  savePath<-"WRTDS_test"
   saveResults(savePath, eList)
   
   # Run original model
@@ -102,14 +105,14 @@ for (i in 1:length(WRTDS_files)) {
 
   ############
   #write output to this folder
-  setwd("C:/Users/kjankowski/OneDrive - DOI/Documents/Projects/Silica Synthesis/Results/WRTDS/WRTDS_Si_results_GFN")
+  
   
   # extract error statistics
   error <- errorStats(eList1)
-  write.csv(error, paste0(WRTDS_files[i], "_ErrorStats_WRTDS.csv"), row.names=FALSE)
+  write.csv(error, file.path("WRTDS_test", paste0(WRTDS_files[i], "_ErrorStats_WRTDS.csv")), row.names=FALSE)
   
   #open pdf for graphical output 
-  pdf(paste0(WRTDS_files[i], "_WRTDS_GFN_output.pdf"))
+  pdf(file.path("WRTDS_test", paste0(WRTDS_files[i], "_WRTDS_GFN_output.pdf")))
   
   #residual plots
   fluxBiasMulti(eList1)
@@ -132,20 +135,20 @@ for (i in 1:length(WRTDS_files)) {
   ContConc<-eListOut$Daily
   
   #write csv of daily Si data
-  write.csv(ContConc, paste0(WRTDS_files[i], "_ContSi_GFN_WRTDS.csv"))
+  write.csv(ContConc, file.path("WRTDS_test", paste0(WRTDS_files[i], "_ContSi_GFN_WRTDS.csv")))
   
   #average annual values
   Results<-tableResults(eListOut)
   
   #write csv of annual results dataframe
-  write.csv(Results, paste0(WRTDS_files[i], "_ResultsTable_GFN_WRTDS.csv"))
+  write.csv(Results, file.path("WRTDS_test", paste0(WRTDS_files[i], "_ResultsTable_GFN_WRTDS.csv")))
   
   #make new column for year
   ContConc$Year<-format(as.Date(ContConc$Date), "%Y")
   
   # calculate monthly values
   months=calculateMonthlyResults(eListOut)
-  write.csv(months, paste0(WRTDS_files[i], "_Monthly_GFN_WRTDS.csv"))
+  write.csv(months, file.path("WRTDS_test", paste0(WRTDS_files[i], "_Monthly_GFN_WRTDS.csv")))
   
   #find min year
   minYP<-as.numeric(min(ContConc$Year))+1
@@ -166,7 +169,7 @@ for (i in 1:length(WRTDS_files)) {
   Trends<-cbind(Conc, Flux)
   
   #write csv of trends dataframe
-  write.csv(Trends, paste0(WRTDS_files[i], "_TrendsTable_GFN_WRTDS.csv"))
+  write.csv(Trends, file.path("WRTDS_test", paste0(WRTDS_files[i], "_TrendsTable_GFN_WRTDS.csv")))
   
   # Run trend estimate for GFN method between start/end years
   eListPairs <- runPairs(eListOut, windowSide = 11, 
@@ -175,7 +178,7 @@ for (i in 1:length(WRTDS_files)) {
                          year2=maxYP,
                         )
 
-  write.csv(eListPairs, paste0(WRTDS_files[i], "_Si_GFN.csv"))
+  write.csv(eListPairs, file.path("WRTDS_test", paste0(WRTDS_files[i], "_Si_GFN.csv")))
   
  
   ## Estimate trend uncertainty  
@@ -188,10 +191,10 @@ for (i in 1:length(WRTDS_files)) {
   CIs=as.data.frame(bootResults)
   CIs$solute=rep("Si", nrow(bootResults))
   colnames(CIs)=c("xConc", "xFlux", "pConc", "pFlux", "solute")
-  write.csv(CIs, paste0(WRTDS_files[i], "_EGRETCi_GFN_bootstraps.csv"), row.names=FALSE)
+  write.csv(CIs, file.path("WRTDS_test", paste0(WRTDS_files[i], "_EGRETCi_GFN_bootstraps.csv")), row.names=FALSE)
   
   Summary=as.data.frame(bootSummary)
-  write.csv(Summary, paste0(WRTDS_files[i], "_Si_EGRETCi_GFN_Trend.csv"))
+  write.csv(Summary, file.path("WRTDS_test", paste0(WRTDS_files[i], "_Si_EGRETCi_GFN_Trend.csv")))
   
   #calculates CI around model fit - TAKES FOREVER
   #CIAnnualResults <- ciCalculations(eList,nBoot=100,blockLength=200)
@@ -199,4 +202,4 @@ for (i in 1:length(WRTDS_files)) {
   #write.csv(CIAnnualResults, paste0(WRTDS_files[i], "_Si_EGRETCi_TrendCIs.csv"), row.names=FALSE)
   
  
-}
+# }
