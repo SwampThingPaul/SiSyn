@@ -46,3 +46,18 @@ vignettes/*.pdf
 /HJA_WRTDS/README.RMD
 
 /DataInventory/src/0_ceramictoken.R
+
+# DS_Store
+.DS_Store
+
+# Test WRTDS folders
+WRTDS Content/
+WRTDS_test/
+WRTDS Inputs/
+WRTDS Temporary Files/
+WRTDS Outputs/
+WRTDS Source Files/
+
+# Minimum Detection Limit folder
+MDL_Prep/
+
