@@ -13,9 +13,10 @@ librarian::shelf(tidyverse, googledrive, lubridate, EGRET, EGRETci)
 # Clear environment
 rm(list = ls())
 
-# Create a folder for (1) source files, (2) direct inputs, and (3) outputs
+# Create a folder for (1) source files, (2) direct inputs, (3) site-specific files, and (4) outputs
 dir.create(path = "WRTDS Source Files", showWarnings = F)
 dir.create(path = "WRTDS Inputs", showWarnings = F)
+dir.create(path = "WRTDS Temporary Files", showWarnings = F)
 dir.create(path = "WRTDS Outputs", showWarnings = F)
 
 # Identify Google links to relevant folders
@@ -300,7 +301,9 @@ discharge <- disc_v3 %>%
   # Drop any years before the ten year buffer suggested by WRTDS
   dplyr::filter(retain == "keep") %>%
   # Remove unneeded columns (implicitly)
-  dplyr::select(Discharge_Stream, Stream, Date, Qcms)
+  dplyr::select(Discharge_Stream, Stream, Date, Qcms) %>%
+  # Rename the discharge (Q) column without units
+  dplyr::rename(Q = Qcms)
 
 # Take another look
 dplyr::glimpse(discharge)
@@ -349,13 +352,15 @@ rm(list = setdiff(ls(), c("disc_main", "disc_log", "chem_main", "mdl_info", "inf
 
 # Pick a single "Discharge_Stream" to run through this with
 river <- "KRR_S65_Q"
+## We'll loop through this later
 
 # Pick a single chemical as well
 element <- "DSi"
+## We'll loop through this as well!
 
 # Subset discharge to correct river
 river_disc <- dplyr::filter(discharge, Discharge_Stream == river) %>%
-  dplyr::select(Date, Qcms)
+  dplyr::select(Date, Q)
 
 # Subset chemistry to right river *and* right element
 river_chem <- chemistry %>%
@@ -368,12 +373,21 @@ river_info <- information %>%
   dplyr::select(param.units, shortName, paramShortName, constitAbbrev,
                 drainSqKm, station.nm, param.nm, staAbbrev)
 
+# Save these as CSVs with generic names
+## This means each iteration of the loop will overwrite them so this folder won't become gigantic
+write.csv(x = river_disc, row.names = F, na = "",
+          file = file.path("WRTDS Temporary Files", "discharge.csv"))
+write.csv(x = river_chem, row.names = F, na = "",
+          file = file.path("WRTDS Temporary Files", "chemistry.csv"))
+write.csv(x = river_info, row.names = F, na = "",
+          file = file.path("WRTDS Temporary Files", "information.csv"))
+
+# Then read them back in with EGRET's special acquisition functions
+egret_disc <- EGRET::readUserDaily(filePath = "WRTDS Temporary Files", fileName = "discharge.csv", qUnit = 2, verbose = F)
+egret_chem <- EGRET::readUserSample(filePath = "WRTDS Temporary Files", fileName = "chemistry.csv", verbose = F)
+egret_info <- EGRET::readUserInfo(filePath = "WRTDS Temporary Files", fileName = "information.csv", interactive = F)
 
 
-# NEXT:
-## 1) save each of the "river_" objects as temp files
-## 2) Read them back in using EGRET's special functions
-## 3-?) adapt rest of workflow!
 
 
 
