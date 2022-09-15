@@ -349,22 +349,31 @@ rm(list = setdiff(ls(), c("disc_main", "disc_log", "chem_main", "mdl_info", "inf
 ## ---------------------------------------------- ##
                       # Run ----
 ## ---------------------------------------------- ##
+# "Run" Structure:
+## Big for loop that iterates across "Discharge_Stream" names
+## Within that loop, a slightly smaller loop that iterates across chemicals that were sampled at that river.
 
-# Pick a single "Discharge_Stream" to run through this with
-river <- "KRR_S65_Q"
-## We'll loop through this later
+# for(river in unique(discharge$Discharge_Stream)){
+# (^^^) Actual loop (uncomment when you are ready)
+# (vvv) Test loop for a single site
+for(river in "KRR_S65_Q"){
 
-# Pick a single chemical as well
-element <- "DSi"
-## We'll loop through this as well!
+  # Subset discharge to correct river
+  river_disc <- discharge %>%
+    dplyr::filter(Discharge_Stream == river) %>%
+    dplyr::select(Date, Q)
+  
+  # Subset chemistry to the right river (but still all chemicals)
+  chem_partial <- chemistry %>%
+    dplyr::filter(Discharge_Stream == river)
 
-# Subset discharge to correct river
-river_disc <- dplyr::filter(discharge, Discharge_Stream == river) %>%
-  dplyr::select(Date, Q)
-
+  # Again, including "actual" and "test" loop heads  
+  # for(element in unique(chem_partial$variable_simp)){
+  for(element in "DSi"){
+    
 # Subset chemistry to right river *and* right element
-river_chem <- chemistry %>%
-  dplyr::filter(Discharge_Stream == river & variable_simp == element) %>%
+river_chem <- chem_partial %>%
+  dplyr::filter(variable_simp == element) %>%
   dplyr::select(Date, remarks, value_mgL)
 
 # Information also subseted to right river + element
@@ -512,10 +521,8 @@ egret_boot_summary <- as.data.frame(egret_boot$bootOut)
 # And export it as well
 write.csv(x = egret_boot_summary, file.path("WRTDS Outputs", paste0(out_prefix, "EGRETCi_GFN_Trend.csv")), row.names = F, na = "")
 
-## ---------------------------------------------- ##
-                    # Results ----
-## ---------------------------------------------- ##
-                    
-
+  } # End "element" loop
+  
+} # End "river" loop
 
 # End ----
