@@ -384,16 +384,135 @@ write.csv(x = river_info, row.names = F, na = "",
 
 # Then read them back in with EGRET's special acquisition functions
 egret_disc <- EGRET::readUserDaily(filePath = "WRTDS Temporary Files", fileName = "discharge.csv", qUnit = 2, verbose = F)
-egret_chem <- EGRET::readUserSample(filePath = "WRTDS Temporary Files", fileName = "chemistry.csv", verbose = F)
+egret_chem_v1 <- EGRET::readUserSample(filePath = "WRTDS Temporary Files", fileName = "chemistry.csv", verbose = F)
 egret_info <- EGRET::readUserInfo(filePath = "WRTDS Temporary Files", fileName = "information.csv", interactive = F)
 
+# Remove any duplicates from chemistry file
+egret_chem_v2 <- EGRET::removeDuplicates(Sample = egret_chem_v1)
+egret_chem_v3 <- stats::aggregate(egret_chem_v2, by = list(egret_chem_v2$Date), FUN = mean)
+egret_chem <- as.data.frame(dplyr::select(egret_chem_v3, -Group.1))
 
+# Create a list of the discharge, chemistry, and information files
+egret_list <- EGRET::mergeReport(INFO = egret_info, Daily = egret_disc, Sample = egret_chem, verbose = F)
+## Getting a weird "duplicated dates" message/warning...
 
+# Fit original model
+egret_estimation <- EGRET::modelEstimation(eList = egret_list, minNumObs = 50, verbose = F)
 
+# Fit "GFN" (?) model
+egret_list_out <- EGRET::runSeries(eList = egret_list, windowSide = 11, minNumObs = 50, verbose = F)
 
+# Create a common prefix for all outputs from this run of the loop
+out_prefix <- paste0(river, "_", element, "_") 
 
+# Identify error statistics
+egret_error <- EGRET::errorStats(eList = egret_estimation)
 
+# Save the error stats out
+write.csv(x = error, file = file.path("WRTDS Outputs", paste0(out_prefix, "ErrorStats_WRTDS.csv")), row.names = F, na = "")
 
+# Create PDF report
+## Start the PDF
+pdf(file = file.path("WRTDS Outputs", paste0(out_prefix, "WRTDS_GFN_output.pdf")))
+
+## Residual plots
+EGRET::fluxBiasMulti(eList = egret_estimation)
+
+## Model Fit
+EGRET::plotConcTimeDaily(eList = egret_list_out)
+
+## Concentration
+EGRET::plotConcHist(eList = egret_list_out) # minYP, maxYP)
+
+## Flux
+EGRET::plotFluxHist(eList = egret_list_out) #, minYP, maxYP)
+
+## Data
+EGRET::multiPlotDataOverview(eList = egret_list_out)
+
+## Actually create PDF report
+dev.off()
+
+# Create annual averages
+egret_annual <- EGRET::tableResults(eList = egret_list_out)
+## Can't silence this function... >:(
+
+# Export that as a CSV also
+write.csv(x = egret_annual, file.path("WRTDS Outputs", paste0(out_prefix, "ResultsTable_GFN_WRTDS.csv")), row.names = F, na = "")
+
+# Identify monthly results
+egret_monthly <- EGRET::calculateMonthlyResults(eList = egret_list_out)
+
+# Export that
+write.csv(x = egret_monthly, file.path("WRTDS Outputs", paste0(out_prefix, "Monthly_GFN_WRTDS.csv")), row.names = F, na = "")
+
+# Extract daily chemical value from run
+egret_concentration <- egret_list_out$Daily
+
+# Export that as well
+write.csv(x = egret_concentration, file.path("WRTDS Outputs", paste0(out_prefix, "GFN_WRTDS.csv")), row.names = F, na = "")
+
+# Make a new column for year
+egret_concentration$Year <- format(as.Date(egret_concentration$Date), "%Y")
+
+# Find min & max year
+min_year <- as.numeric(min(egret_concentration$Year, na.rm = T)) + 1
+max_year <- as.numeric(max(egret_concentration$Year, na.rm = T)) - 1
+
+# Set them as a vector
+year_points <- c(min_year, max_year)
+
+# Calculate concentration trend
+egret_conc_trend_v1 <- EGRET::tableChangeSingle(eList = egret_list_out, fluxUnit = 8, yearPoints = year_points, flux = FALSE)
+## Can't silence this function either
+
+# Calculate flux trend
+egret_flux_trend <- EGRET::tableChangeSingle(eList = egret_list_out, fluxUnit = 8, yearPoints = year_points, flux = TRUE)
+## Can't silence this function either
+
+# Add a column to each of these indicating whether it's flux or conc.
+egret_conc_trend_v1$Metric <- "Concentration"
+egret_flux_trend$Metric <- "Flux"
+
+# Rename two columns in the concentration dataframe
+egret_conc_trend <- egret_conc_trend_v1 %>%
+  dplyr::rename(`change[percent]` = `change[%]`,
+                `slope [percent/yr]` = `slope [%/yr]`)
+
+# Bind these dataframes together
+egret_trends <- egret_conc_trend %>%
+  dplyr::bind_rows(egret_flux_trend) %>%
+  # Move the metric column before everything else
+  dplyr::select(Metric, dplyr::everything())
+
+# Export it!
+write.csv(x = egret_trends, file.path("WRTDS Outputs", paste0(out_prefix, "TrendsTable_GFN_WRTDS.csv")), row.names = F, na = "")
+
+# Run trend estimate for GFN method between start/end years
+egret_pairs <- EGRET::runPairs(eList = egret_list_out, windowSide = 11, minNumObs = 50, year1 = min_year, year2 = max_year)
+
+# Export those values as well
+write.csv(x = egret_pairs, file.path("WRTDS Outputs", paste0(out_prefix, "ListPairs_GFN_WRTDS.csv")), row.names = F, na = "")
+
+# Estimate trend uncertainty
+egret_boot <- runPairsBoot(eList = egret_list_out, pairResults = egret_pairs, nBoot = 100, blockLength = 200)
+
+# Strip out key results
+egret_boot_results <- data.frame(
+  Solute = rep(element, times = length(egret_boot$xConc)),
+  xConc = egret_boot$xConc,
+  xFlux = egret_boot$xFlux,
+  pConc = egret_boot$pConc,
+  pFlux = egret_boot$pFlux)
+
+# Export the results
+write.csv(x = egret_boot_results, file.path("WRTDS Outputs", paste0(out_prefix, "EGRETCi_GFN_bootstraps.csv")), row.names = F, na = "")
+
+# Also grab the summary information
+egret_boot_summary <- as.data.frame(egret_boot$bootOut)
+
+# And export it as well
+write.csv(x = egret_boot_summary, file.path("WRTDS Outputs", paste0(out_prefix, "EGRETCi_GFN_Trend.csv")), row.names = F, na = "")
 
 ## ---------------------------------------------- ##
                     # Results ----
