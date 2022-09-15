@@ -388,9 +388,7 @@ egret_chem_v1 <- EGRET::readUserSample(filePath = "WRTDS Temporary Files", fileN
 egret_info <- EGRET::readUserInfo(filePath = "WRTDS Temporary Files", fileName = "information.csv", interactive = F)
 
 # Remove any duplicates from chemistry file
-egret_chem_v2 <- EGRET::removeDuplicates(Sample = egret_chem_v1)
-egret_chem_v3 <- stats::aggregate(egret_chem_v2, by = list(egret_chem_v2$Date), FUN = mean)
-egret_chem <- as.data.frame(dplyr::select(egret_chem_v3, -Group.1))
+egret_chem <- EGRET::removeDuplicates(Sample = egret_chem_v1)
 
 # Create a list of the discharge, chemistry, and information files
 egret_list <- EGRET::mergeReport(INFO = egret_info, Daily = egret_disc, Sample = egret_chem, verbose = F)
