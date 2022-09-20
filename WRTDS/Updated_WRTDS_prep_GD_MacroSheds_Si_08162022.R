@@ -29,7 +29,7 @@ names(QLog)[3]<-"files"
 
 # Not sure what the first line is for? but copied both lines from NH4 prep
 ##we will need to put a master MDL file here - then maybe can just select the solute column
-NH4_MDL<-read.csv("NH4_MDL.csv")
+#NH4_MDL<-read.csv("NH4_MDL.csv")
 
 #merge discharge log and list of csv files in google drive
 RefTable<-merge(QLog, csv_files, by="files")
@@ -73,7 +73,7 @@ masterSi=anti_join(masterSi, earlyAND)
 names(masterSi)[5]<-"Date"
 # value [6] = mM concentration, # value_mgL [7] = mg/L concentration
 # we want value in mg/L for all chemicals!
-names(masterSi)[,"value_mgL"]<-"DSi"
+colnames(masterSi)[which(names(masterSi)=="value_mgL")]<-"DSi"
 
 #convert date to date format
 masterSi$Date<-as.Date(masterSi$Date, "%Y-%m-%d")
@@ -207,11 +207,11 @@ for (i in 1:length(StreamList)) {
   #add remarks column between date and NOX columns - required for WRTDS
   Sidata<-add_column(Sidata, remarks, .after = "Date")
   
-  MDL<-subset(NH4_MDL, NH4_MDL$site==stream)
+  #MDL<-subset(NH4_MDL, NH4_MDL$site==stream)
   
   #add < when value is less than MDL
   # we don't have MDL values for Si, but do for NO3, NH4 and PO4/SRP
-  Sidata$remarks<-ifelse(NH4data$NH4 < MDL$MDL..mg.L., "<", "")
+  #Sidata$remarks<-ifelse(NH4data$NH4 < MDL$MDL..mg.L., "<", "")
   
   #write Si file for WRTDS
   write.csv(Sidata, paste0(StreamList[i], "_Si_WRTDS.csv"), row.names = FALSE)

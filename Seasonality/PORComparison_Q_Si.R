@@ -7,6 +7,7 @@ require(lubridate)
 require(reshape)
 require(gtools)
 require(dplyr)
+require(googledrive)
 
 #get folder URL from google drive with discharge data
 folder_url<-"https://drive.google.com/drive/folders/19lemMC09T1kajzryEx5RUoOs3KDSbeAX"
@@ -103,7 +104,18 @@ master_q$overlapmin<-as.Date(master_q$overlapmin, origin = "1970-01-01")
 master_q$overlapmax<-as.Date(master_q$overlapmax, origin = "1970-01-01")
 master_q$POR_overlap<-difftime(master_q$overlapmax, master_q$overlapmin, units = "days")/365
 
-dates_df_5<-subset(master_q, master_q$POR_overlap > 4.99)
+dates_df_5<-subset(master_q, master_q$POR_overlap > 4)
+
+dates_df_5_sites<-dates_df_5$Stream
+
+
+LT<-read.csv("Data_years_streams_WRTDS.csv")
+
+LT_streams<-LT$Stream.Site
+
+newsites<-setdiff(dates_df_5_sites, LT_streams)
+
+write.csv(newsites, "NewSites.csv")
 
 dates_df_10<-subset(master_q, master_q$POR_overlap > 9.99)
 

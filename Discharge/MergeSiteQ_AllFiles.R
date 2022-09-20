@@ -61,6 +61,8 @@ QLog<-read.csv("DischargeLog_All_011422.csv")
 
 setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/All_Q")
 
+Q<-read.csv("UpdatedAll_Q_master.csv")
+
 #create list to store output from for loop
 data_list = list()
 DischargeList<-c("MEAN_Q", "Discharge", "InstantQ", "Q_m3sec", "discharge")
