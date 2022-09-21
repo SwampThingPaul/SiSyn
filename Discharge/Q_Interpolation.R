@@ -35,7 +35,7 @@ allQ_noNA = na.omit(allQ)
 #### check if there is overlap between Si sample and missing Q dates ####
 ## if yes remove sample, dont want sample where there is interpolated Q ##
 #merge all C-Q data, remove Si data not in Q
-Si_Q_all = merge(allSi, allQ_noNA) #This should remove any Si or Q values where there are NA values for the corresponding Si/Q measurement
+Si_Q_all = merge(allSi, allQ_noNA) #This should remove any Si values where Q is NA
 
 ## record length of missing dates, just to know how long we are interpolating##
 #loop for each site?
@@ -67,7 +67,7 @@ for (i in 1:length(site_names)){
   date_list[[i]] = date_site
   
   #### fill new data frame NA values using na.approx ####
-  Q_site_interp = na.approx(Q_site) #if Q column ends in NA, they will remain NA; rule=2 carries the last measured Q value if the values end in NA
+  Q_site_interp = na.approx(Q_site$Q) #if Q column ends in NA, they will remain NA; rule=2 carries the last measured Q value if the values end in NA
   
   Q_interp[[i]] = Q_site_interp
 }
