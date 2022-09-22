@@ -55,3 +55,25 @@ missing_df<-as.data.frame(do.call(rbind, missing))
 
 missing_df$site<-K_names
 
+K_names<-unique(HJ_data$site)
+
+setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/NewSites_Sept2022")
+
+for (i in 1:length(K_names)) {
+  
+  HJ_Si<-subset(HJ_data, HJ_data$site==K_names[i])
+  
+  write.csv(HJ_Si, paste0(K_names[i], "_Discharge.csv"))
+  
+}
+
+dev.off()
+
+missing_df<-as.data.frame(do.call(rbind, missing))
+
+missing_df$site<-K_names
+
+
+
+
+
