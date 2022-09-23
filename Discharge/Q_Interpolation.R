@@ -3,18 +3,35 @@ library(plyr)
 library(dplyr)
 
 #interpolate Q data##
-setwd("G:/Shared drives/SCWRS/Sethna/SiSyn/Q interp files")
+#setwd("G:/Shared drives/SCWRS/Sethna/SiSyn/Q interp files")
+
+setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/NewSites_Sept2022")
 
 #### read in all Q and Si csv files for new sites ####
 Q_files<-list.files(path = ".", pattern = "_Q.csv|_Discharge.csv")
 
 # Si_files<-list.files(path = ".", pattern = "_Si.csv")
 
+DischargeList<-c("MEAN_Q", "Discharge", "InstantQ", "Q_m3sec", "discharge", "Q", "var")
+DateList<-c("Date", "dateTime", "dates", "date", "datetime")
+
 #loop to read in csv files; concatenate into one dataframe for Q and Si
 Q = list()
 
 for (i in 1:length(Q_files)){
   siteQ = read.csv(Q_files[i])
+  
+  names(siteQ)[which(colnames(siteQ) %in% DischargeList)]<-"Q" #convert all Q columns to be called "Q"
+  names(siteQ)[which(colnames(siteQ) %in% DateList)]<-"Date" #convert all Date columns to be called "Date"
+  
+  site_name<-gsub("_Q.csv|_Discharge.csv", "", Q_files[i])
+  
+  siteQ$site_from_csv<-site_name
+  
+  siteQ<-siteQ[,c("Date", "Q", "site_from_csv")]
+  
+  names(siteQ)<-c("Date", "Q", "Site")
+  
   Q[[i]] = siteQ
 }
 
