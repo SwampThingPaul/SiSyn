@@ -506,7 +506,7 @@ egret_pairs <- EGRET::runPairs(eList = egret_list_out, windowSide = 11, minNumOb
 write.csv(x = egret_pairs, file.path("WRTDS Outputs", paste0(out_prefix, "ListPairs_GFN_WRTDS.csv")), row.names = F, na = "")
 
 # Estimate trend uncertainty
-egret_boot <- runPairsBoot(eList = egret_list_out, pairResults = egret_pairs, nBoot = 100, blockLength = 200)
+egret_boot <- EGRETci::runPairsBoot(eList = egret_list_out, pairResults = egret_pairs, nBoot = 100, blockLength = 200)
 
 # Strip out key results
 egret_boot_results <- data.frame(

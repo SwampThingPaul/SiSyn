@@ -48,8 +48,8 @@ for(file in needed_files$name){
 }
 
 # Read in each of these CSV files
-disc_main <- read.csv(file = file.path(server_path, "WRTDS Source Files", disc_files[2,1]))
-disc_log <- read.csv(file = file.path(server_path, "WRTDS Source Files", disc_files[1,1]))
+disc_main <- read.csv(file = file.path(server_path, "WRTDS Source Files", disc_files[3,1]))
+disc_log <- read.csv(file = file.path(server_path, "WRTDS Source Files", disc_files[2,1]))
 info_v1 <- read.csv(file = file.path(server_path, "WRTDS Source Files", info_files[1,1]))
 chem_main <- read.csv(file = file.path(server_path, "WRTDS Source Files", chem_files[2,1]))
 mdl_info <- read.csv(file = file.path(server_path, "WRTDS Source Files", chem_files[1,1]))
@@ -509,7 +509,7 @@ egret_pairs <- EGRET::runPairs(eList = egret_list_out, windowSide = 11, minNumOb
 write.csv(x = egret_pairs, file.path(server_path, "WRTDS Outputs", paste0(out_prefix, "ListPairs_GFN_WRTDS.csv")), row.names = F, na = "")
 
 # Estimate trend uncertainty
-egret_boot <- runPairsBoot(eList = egret_list_out, pairResults = egret_pairs, nBoot = 100, blockLength = 200)
+egret_boot <- EGRETci::runPairsBoot(eList = egret_list_out, pairResults = egret_pairs, nBoot = 100, blockLength = 200)
 
 # Strip out key results
 egret_boot_results <- data.frame(
