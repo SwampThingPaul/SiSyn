@@ -372,8 +372,8 @@ for(river in "AND_GSWSMC_Q"){
     dplyr::filter(Discharge_Stream == river)
   
   # Again, including "actual" and "test" loop heads  
-  # for(element in unique(chem_partial$variable_simp)){
-  for(element in "DSi"){
+  for(element in unique(chem_partial$variable_simp)){
+  # for(element in "DSi"){
     
     # Grab start time for processing
     start <- Sys.time()
