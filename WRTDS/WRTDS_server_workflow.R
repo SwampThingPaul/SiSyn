@@ -184,7 +184,9 @@ info_v2 <- info_v2_p_v2 %>%
   dplyr::bind_rows(info_v2_nh4) %>%
   dplyr::bind_rows(info_v2_nox) %>%
   # And reorder columns to original order
-  dplyr::select(Stream, param.units, shortName, paramShortName, constitAbbrev, drainSqKm, station.nm, param.nm, staAbbrev)
+  dplyr::select(Stream, param.units, shortName, paramShortName, constitAbbrev, drainSqKm, station.nm, param.nm, staAbbrev) %>%
+  # Simplify the phosphate entry
+  dplyr::mutate(param.nm = ifelse(param.nm == "PO4", yes = "P", no = param.nm))
 
 # Look at it
 dplyr::glimpse(info_v2)
@@ -375,6 +377,10 @@ for(river in "AND_GSWSMC_Q"){
   for(element in unique(chem_partial$variable_simp)){
   # for(element in "DSi"){
     
+    if(file.exists(file.path(server_path, "WRTDS Loop Diagnostic", paste0(river, "_", element, "_", "Loop_Diagnostic.csv")))) {
+      message("Processing complete for ", river, ", element ", element)
+    } else {
+    
     # Grab start time for processing
     start <- Sys.time()
     
@@ -540,6 +546,8 @@ loop_diagnostic <- data.frame("stream" = river,
 # Export this as well
 write.csv(x = loop_diagnostic, file.path(server_path, "WRTDS Loop Diagnostic", paste0(out_prefix, "Loop_Diagnostic.csv")), row.names = F, na = "")
 
+    } # Close `else` part of whether file exists
+    
   } # End "element" loop
   
 } # End "river" loop
