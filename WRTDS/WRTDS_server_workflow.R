@@ -21,6 +21,7 @@ dir.create(path = file.path(server_path, "WRTDS Source Files"), showWarnings = F
 dir.create(path = file.path(server_path, "WRTDS Inputs"), showWarnings = F)
 dir.create(path = file.path(server_path, "WRTDS Temporary Files"), showWarnings = F)
 dir.create(path = file.path(server_path, "WRTDS Outputs"), showWarnings = F)
+dir.create(path = file.path(server_path, "WRTDS Loop Diagnostic"), showWarnings = F)
 
 # Identify Google links to relevant folders
 disc_folder <- "https://drive.google.com/drive/folders/1HQtpWYoq_YQwj_bDNNbv8D-0swi00o_s"
@@ -359,7 +360,7 @@ rm(list = setdiff(ls(), c("server_path", "disc_main", "disc_log", "chem_main", "
 # for(river in unique(discharge$Discharge_Stream)){
 # (^^^) Actual loop (uncomment when you are ready)
 # (vvv) Test loop for a single site
-for(river in "KRR_S65_Q"){
+for(river in "AND_GSWSMC_Q"){
   
   # Subset discharge to correct river
   river_disc <- discharge %>%
@@ -373,6 +374,9 @@ for(river in "KRR_S65_Q"){
   # Again, including "actual" and "test" loop heads  
   # for(element in unique(chem_partial$variable_simp)){
   for(element in "DSi"){
+    
+    # Grab start time for processing
+    start <- Sys.time()
     
     # Subset chemistry to right river *and* right element
     river_chem <- chem_partial %>%
@@ -523,6 +527,18 @@ egret_boot_summary <- as.data.frame(egret_boot$bootOut)
 
 # And export it as well
 write.csv(x = egret_boot_summary, file.path(server_path, "WRTDS Outputs", paste0(out_prefix, "EGRETCi_GFN_Trend.csv")), row.names = F, na = "")
+
+# Grab the end processing time
+end <- Sys.time()
+
+# Combine timing into a dataframe
+loop_diagnostic <- data.frame("stream" = river,
+                              "chemical" = element,
+                              "loop_start" = start,
+                              "loop_end" = end)
+
+# Export this as well
+write.csv(x = loop_diagnostic, file.path(server_path, "WRTDS Loop Diagnostic", paste0(out_prefix, "Loop_Diagnostic.csv")), row.names = F, na = "")
 
   } # End "element" loop
   
