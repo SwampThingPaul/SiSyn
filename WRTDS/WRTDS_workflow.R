@@ -44,8 +44,8 @@ for(file in needed_files$name){
 }
 
 # Read in each of these CSV files
-disc_main <- read.csv(file = file.path("WRTDS Source Files", disc_files[2,1]))
-disc_log <- read.csv(file = file.path("WRTDS Source Files", disc_files[1,1]))
+disc_main <- read.csv(file = file.path("WRTDS Source Files", disc_files[3,1]))
+disc_log <- read.csv(file = file.path("WRTDS Source Files", disc_files[2,1]))
 info_v1 <- read.csv(file = file.path("WRTDS Source Files", info_files[1,1]))
 chem_main <- read.csv(file = file.path("WRTDS Source Files", chem_files[2,1]))
 mdl_info <- read.csv(file = file.path("WRTDS Source Files", chem_files[1,1]))
