@@ -359,10 +359,10 @@ rm(list = setdiff(ls(), c("server_path", "disc_main", "disc_log", "chem_main", "
 ## Big for loop that iterates across "Discharge_Stream" names
 ## Within that loop, a slightly smaller loop that iterates across chemicals that were sampled at that river.
 
-# for(river in unique(discharge$Discharge_Stream)){
+for(river in unique(discharge$Discharge_Stream)){
 # (^^^) Actual loop (uncomment when you are ready)
 # (vvv) Test loop for a single site
-for(river in "AND_GSWSMC_Q"){
+# for(river in "AND_GSWSMC_Q"){
   
   # Subset discharge to correct river
   river_disc <- discharge %>%
@@ -394,6 +394,11 @@ for(river in "AND_GSWSMC_Q"){
       dplyr::filter(Discharge_Stream == river & param.nm == element) %>%
       dplyr::select(param.units, shortName, paramShortName, constitAbbrev,
                     drainSqKm, station.nm, param.nm, staAbbrev)
+    
+    # # If the river isn't in the chemistry data, skip the rest!
+    if(nrow(river_info) == 0){
+      message("Missing information file for ", river, " / element ", element, "!")
+    } else {
     
 # Save these as CSVs with generic names
 ## This means each iteration of the loop will overwrite them so this folder won't become gigantic
@@ -545,7 +550,9 @@ loop_diagnostic <- data.frame("stream" = river,
 
 # Export this as well
 write.csv(x = loop_diagnostic, file.path(server_path, "WRTDS Loop Diagnostic", paste0(out_prefix, "Loop_Diagnostic.csv")), row.names = F, na = "")
-
+    
+} # Close `else` part of whether information file includes the selected river/element
+    
     } # Close `else` part of whether file exists
     
   } # End "element" loop
