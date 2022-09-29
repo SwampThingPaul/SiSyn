@@ -360,7 +360,7 @@ rm(list = setdiff(ls(), c("server_path", "disc_main", "disc_log", "chem_main", "
 ## Within that loop, a slightly smaller loop that iterates across chemicals that were sampled at that river.
 
 # Add "bad" rivers to this vector as they are discovered
-bad_rivers <- c("AND_GSWS02_Q", "AND_GSWS06_Q")
+bad_rivers <- c("AND_GSWS02_Q", "AND_GSWS06_Q", "AND_GSWS07_Q", "AND_GSWS08_Q", "AND_GSWS09_Q", "AND_GSWS10_Q")
 
 for(river in setdiff(x = unique(discharge$Discharge_Stream), y = bad_rivers)){
 # (^^^) Actual loop (uncomment when you are ready)
