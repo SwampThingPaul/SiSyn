@@ -359,15 +359,25 @@ rm(list = setdiff(ls(), c("server_path", "disc_main", "disc_log", "chem_main", "
 ## Big for loop that iterates across "Discharge_Stream" names
 ## Within that loop, a slightly smaller loop that iterates across chemicals that were sampled at that river.
 
+# Can read in CSVs if you want to skip above steps
+discharge <- read.csv(file.path(server_path, "WRTDS Inputs", "WRTDS-input_discharge.csv"))
+chemistry <- read.csv(file.path(server_path, "WRTDS Inputs", "WRTDS-input_chemistry.csv"))
+information <- read.csv(file.path(server_path, "WRTDS Inputs", "WRTDS-input_information.csv"))
+
 # Add "bad" rivers to this vector as they are discovered
 bad_rivers <- c(
   # "Error in EGRET::runPairs" ... "year1 is outside the Sample range"
   "AND_GSWS02_Q", "AND_GSWS06_Q", "AND_GSWS07_Q", "AND_GSWS08_Q",
   "AND_GSWS09_Q", "AND_GSWS10_Q",
+  # "Error in EGRET::runPairs" ... "year2 is outside the Sample range"
+  "HBR_ws1_Q", "HBR_ws2_Q", "HBR_ws3_Q", "HBR_ws4_Q", "HBR_ws5_Q",
+  "HBR_ws6_Q", "HBR_ws7_Q", "HBR_ws8_Q", "HBR_ws9_Q",
   # File too large (I think?) so R dies trying to do the loop
-  "ARC_Imnavait_fill_Q")
+  "ARC_Imnavait_fill_Q",
+  # Unknown issue crashes R (need to diagnose step-by-step)
+  "KRR_S65_Q", "KRR_S65B_Q", "KRR_S65C_Q", "KRR_S65D_Q", "KRR_S65E_Q")
 
-# River after "ARC_I8Outlet_Q" is maybe blowing up because of too many rows
+# River after "KNZ_n04d_Q" is maybe blowing up because of too many rows
 
 for(river in setdiff(x = unique(discharge$Discharge_Stream), y = bad_rivers)){
 # (^^^) Actual loop (uncomment when you are ready)
