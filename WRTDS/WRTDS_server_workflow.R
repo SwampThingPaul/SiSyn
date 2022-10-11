@@ -375,7 +375,7 @@ bad_rivers <- c(
   # File too large (I think?) so R dies trying to do the loop
   "ARC_Imnavait_fill_Q",
   # Unknown issue crashes R (need to diagnose step-by-step)
-  "KRR_S65_Q", "KRR_S65B_Q", "KRR_S65C_Q", "KRR_S65D_Q", "KRR_S65E_Q")
+  "KRR_S65_Q", "KRR_S65B_Q", "KRR_S65C_Q", "KRR_S65D_Q", "KRR_S65E_Q", "KRR_S65A_Q")
 
 # River after "KNZ_n04d_Q" is maybe blowing up because of too many rows
 
@@ -397,7 +397,7 @@ for(river in setdiff(x = unique(discharge$Discharge_Stream), y = bad_rivers)){
   for(element in unique(chem_partial$variable_simp)){
   # for(element in "DSi"){
     
-    if(file.exists(file.path(server_path, "WRTDS Loop Diagnostic", paste0(river, "_", element, "_", "Loop_Diagnostic.csv")))) {
+    if(file.exists(file.path(server_path, "WRTDS Loop Diagnostic", paste0(river, "_", element, "_", "Loop_Diagnostic.csv"))) == TRUE) {
       message("Processing complete for ", river, ", element ", element)
     } else {
     
@@ -534,7 +534,11 @@ egret_trends <- egret_conc_trend %>%
 write.csv(x = egret_trends, file.path(server_path, "WRTDS Outputs", paste0(out_prefix, "TrendsTable_GFN_WRTDS.csv")), row.names = F, na = "")
 
 # Run trend estimate for GFN method between start/end years
-egret_pairs <- EGRET::runPairs(eList = egret_list_out, windowSide = 11, minNumObs = 50, year1 = min_year, year2 = max_year)
+egret_pairs <- EGRET::runPairs(eList = egret_list_out, windowSide = 11, minNumObs = 50,
+                               # year1 = min_year,
+                               year1 = min(egret_list_out$Sample$waterYear, na.rm = T),
+                               # year2 = max_year)
+                               year2 = max(egret_list_out$Sample$waterYear, na.rm = T))
 
 # Export those values as well
 write.csv(x = egret_pairs, file.path(server_path, "WRTDS Outputs", paste0(out_prefix, "ListPairs_GFN_WRTDS.csv")), row.names = F, na = "")
