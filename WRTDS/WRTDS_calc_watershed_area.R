@@ -12,7 +12,7 @@
 ## ---------------------------------------------- ##
 # Read needed libraries
 # install.packages("librarian")
-librarian::shelf(tidyverse, googledrive, sf, terra, nngeo)
+librarian::shelf(tidyverse, googledrive, readxl, sf, terra, nngeo)
 
 # Clear environment
 rm(list = ls())
@@ -21,6 +21,41 @@ rm(list = ls())
 (path <- file.path('/', "home", "shares", "lter-si", "si-watershed-extract"))
 
 # Site coordinate retrieval and preparation --------------------
+
+# If you've never used the `googledrive` R package, you'll need to "authorize" it
+## 1) Run the below line with your Google email that has access to the needed folders
+# googledrive::drive_auth(email = "lyon.nceas.ucsb.edu")
+## 1B) Choose which Google account to proceed with
+## 2) Check the "see, edit, create, and ..." box
+## 3) Click "Continue" at the bottom
+## 4) Copy the "authorization code"
+## 5) Paste it into the field in the Console
+
+
+# Identify reference table Google ID
+ref_id <- googledrive::drive_ls(as_id("https://drive.google.com/drive/u/1/folders/1HQtpWYoq_YQwj_bDNNbv8D-0swi00o_s")) %>%
+  dplyr::filter(name == "WRTDS_Reference_Table")
+
+# Download ref table (overwriting previous downloads)
+googledrive::drive_download(file = as_id(ref_id),
+                            path = file.path(path, "WRTDS_Reference_Table.xlsx"),
+                            overwrite = T)
+
+# Read in reference table of all sites
+sites_v0 <- readxl::read_excel(path = file.path(path, "WRTDS_Reference_Table.xlsx"))
+
+# Do some pre-processing to pare down to only desired information
+sites <- sites_v0 %>%
+  # Filter out sites not used in WRTDS
+  dplyr::filter(Use_WRTDS != "No")
+
+# Glimpse that
+dplyr::glimpse(sites)
+
+
+
+
+
 
 # Load in site names with lat/longs
 sites_old <- read.csv(file.path(path, "tidy_SilicaSites.csv"))
