@@ -2,6 +2,7 @@
            # WRTDS Centralized Workflow
 ## ---------------------------------------------- ##
 # WRTDS = Weighted Regressions on Time, Discharge, and Season
+## Nick J Lyon + ...
 
 ## ---------------------------------------------- ##
                 # Housekeeping ----
