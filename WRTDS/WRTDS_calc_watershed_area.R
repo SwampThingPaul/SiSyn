@@ -167,7 +167,8 @@ for(i in 1:12) {
   message("Processing Pfafstetter code level ", i)
   
   # Grab each PFAF code and add it to the "sites_actual" object as a column
-  sites_actual[[paste0("PFAF_", i)]] <- basin_needs[[paste0("PFAF_", i)]][match(sites_actual$HYBAS_ID, basin_needs$HYBAS_ID)]}
+  sites_actual[[paste0("PFAF_", i)]] <- basin_needs[[paste0("PFAF_", i)]][match(sites_actual$HYBAS_ID, basin_needs$HYBAS_ID)]
+  }
 
 # Also grab area
 sites_actual$SUB_AREA <- basin_needs$SUB_AREA[match(sites_actual$HYBAS_ID, basin_needs$HYBAS_ID)]
@@ -240,10 +241,18 @@ find_all_up <- function(HYBAS, HYBAS.ID, ignore.endorheic = F, split = F){
 # It makes sense to identify areas / polygons based on that focal polygon
 # rather than stream name to save on computation time
 
+# Separate sites by whether we already know there basin area
+known_area <- dplyr::filter(sites_actual, !is.na(drainSqKm))
+unk_area <- dplyr::filter(sites_actual, is.na(drainSqKm))
+
+# Check that we didn't somehow lose rows here
+nrow(known_area) + nrow(unk_area) == nrow(sites_actual)
+
 # Create an empty list
 id_list <- list()
 
-for(focal_poly in unique(sites_actual$HYBAS_ID)){
+# Identify area for sites where we don't know it already
+for(focal_poly in unique(unk_area$HYBAS_ID)){
 # for(focal_poly in "7000073120"){
   
   # Create/identify name and path of file
