@@ -47,7 +47,12 @@ sites_v0 <- readxl::read_excel(path = file.path(path, "WRTDS_Reference_Table.xls
 # Do some pre-processing to pare down to only desired information
 sites <- sites_v0 %>%
   # Filter out sites not used in WRTDS
-  dplyr::filter(Use_WRTDS != "No")
+  dplyr::filter(Use_WRTDS != "No") %>%
+  # Drop the WRTDS column now that we've subsetted by it
+  dplyr::select(-Use_WRTDS) %>%
+  # Make a uniqueID column
+  dplyr::mutate(uniqueID = paste0(LTER, "_", Stream_Name), 
+                .before = dplyr::everything())
 
 # Glimpse that
 dplyr::glimpse(sites)
@@ -57,6 +62,11 @@ sites %>%
   dplyr::filter(is.na(Latitude) | is.na(Longitude)) %>%
   unique()
 ## 0 rows means all is good!
+
+# Check for invalid coordinates
+## Bad longitudes
+dplyr::filter(sites, abs(Longitude) > 180)
+dplyr::filter(sites, abs(Latitude) > 90)
 
 # Get an explicitly spatial version
 sites_spatial <- sf::st_as_sf(sites, coords = c("Longitude", "Latitude"), crs = 4326)
@@ -113,7 +123,9 @@ basin_simp <- all_basins %>%
 # Re-check structure
 str(basin_simp)
 
-# Extract IDs at site points --------------------------------------------
+## ---------------------------------------------- ##
+          # Identify Focal Polygon ----
+## ---------------------------------------------- ##
 
 # Pre-emptively resolve an error with 'invalid spherical geometry'
 sf::sf_use_s2(F)
@@ -140,28 +152,34 @@ sort(unique(stringr::str_sub(sites_actual$HYBAS_ID, 1, 1)))
 # 1 = Africa; 2 = Europe; 3 = Siberia; 4 = Asia; 5 = Australia; 6 = South America; 7 = North America; 8 = Arctic (North America); 9 = Greenland 
 
 # Prepare only needed HydroSheds 'continents'
-basin_needs <- rbind(europe, north_am, arctic)
+basin_needs <- rbind(europe, siberia, north_am, arctic)
 
 # Clean up environment to have less data stored as we move forward
 rm(list = setdiff(ls(), c('path', 'sites', 'sites_actual', 'basin_needs')))
 
-# Extract PFAF codes from key polygons  --------------------------------------
+## ---------------------------------------------- ##
+            # Get Pfafstetter Codes ----
+## ---------------------------------------------- ##
 
 # Bring each PFAF code into the sites_actual object by matching with HYBAS_ID
 for(i in 1:12) {
+  # Processing message
   message("Processing Pfafstetter code level ", i)
-  sites_actual[[paste0("PFAF_", i)]] <- basin_needs[[paste0("PFAF_", i)]][match(sites_actual$HYBAS_ID, basin_needs$HYBAS_ID)]
-}
+  
+  # Grab each PFAF code and add it to the "sites_actual" object as a column
+  sites_actual[[paste0("PFAF_", i)]] <- basin_needs[[paste0("PFAF_", i)]][match(sites_actual$HYBAS_ID, basin_needs$HYBAS_ID)]}
 
 # Also grab area
 sites_actual$SUB_AREA <- basin_needs$SUB_AREA[match(sites_actual$HYBAS_ID, basin_needs$HYBAS_ID)]
 
 # Check the object again
-str(sites_actual)
+dplyr::glimpse(sites_actual)
 # This object has polygons defined at the finest possible level
 # We may want to visualize aggregated basins so let's go that direction now
 
-# Get custom Hydrosheds functions ------------------------------------------
+## ---------------------------------------------- ##
+      # Load Modified HydroSHEDS Functions ----
+## ---------------------------------------------- ##
 
 # These are modified from someone's GitHub functions to accept non-S4 objects
 # Link to originals here: https://rdrr.io/github/ECCC-MSC/Basin-Delineation/
@@ -214,7 +232,19 @@ find_all_up <- function(HYBAS, HYBAS.ID, ignore.endorheic = F, split = F){
   return(HYBAS.ID.master)
 }
 
-# Identify all upstream polygon(s) -----------------------------------------
+## ---------------------------------------------- ##
+          # Identify Upstream Polygons ----
+## ---------------------------------------------- ##
+
+sites_actual %>%
+  dplyr::group_by(Discharge_Site_Name) %>%
+  dplyr::summarize(count = dplyr::n()) %>%
+  dplyr::filter(count > 1) %>%
+  view()
+
+
+
+
 
 # For every uniqueID, find all of the upstream polygons
 for (stream_id in unique(sites_actual$uniqueID)) {
@@ -286,6 +316,14 @@ str(hydro_out)
 # Clean up environment
 rm(list = setdiff(ls(), c('path', 'sites', 'sites_actual',
                           'basin_needs', 'hydro_out')))
+
+
+
+
+
+
+
+
 
 # Subset basin object to only needed polygons ---------------------------------
 
