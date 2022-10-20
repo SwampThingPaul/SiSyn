@@ -1,5 +1,7 @@
 # Weighted Regressions on Time, Discharge, and Season (WRTDS) Scripts
 
+- **WRTDS_calc_watershed_area.R**: Calculates drainage basin areas (in square km) for streams where that is not known from other sources. This is necessary for WRTDS because WRTDS requires drainage basin area in the "info" file it demands
+
 - **WRTDS_workflow.R**: Core workflow for doing WRTDS on a local machine. Prepares master chemistry and discharge data and runs through the WRTDS workflow (see `EGRET` R package)
 
 - **WRTDS_server_workflow.R**: Similar to "WRTDS_workflow.R" but file paths are built to read from / export to the "shares" folder of NCEAS' Aurora server
