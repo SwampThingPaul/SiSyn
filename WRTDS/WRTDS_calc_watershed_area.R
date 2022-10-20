@@ -236,75 +236,56 @@ find_all_up <- function(HYBAS, HYBAS.ID, ignore.endorheic = F, split = F){
           # Identify Upstream Polygons ----
 ## ---------------------------------------------- ##
 
-sites_actual %>%
-  dplyr::group_by(Discharge_Site_Name) %>%
-  dplyr::summarize(count = dplyr::n()) %>%
-  dplyr::filter(count > 1) %>%
-  view()
+# Because some sites fall into the same focal HydroSHEDS polygon,
+# It makes sense to identify areas / polygons based on that focal polygon
+# rather than stream name to save on computation time
 
-
-
-
-
-# For every uniqueID, find all of the upstream polygons
-for (stream_id in unique(sites_actual$uniqueID)) {
-  # for (stream_id in "BNZ_C3"){ # Test "loop"
-  
-  # If the file already exists, skip the processing step
-  if (fs::file_exists(file.path(path, 'hydrosheds-basin-ids',
-                                paste0(stream_id, '_HYBAS_ID.csv')))) {
-    message("HydroSheds IDs for '", stream_id, "' already identified.")
-    
-    # If the file doesn't yet exist, get it
-  } else {
-    
-    # Identify the focal polygon HYBAS_ID that corresponds to this uniqueID
-    focal_poly <- as.character(sites_actual$HYBAS_ID[sites_actual$uniqueID == stream_id])
-    
-    # Print start-up message
-    message( "Processing for '", stream_id, "' begun at ", Sys.time())
-    
-    # Identify all upstream shapes
-    fxn_out <- find_all_up(HYBAS = basin_needs, HYBAS.ID = focal_poly)
-    
-    # Make a dataframe of this
-    hydro_df <- data.frame(uniqueID = rep(stream_id, (length(fxn_out) + 1)),
-                           hybas_id = c(focal_poly, fxn_out))
-    
-    # Save this out
-    write.csv(x = hydro_df,
-              file = file.path(path, 'hydrosheds-basin-ids',
-                               paste0(stream_id, '_HYBAS_ID.csv')),
-              na = '', row.names = F)
-    
-    # Print success message
-    message( "Processing complete for '", stream_id, "' at ", Sys.time()) } }
-
-# Make an empty list and counter set to 1
+# Create an empty list
 id_list <- list()
-n <- 1
 
-# Now that we have individual .csvs for every watershed, let's read them back in
-for (stream_id in unique(sites_actual$uniqueID)) {
-  # for (stream_id in "BNZ_C3"){ # Test "loop"
+for(focal_poly in unique(sites_actual$HYBAS_ID)){
+# for(focal_poly in "7000073120"){
   
-  # If the file doesn't yet exist, warn the user
-  if (fs::file_exists(file.path(path, 'hydrosheds-basin-ids',
-                                paste0(stream_id, '_HYBAS_ID.csv'))) == F) {
-    message("HydroSheds IDs for '", stream_id, "' NOT identified.")
+  # Create/identify name and path of file
+  poly_file <- file.path(path, 'hydrosheds-basin-ids',
+                         paste0(focal_poly, '_Upstream_IDs.csv'))
+  
+  # If we've already found this polygon's upstream polygons:
+  if (fs::file_exists(poly_file) == TRUE) {
     
-    # If the file *does* exist, get it
+    # Read the CSV
+    hydro_df <- read.csv(file = poly_file)
+    
+    # Add to the list
+    id_list[[focal_poly]] <- hydro_df
+    
+    # Message outcome
+    message("Upstream HydroSheds IDs for HYBAS ID '", focal_poly, "' already identified.")
+    
+    # If we *don't* have the polygon, continue!
   } else {
-    
-    # Read in the csv being considered
-    ids <- read.csv(file.path(path, 'hydrosheds-basin-ids',
-                              paste0(stream_id, '_HYBAS_ID.csv')))
-    
-    # Add it to the list at the nth position
-    id_list[[n]] <- ids
-    
-    # Advance the counter by 1
-    n <- n + 1 } }
+  
+  # Print start-up message
+  message( "Processing for HYBAS ID '", focal_poly, "' begun at ", Sys.time())
+  
+  # Identify all upstream shapes
+  fxn_out <- find_all_up(HYBAS = basin_needs, HYBAS.ID = focal_poly)
+  
+  # Make a dataframe of this
+  hydro_df <- data.frame(focal_poly = rep(focal_poly, (length(fxn_out) + 1)),
+                         hybas_id = c(focal_poly, fxn_out))
+  
+  # Save this out
+  write.csv(x = hydro_df, file = poly_file, na = '', row.names = F)
+  
+  # And add it to the list
+  id_list[[focal_poly]] <- hydro_df
+  
+  # Print finishing message
+  message( "Processing for HYBAS ID '", focal_poly, "' finished at ", Sys.time())
+  
+  } # Close `else` clause
+} # Close `loop`
 
 # Unlist the list
 hydro_out <- id_list %>%
@@ -314,8 +295,8 @@ hydro_out <- id_list %>%
 str(hydro_out)
 
 # Clean up environment
-rm(list = setdiff(ls(), c('path', 'sites', 'sites_actual',
-                          'basin_needs', 'hydro_out')))
+# rm(list = setdiff(ls(), c('path', 'sites', 'sites_actual',
+#                           'basin_needs', 'hydro_out')))
 
 
 
