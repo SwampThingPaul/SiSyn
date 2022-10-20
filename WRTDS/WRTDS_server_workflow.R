@@ -2,7 +2,7 @@
            # WRTDS Centralized Workflow
 ## ---------------------------------------------- ##
 # WRTDS = Weighted Regressions on Time, Discharge, and Season
-## Nick J Lyon + ...
+## Nick J Lyon
 
 ## ---------------------------------------------- ##
                 # Housekeeping ----
@@ -24,39 +24,39 @@ dir.create(path = file.path(server_path, "WRTDS Temporary Files"), showWarnings 
 dir.create(path = file.path(server_path, "WRTDS Outputs"), showWarnings = F)
 dir.create(path = file.path(server_path, "WRTDS Loop Diagnostic"), showWarnings = F)
 
-# Identify Google links to relevant folders
-disc_folder <- "https://drive.google.com/drive/folders/1HQtpWYoq_YQwj_bDNNbv8D-0swi00o_s"
-chem_folder <- "https://drive.google.com/drive/folders/1BAs0y1hHArW8BANUFJrXOXcoMHIk25Pp"
-info_folder <- "https://drive.google.com/drive/u/1/folders/1q92ee9nKct_nCJ3NVD2-tm8KCuRBfm2U"
+# Define the names of the Drive files we need
+names <- c("WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv", # No.1 Ref table
+           "UpdatedAll_Q_master_10182022.csv", # No.2 Main discharge
+           "20221020_masterdata_chem.csv", # No.3 Main chemistry
+           "20220909_master_min_det_limit.csv") # No.4 Minimum detection limit info
 
-# Identify their IDs
-disc_files <- googledrive::drive_ls(path = as_id(disc_folder), type = "csv")
-chem_files <- googledrive::drive_ls(path = as_id(chem_folder), type = "csv", pattern = "master")
-info_files <- googledrive::drive_ls(path = as_id(info_folder), type = "csv", pattern = "INFO_all_PO4")
+# Find folders for those files
+ids <- googledrive::drive_ls(as_id("https://drive.google.com/drive/u/1/folders/1HQtpWYoq_YQwj_bDNNbv8D-0swi00o_s")) %>%
+  dplyr::bind_rows(googledrive::drive_ls(as_id("https://drive.google.com/drive/u/1/folders/1BAs0y1hHArW8BANUFJrXOXcoMHIk25Pp")))
 
-# Combine all of the wanted files in a single object
-needed_files <- rbind(disc_files, chem_files, info_files)
-
-# Download these files
-for(file in needed_files$name){
-  # Find file ID
-  file_id <- needed_files$id[needed_files$name == file]
+# Download the files we want
+for(k in 1:length(names)){
   
-  # Download file
-  googledrive::drive_download(file = as_id(file_id), 
-                              path = file.path(server_path, "WRTDS Source Files", file),
-                              overwrite = T)
+  # Processing message
+  message("Downloading file '", names[k], "'")
+  
+  # Download files
+  ids %>%
+    # Filter to desired file
+    dplyr::filter(name == names[k]) %>%
+    # Download that file!
+    googledrive::drive_download(file = as_id(.), overwrite = T,
+                                path = file.path(server_path, "WRTDS Source Files", names[k]))
 }
 
-# Read in each of these CSV files
-disc_main <- read.csv(file = file.path(server_path, "WRTDS Source Files", disc_files[3,1]))
-disc_log <- read.csv(file = file.path(server_path, "WRTDS Source Files", disc_files[2,1]))
-info_v1 <- read.csv(file = file.path(server_path, "WRTDS Source Files", info_files[1,1]))
-chem_main <- read.csv(file = file.path(server_path, "WRTDS Source Files", chem_files[2,1]))
-mdl_info <- read.csv(file = file.path(server_path, "WRTDS Source Files", chem_files[1,1]))
+# Now read in those files!
+ref_table <- read.csv(file = file.path(server_path, "WRTDS Source Files", names[1]))
+disc_main <- read.csv(file = file.path(server_path, "WRTDS Source Files", names[2]))
+chem_main <- read.csv(file = file.path(server_path, "WRTDS Source Files", names[3]))
+mdl_info <- read.csv(file = file.path(server_path, "WRTDS Source Files", names[4]))
 
 # Clean up the environment before continuing
-rm(list = setdiff(ls(), c("server_path", "disc_main", "disc_log", "chem_main", "mdl_info", "info_v1")))
+rm(list = setdiff(ls(), c("ref_table", "disc_main", "chem_main", "mdl_info")))
 ## Above line removes anything *other* than objects specified
 
 # Load in the custom function for converting calendar dates to hydro dates
