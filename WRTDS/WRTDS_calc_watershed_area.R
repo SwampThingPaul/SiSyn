@@ -2,7 +2,7 @@
                 # WRTDS - Find Watershed Area
 ## ------------------------------------------------------- ##
 # Written by:
-## Nick J Lyon + ...
+## Nick J Lyon
 
 # Purpose:
 ## Find area of drainage basins for sites where that is not known from expert sources
@@ -124,7 +124,7 @@ basin_simp <- all_basins %>%
 str(basin_simp)
 
 ## ---------------------------------------------- ##
-          # Identify Focal Polygon ----
+           # Identify Focal Polygon ----
 ## ---------------------------------------------- ##
 
 # Pre-emptively resolve an error with 'invalid spherical geometry'
@@ -142,41 +142,38 @@ sites_actual <- sites_spatial %>%
                       # ...retain the HYBAS_ID of that interaction...
                       yes = basin_simp$HYBAS_ID[ixn],
                       #...if not, retain nothing
-                      no = '') )
-
-# Check it out
-sites_actual
+                      no = '') ) %>%
+  # And handle a missing HYBAS ID manually
+  dplyr::mutate(HYBAS_ID = ifelse(test = LTER == "Finnish Environmental Institute" & 
+                                    Discharge_File_Name == "Site28208_Q",
+                                  # This ID is from a *very* close neighboring site
+                                  yes = "2000029960",
+                                  no = HYBAS_ID))
 
 # And to make our lives easier, check out which continents we actually need
 sort(unique(stringr::str_sub(sites_actual$HYBAS_ID, 1, 1)))
 # 1 = Africa; 2 = Europe; 3 = Siberia; 4 = Asia; 5 = Australia; 6 = South America; 7 = North America; 8 = Arctic (North America); 9 = Greenland 
 
+# The missing IDs are Antarctica streams
+sites_actual %>%
+  dplyr::filter(nchar(stringr::str_sub(sites_actual$HYBAS_ID, 1, 1)) == 0) %>%
+  dplyr::select(LTER) %>%
+  sf::st_drop_geometry() %>%
+  unique()
+
 # Prepare only needed HydroSheds 'continents'
 basin_needs <- rbind(europe, siberia, north_am, arctic)
 
-# Clean up environment to have less data stored as we move forward
-rm(list = setdiff(ls(), c('path', 'sites', 'sites_actual', 'basin_needs')))
-
-## ---------------------------------------------- ##
-            # Get Pfafstetter Codes ----
-## ---------------------------------------------- ##
-
-# Bring each PFAF code into the sites_actual object by matching with HYBAS_ID
-for(i in 1:12) {
-  # Processing message
-  message("Processing Pfafstetter code level ", i)
-  
-  # Grab each PFAF code and add it to the "sites_actual" object as a column
-  sites_actual[[paste0("PFAF_", i)]] <- basin_needs[[paste0("PFAF_", i)]][match(sites_actual$HYBAS_ID, basin_needs$HYBAS_ID)]
-  }
-
-# Also grab area
+# Get area for our focal polygons
 sites_actual$SUB_AREA <- basin_needs$SUB_AREA[match(sites_actual$HYBAS_ID, basin_needs$HYBAS_ID)]
 
 # Check the object again
 dplyr::glimpse(sites_actual)
-# This object has polygons defined at the finest possible level
-# We may want to visualize aggregated basins so let's go that direction now
+## This object has polygons defined at the finest possible level
+## We may want to visualize aggregated basins so let's go that direction now
+
+# Clean up environment to have less data stored as we move forward
+rm(list = setdiff(ls(), c('path', 'sites', 'sites_actual', 'basin_needs')))
 
 ## ---------------------------------------------- ##
       # Load Modified HydroSHEDS Functions ----
@@ -241,9 +238,12 @@ find_all_up <- function(HYBAS, HYBAS.ID, ignore.endorheic = F, split = F){
 # It makes sense to identify areas / polygons based on that focal polygon
 # rather than stream name to save on computation time
 
-# Separate sites by whether we already know there basin area
+# Let's not waste time on sites where we already know the drainage basin area
 known_area <- dplyr::filter(sites_actual, !is.na(drainSqKm))
-unk_area <- dplyr::filter(sites_actual, is.na(drainSqKm))
+
+# Split off only sites where we don't know area
+unk_area <- sites_actual %>%
+  dplyr::filter(is.na(drainSqKm))
 
 # Check that we didn't somehow lose rows here
 nrow(known_area) + nrow(unk_area) == nrow(sites_actual)
@@ -301,63 +301,76 @@ hydro_out <- id_list %>%
   purrr::map_dfr(dplyr::select, dplyr::everything())
 
 # Check the structure
-str(hydro_out)
-
-
-
-
-# HERE NOW ----
-
-
-
+dplyr::glimpse(hydro_out)
 
 ## ---------------------------------------------- ##
-              # Wrangle Output -----
+               # Wrangle Output -----
 ## ---------------------------------------------- ##
-
-
 
 # Pre-emptively resolve an error with 'invalid spherical geometry'
 sf::sf_use_s2(F)
-## s2 processing assumes that two points lie on a sphere
-## earlier form of processing assumes two points lie on a plane
 
 # Strip the polygons that correspond to those IDs
-hydro_poly <- hydro_out %>%
+hydro_poly_df <- hydro_out %>%
   # Make the HydroBasins ID column have an identical name between the df and sf objects
   dplyr::rename(HYBAS_ID = hybas_id) %>%
   # Attach everything in the polygon variant
   ## Necessary because of some polygons are found in >1 uniqueID
   dplyr::left_join(basin_needs, by = 'HYBAS_ID') %>%
   # Within uniqueID...
-  dplyr::group_by(uniqueID) %>%
+  dplyr::group_by(focal_poly) %>%
   # ...sum sub-polygon areas and combine sub-polygon geometries
   dplyr::summarise(drainSqKm = sum(SUB_AREA, na.rm = TRUE),
                    geometry = sf::st_union(geometry)) %>%
   # Need to make the class officially sf again before continuing
   sf::st_as_sf() %>%
-  # Then eliminate any small gaps within those shapes
-  # nngeo::st_remove_holes() %>%
-  ## Throws error: `Error in tmp[j][[1]] : subscript out of bounds`
-  # Retrieve the domain and stream names
-  tidyr::separate(col = uniqueID, into = c("domain", "stream"), sep = "_",
-                  remove = F, fill = "right")
+  # Then drop geometry
+  sf::st_drop_geometry() %>%
+  # Get a character version of the HYBAS ID and drop the old one
+  dplyr::mutate(HYBAS_ID = as.character(focal_poly), .before = dplyr::everything()) %>%
+  dplyr::select(-focal_poly)
 
 # Check structure
-str(hydro_poly)
+dplyr::glimpse(hydro_poly_df)
 
-# Write this out for later use (though as a dataframe)
-hydro_poly_df <- sf::st_drop_geometry(x = hydro_poly)
+# Combine polygon IDs with the unknown areas dataframe
+unk_actual <- unk_area %>%
+  # Drop old (and empty) drainage area column
+  dplyr::select(-drainSqKm) %>%
+  # Drop geometry
+  sf::st_drop_geometry() %>%
+  # Join on newly identified areas
+  dplyr::left_join(y = hydro_poly_df, by = c("HYBAS_ID"))
 
-# Check it again
-str(hydro_poly_df)
+# Glimpse this too
+dplyr::glimpse(unk_actual)
 
-# Export this for later use as a CSV
-write.csv(hydro_poly_df, file = file.path(path, 'watershed_areas.csv'),
-          row.names = F, na = "")
+# Then recombine the known and unknown areas files
+ref_table_actual <- known_area %>%
+  # Use bind_rows to get the correct column order back
+  dplyr::bind_rows(unk_actual) %>%
+  # Drop geometry
+  sf::st_drop_geometry() %>%
+  # Remove some unneeded columns
+  dplyr::select(-uniqueID, -ixn, -HYBAS_ID, -SUB_AREA)
+
+# Glimpse it
+dplyr::glimpse(ref_table_actual)
+# view(ref_table_actual)
+
+# Make sure that no drainage areas are missing
+nrow(filter(ref_table_actual, is.na(drainSqKm)))
+nrow(filter(ref_table_actual, nchar(drainSqKm) == 0))
+## Both above should return "0"
+
+# Define name/path of this file
+out_name <- file.path(path, "WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv")
+
+# Save this locally
+write.csv(x = ref_table_actual, na = "", row.names = F, file = out_name)
 
 # Now upload this as well to the GoogleDrive
-# googledrive::drive_upload(media = file.path(path, 'watershed_areas.csv'),
-#                           path = as_id("https://drive.google.com/drive/folders/1HQtpWYoq_YQwj_bDNNbv8D-0swi00o_s"))
+googledrive::drive_upload(media = out_name, overwrite = T,
+                          path = as_id("https://drive.google.com/drive/u/1/folders/1HQtpWYoq_YQwj_bDNNbv8D-0swi00o_s"))
 
 # End ----
