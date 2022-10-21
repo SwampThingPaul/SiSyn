@@ -375,7 +375,7 @@ bad_rivers <- c(
   # Error in `EGRET::modelEstimation`
   ### "Error in runSurvReg(SampleCrossV$DecYear[i], SampleCrossV$LogQ[i], DecLow,  : 
   ### minNumUncen is greater than total number of samples"
-  "AND__GSWS06_NOx"
+  "AND__GSWS06_NOx", "AND__GSWS07_NOx"
   
 )
 
