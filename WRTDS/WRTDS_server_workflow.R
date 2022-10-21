@@ -415,7 +415,7 @@ for(river in setdiff(x = unique(chemistry$Stream_Element_ID), y = bad_rivers)){
   
   # If the file exists
   if(file.exists(file.path(server_path, "WRTDS Loop Diagnostic", paste0(out_prefix, "Loop_Diagnostic.csv"))) == TRUE) {
-    message("Processing complete for ", river, ", element ", element)
+    message("WRTDS already run for ", element, " at river '", river, "'")
   } else {
     
   # Grab start time for processing
