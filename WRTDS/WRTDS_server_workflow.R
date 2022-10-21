@@ -9,7 +9,7 @@
 ## ---------------------------------------------- ##
 # Load libraries
 # install.packages("librarian")
-librarian::shelf(tidyverse, googledrive, lubridate, EGRET, EGRETci)
+librarian::shelf(tidyverse, googledrive, lubridate, EGRET, EGRETci, njlyon0/helpR)
 
 # Clear environment
 rm(list = ls())
@@ -59,80 +59,17 @@ mdl_info <- read.csv(file = file.path(server_path, "WRTDS Source Files", names[4
 rm(list = setdiff(ls(), c("server_path", "ref_table", "disc_main", "chem_main", "mdl_info")))
 ## Above line removes anything *other* than objects specified
 
-# Load in the custom function for converting calendar dates to hydro dates
-hydro.day.new = function(x, start.month = 10L){
-  start.yr = lubridate::year(x) - (lubridate::month(x) < start.month)
-  start.date = lubridate::make_date(start.yr, start.month, 1L)
-  as.integer(x - start.date + 1L) }
-
 ## ---------------------------------------------- ##
-            # General Prep / Tidying ----
+          # Prep - Supporting Files ----
 ## ---------------------------------------------- ##
-# Includes:
-## Column name standardization
-## Removal of unnecessary columns
-## Unit standardization (by conversion)
-## Streamlining of information file
 
-# Wrangle the discharge data objects to standardize naming somewhat
-disc_v2 <- disc_main %>%
-  # Rename site column as it appears in the discharge log file
-  dplyr::rename(Discharge_File_Name = DischargeFileName) %>%
-  # Convert date to true date format
-  dplyr::mutate(Date = as.Date(Date, "%Y-%m-%d")) %>%
-  # Average through duplicate LTER-stream-date combinations to get rid of them
-  dplyr::group_by(LTER, Discharge_File_Name, Date) %>%
-  dplyr::summarize(Qcms = mean(Qcms, na.rm = T)) %>%
-  dplyr::ungroup()
+# Make a lookup table from the reference table for just stream names
+name_lkup <- ref_table %>%
+  # Pare to only some columns
+  dplyr::select(LTER, Discharge_File_Name, Stream_Name)
 
-# Take a look
-dplyr::glimpse(disc_v2)
-
-# Clean up the chemistry data
-chem_v2 <- chem_main %>%
-  # Simplify phosphorous for later
-  dplyr::mutate(
-    variable_simp = ifelse(variable == "SRP" | variable == "PO4",
-                           yes = "P", no = variable)) %>%
-  # That done, drop all chemicals other than the core ones we're interested in
-  dplyr::filter(variable_simp %in% c("P", "DSi", "NOx", "NH4")) %>%
-  # Calculate the mg/L for each of these chemicals
-  dplyr::mutate(value_mgL = dplyr::case_when(
-    variable_simp == "P" ~ (((value / 10^6) * 30.973762) * 1000),
-    variable_simp == "DSi" ~ (((value / 10^6) * 28.0855) * 1000),
-    variable_simp == "NOx" ~ (((value / 10^6) * 14.0067) * 1000),
-    variable_simp == "NH4" ~ (((value / 10^6) * 14.0067) * 1000))) %>%
-  # Drop units, site, value, and variable columns because they're outdated now
-  dplyr::select(-units, -site, -variable, -value) %>%
-  # Rename some columns
-  dplyr::rename(Stream_Name = Site.Stream.Name,
-                Date = Sampling.Date,
-                variable = variable_simp) %>%
-  # Convert date to true date format
-  dplyr::mutate(Date = as.Date(Date, "%Y-%m-%d")) %>%
-  # Average through duplicate LTER-stream-date-variable combinations to get rid of them
-  dplyr::group_by(LTER, Stream_Name, variable, Date) %>%
-  dplyr::summarize(value_mgL = mean(value_mgL, na.rm = T),
-                   obs_count = dplyr::n()) %>%
-  dplyr::ungroup()
-  
-# Examine that as well
-dplyr::glimpse(chem_v2)
-
-
-
-
-
-
-# Wrangle the discharge log information as well
-# ref_table <- disc_log %>%
-#   # Rename file name columns
-#   dplyr::rename(Discharge_Stream = DischargeFileName) %>%
-#   # Crop down to only needed columns
-#   dplyr::select(Discharge_Stream, Stream)
-# 
-# # Check it
-# dplyr::glimpse(ref_table)
+# Glimpse it
+dplyr::glimpse(name_lkup)
 
 # Wrangle minimum detection limit file too
 mdl_v2 <- mdl_info %>%
@@ -161,146 +98,203 @@ mdl_v2 <- mdl_info %>%
 dplyr::glimpse(mdl_v2)
 
 ## ---------------------------------------------- ##
-    # Prep - Wrangle Response Dataframes ----
+           # Prep - Initial Wrangling ----
 ## ---------------------------------------------- ##
 # Includes:
-## Chem - Incorporation of minimum detection limit (MDL) info (where available)
-## Chem - Removal of pre-1982 data at Andrews' sites
-## Disc - Averages Qcms if multiple discharge values for a given day/stream
-## Both - Retrieval of matched "stream" name with "discharge stream name" and "chemistry stream name"
+## Column name standardization
+## Removal of unnecessary columns
+## Unit standardization (by conversion)
+## Removal of streams not in reference table / look-up (that file is an exhaustive list of streams to include)
 
-# Identify Andrews (AND) sites pre-1982
-early_AND <- chem_v2 %>%
-  dplyr::filter(LTER == "AND" & lubridate::year(Date) < 1983)
+# Wrangle the discharge data objects to standardize naming somewhat
+disc_v2 <- disc_main %>%
+  # Rename site column as it appears in the discharge log file
+  dplyr::rename(Discharge_File_Name = DischargeFileName) %>%
+  # Filter out streams not found in the name look-up 
+  ## The lookup table is an exhaustive set of all sites to include
+  dplyr::filter(Discharge_File_Name %in% name_lkup$Discharge_File_Name) %>%
+  # Convert date to true date format
+  dplyr::mutate(Date = as.Date(Date, "%Y-%m-%d")) %>%
+  # Average through duplicate LTER-stream-date combinations to get rid of them
+  dplyr::group_by(LTER, Discharge_File_Name, Date) %>%
+  dplyr::summarize(Qcms = mean(Qcms, na.rm = T)) %>%
+  dplyr::ungroup() %>%
+  # Drop any NAs in the discharge or date columns
+  dplyr::filter(!is.na(Qcms) & !is.na(Date)) %>%
+  # Drop LTER column (it is flawed and not easily salvageable)
+  ## Issue is it looks like it is just the first three characters of the stream name
+  ## This only works for true LTER sites and GRO sites
+  dplyr::select(-LTER)
 
-# Wrangle the chemistry data
-chem_v3 <- chem_v2 %>%
-  # Remove pre-1982 data at Andrews
-  dplyr::anti_join(y = early_AND) %>%
-  # Pare down to needed columns (implicitly removes unspecified columns)
-  dplyr::select(Stream, variable_simp, Date, value_mgL) %>%
+# Take a look
+dplyr::glimpse(disc_v2)
+
+# Clean up the chemistry data
+chem_v2 <- chem_main %>%
+  # Simplify phosphorous for later
+  dplyr::mutate(variable_simp = ifelse(variable == "SRP" | variable == "PO4",
+                                       yes = "P", no = variable)) %>%
+  # That done, drop all chemicals other than the core ones we're interested in
+  dplyr::filter(variable_simp %in% c("P", "DSi", "NOx", "NH4")) %>%
+  # Calculate the mg/L (from micro moles) for each of these chemicals
+  dplyr::mutate(value_mgL = dplyr::case_when(
+    variable_simp == "P" ~ (((value / 10^6) * 30.973762) * 1000),
+    variable_simp == "DSi" ~ (((value / 10^6) * 28.0855) * 1000),
+    variable_simp == "NOx" ~ (((value / 10^6) * 14.0067) * 1000),
+    variable_simp == "NH4" ~ (((value / 10^6) * 14.0067) * 1000))) %>%
+  # Drop units, site, value, and variable columns because they're outdated now
+  dplyr::select(-units, -site, -variable, -value) %>%
+  # Rename some columns
+  dplyr::rename(Stream_Name = Site.Stream.Name,
+                Date = Sampling.Date,
+                variable = variable_simp) %>%
+  # Filter out streams not found in the name look-up 
+  ## The lookup table is an exhaustive set of all sites to include
+  dplyr::filter(Stream_Name %in% name_lkup$Stream_Name) %>%
+  # Convert date to true date format
+  dplyr::mutate(Date = as.Date(Date, "%Y-%m-%d")) %>%
+  # Average through duplicate LTER-stream-date-variable combinations to get rid of them
+  dplyr::group_by(LTER, Stream_Name, variable, Date) %>%
+  dplyr::summarize(value_mgL = mean(value_mgL, na.rm = T)) %>%
+  dplyr::ungroup() %>%
+  # Drop any NAs in the value column
+  dplyr::filter(!is.na(value_mgL)) %>%
+  # Keep all data from non-Andrews (AND) sites, but drop pre-1983 Andrews data
+  dplyr::filter(LTER != "AND" | (LTER == "AND" & lubridate::year(Date) > 1983)) %>%
   # Attach the minimum detection limit information where it is known
-  dplyr::left_join(y = mdl_v2, by = c("Stream", "variable_simp")) %>%
+  dplyr::left_join(y = mdl_v2, by = c("Stream_Name", "variable")) %>%
   # Using this, create a "remarks" column that indicates whether a value is below the MDL
   dplyr::mutate(remarks = ifelse(test = (value_mgL < MDL), yes = "<", no = ""),
                 .after = Date) %>%
   # Now we can safely drop the MDL information because we have what we need
-  dplyr::select(-MDL) %>%
-  # Now left join on the name for the stream in the discharge file
-  dplyr::left_join(ref_table, by = "Stream") %>%
-  # And move the discharge stream name column to the left
-  dplyr::select(Discharge_Stream, Stream:value_mgL)
+  dplyr::select(-MDL)
+  
+# Examine that as well
+dplyr::glimpse(chem_v2)
 
-# Take a quick look
-glimpse(chem_v3)
+## ---------------------------------------------- ##
+      # Prep - Match Stream "Aliases" ----
+## ---------------------------------------------- ##
+# Explanation:
+## Discharge streams are identified by the "Discharge_File_Name" column
+## Chemistry streams are identified by the "Stream_Name" column
+## We need to use the 'name_lkup' object to allow these two dataframes to cross-talk
+## One discharge stream can have *multiple* chemisry streams that match
 
 # Wrangle the discharge information
 disc_v3 <- disc_v2 %>%
-  # Drop any NAs in the discharge column
-  dplyr::filter(!is.na(Qcms)) %>%
-  # Average discharge if more than one measurement per day/site
-  dplyr::group_by(Discharge_Stream, Date) %>%
-  dplyr::summarize(Qcms = mean(Qcms, na.rm = T)) %>%
-  dplyr::ungroup() %>%
-  # Bring in the ref table stream names as well
-  dplyr::left_join(ref_table, by = "Discharge_Stream") %>%
-  # And move the column to the right of the Dicharge Stream name
-  dplyr::select(Discharge_Stream, Stream, Date, Qcms)
+  # Bring in the ref table stream names and LTER names as well
+  dplyr::left_join(y = name_lkup, by = c("Discharge_File_Name"))
 
 # Glimpse it
 dplyr::glimpse(disc_v3)
 
-# Now information
-info_v3 <- info_v2 %>%
-  # And bring on discharge stream from the chemistry data
-  dplyr::mutate(Discharge_Stream = chem_v3$Discharge_Stream[match(Stream, chem_v3$Stream)], .before = Stream)
+# Wrangle the chemistry data
+chem_v3 <- chem_v2 %>%
+  # Standardize some LTER names to match the lookup table
+  dplyr::mutate(LTER = dplyr::case_when(
+    LTER == "KRR(Julian)" ~ "KRR",
+    LTER == "LMP(Wymore)" ~ "LMP",
+    LTER == "NWQA" ~ "USGS",
+    LTER == "Sagehen(Sullivan)" ~ "Sagehen",
+    LTER == "UMR(Jankowski)" ~ "UMR",
+    TRUE ~ LTER)) %>%
+  # Now left join on the name for the stream in the discharge file
+  dplyr::left_join(y = name_lkup, by = c("LTER", "Stream_Name"))
 
-# Glimpse
-dplyr::glimpse(info_v3)
+# Take a quick look
+glimpse(chem_v3)
 
 ## ---------------------------------------------- ##
-       # Prep - Identify Years to Exclude ----
+      # Prep - Crop Time Series for WRTDS ----
 ## ---------------------------------------------- ##
 # WRTDS runs best when there are 10 years of discharge data *before* the first chemistry datapoint. Similarly, we can't have more chemistry data than we have discharge data.
 # So we need to identify the min/max dates of discharge and chemistry (separately) to be able to use them to crop the actual data as WRTDS requires
 
 # Identify earliest chemical data at each site
-min_chem <- chem_v3 %>%
+disc_lims <- chem_v3 %>%
   # Make a new column of earliest days per stream
-  dplyr::group_by(Discharge_Stream, Stream) %>%
+  dplyr::group_by(LTER, Stream_Name, Discharge_File_Name) %>%
   dplyr::mutate(min_date = min(Date, na.rm = T)) %>%
   dplyr::ungroup() %>%
   # Filter to only those dates
   dplyr::filter(Date == min_date) %>%
   # Pare down columns (drop date now that we have `min_date`)
-  dplyr::select(Discharge_Stream, Stream, min_date) %>%
+  dplyr::select(LTER, Stream_Name, Discharge_File_Name, min_date) %>%
   # Subtract 10 years to crop the discharge data to 10 yrs per chemistry data
-  dplyr::mutate(disc_start = (min_date - (10 * 365.25)) - 1)
+  dplyr::mutate(disc_start = (min_date - (10 * 365.25)) - 1) %>%
+  # Keep only unique rows
+  unique()
 
 # Check that
-dplyr::glimpse(min_chem)
+dplyr::glimpse(disc_lims)
 
 # Identify min/max of discharge data
-bookends_disc <- disc_v3 %>%
+chem_lims <- disc_v3 %>%
   # Group by stream and identify the first and last days of sampling
-  dplyr::group_by(Discharge_Stream, Stream) %>%
+  dplyr::group_by(LTER, Stream_Name, Discharge_File_Name) %>%
   dplyr::summarize(min_date = min(Date, na.rm = T),
                    max_date = max(Date, na.rm = T)) %>%
   dplyr::ungroup() %>%
   # Using the custom function supplied by the Silica team, convert to hydro day
-  dplyr::mutate(min_hydro = as.numeric(hydro.day.new(x = min_date)),
-                max_hydro = as.numeric(hydro.day.new(x = max_date))) %>%
+  dplyr::mutate(min_hydro = as.numeric(HERON::hydro_day(cal_date = min_date)),
+                max_hydro = as.numeric(HERON::hydro_day(cal_date = max_date))) %>%
   # Find difference between beginning of next water year and end of chem file
-  dplyr::mutate(water_year_diff = 365 - max_hydro)
+  dplyr::mutate(water_year_diff = 365 - max_hydro) %>%
+  # Keep only unique rows
+  unique()
 
 # Look at that outcome
-dplyr::glimpse(bookends_disc)
+dplyr::glimpse(chem_lims)
 
-## ---------------------------------------------- ##
-              # Prep - Crop Years ----
-## ---------------------------------------------- ##
-# Includes:
-## Uses the identified start and end dates from the previous section
-## Crops discharge and chemistry data to necessary years for WRTDS
-
-# Begin with discharge
+# Crop the discharge file!
 discharge <- disc_v3 %>%
   # Left join on the start date from the chemistry data
-  dplyr::left_join(y = min_chem, by = c("Discharge_Stream", "Stream")) %>%
-  # Identify whether each date is greater than the minimum (per stream!)
-  dplyr::group_by(Discharge_Stream, Stream) %>%
-  dplyr::mutate(retain = ifelse(Date > disc_start,
-                                yes = "keep",
-                                no = "drop")) %>%
-  dplyr::ungroup() %>%
+  dplyr::left_join(y = disc_lims, by = c("LTER", "Discharge_File_Name", "Stream_Name")) %>%
   # Drop any years before the ten year buffer suggested by WRTDS
-  dplyr::filter(retain == "keep") %>%
+  dplyr::filter(Date > disc_start) %>%
   # Remove unneeded columns (implicitly)
-  dplyr::select(Discharge_Stream, Stream, Date, Qcms) %>%
+  dplyr::select(LTER, Discharge_File_Name, Stream_Name, Date, Qcms) %>%
   # Rename the discharge (Q) column without units
   dplyr::rename(Q = Qcms)
 
 # Take another look
 dplyr::glimpse(discharge)
 
+# Check for unintentionally lost columns
+helpR::diff_chk(old = names(disc_v3), new = names(discharge))
+## Change to discharge column name is fine
+
 # Now crop chemistry to the min and max dates of discharge
 chemistry <- chem_v3 %>%
   # Attach important discharge dates
-  dplyr::left_join(y = bookends_disc, by = c("Discharge_Stream", "Stream")) %>%
+  dplyr::left_join(y = chem_lims, by = c("LTER", "Discharge_File_Name", "Stream_Name")) %>%
   # Use those to crop the dataframe
-  ## !!! Note that this removes streams where "Discharge_Stream" is NA !!!
   dplyr::filter(Date > min_date & Date < max_date) %>%
   # Drop to only needed columns
-  dplyr::select(Discharge_Stream:value_mgL)
+  dplyr::select(LTER, Discharge_File_Name, Stream_Name,
+                variable, Date, remarks, value_mgL)
   
 # Glimpse it
 dplyr::glimpse(chemistry)
 
-# Finally, clean up the information dataframe however is needed
-information <- info_v3
-## Currently no wrangling needed here
+# Check for unintentionally lost columns
+helpR::diff_chk(old = names(chem_v3), new = names(chemistry))
 
-# Take a look
+# Create the scaffold for what will become the "information" file required by WRTDS
+information <- ref_table %>%
+  # Make empty columns to fill later
+  dplyr::mutate(param.units = "mg/L",
+                shortName = stringr::str_sub(string = Stream_Name, start = 1, end = 8),
+                paramShortName = NA,
+                constitAbbrev = NA,
+                drainSqKm = drainSqKm,
+                station.nm = Stream_Name) %>%
+  # Drop to only desired columns
+  dplyr::select(LTER, Discharge_File_Name, Stream_Name, param.units, shortName,
+                paramShortName, constitAbbrev, drainSqKm, station.nm)
+
+# Check that out
 dplyr::glimpse(information)
 
 ## ---------------------------------------------- ##
@@ -318,17 +312,20 @@ write.csv(x = information, row.names = F, na = "",
           file = file.path(server_path, "WRTDS Inputs",
                            "WRTDS-input_information.csv"))
 
-# Clean up environment again
-rm(list = setdiff(ls(), c("server_path", "disc_main", "disc_log", "chem_main", "mdl_info", "info_v1", "chemistry", "discharge", "information")))
+# Remove *everything* from environment (we need the vector memory below)
+rm(list = ls())
 
 ## ---------------------------------------------- ##
-                      # Run ----
+                    # Run WRTDS ----
 ## ---------------------------------------------- ##
 # "Run" Structure:
-## Big for loop that iterates across "Discharge_Stream" names
-## Within that loop, a slightly smaller loop that iterates across chemicals that were sampled at that river.
+## Big for loop that iterates across "Stream_Name" names
+## Within that loop, a smaller loop iterates across chemicals sampled there
 
-# Can read in CSVs if you want to skip above steps
+# Redefine server path
+server_path <- file.path('/', "home", "shares", "lter-si", "WRTDS")
+
+# Read in CSVs generated by above steps
 discharge <- read.csv(file.path(server_path, "WRTDS Inputs", "WRTDS-input_discharge.csv"))
 chemistry <- read.csv(file.path(server_path, "WRTDS Inputs", "WRTDS-input_chemistry.csv"))
 information <- read.csv(file.path(server_path, "WRTDS Inputs", "WRTDS-input_information.csv"))
