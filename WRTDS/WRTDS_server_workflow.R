@@ -325,7 +325,10 @@ dplyr::glimpse(discharge)
 # Do the same for chemistry
 chemistry <- chem_v4 %>%
   dplyr::filter(Stream_ID %in% incl_streams) %>%
-  dplyr::select(-LTER, -Discharge_File_Name, -Stream_Name)
+  dplyr::select(-LTER, -Discharge_File_Name, -Stream_Name) %>%
+  # Make a column for Stream_ID + Chemical
+  dplyr::mutate(Stream_Element_ID = paste0(Stream_ID, "_", variable),
+                .before = dplyr::everything())
 
 # Check it
 dplyr::glimpse(chemistry)
@@ -371,186 +374,190 @@ information <- read.csv(file.path(server_path, "WRTDS Inputs", "WRTDS-input_info
 bad_rivers <- c(
   # "Error in runSurvReg(SampleCrossV$DecYear[i], SampleCrossV$LogQ[i], DecLow,  : 
   # minNumUncen is greater than total number of samples"
-  "NIVA__AAGEVEG"
+  
   
 )
 
 # Loop across rivers and elements to run WRTDS workflow!
-for(river in setdiff(x = unique(discharge$Stream_ID), y = bad_rivers)){
+for(river in setdiff(x = unique(chemistry$Stream_Element_ID), y = bad_rivers)){
 # (^^^) Actual loop (uncomment when you are ready)
 # (vvv) Test loop for a single site
-# for(river in "AND__GSWS06"){
+# for(river in "AND__GSWS02_DSi"){
+  
+  # Identify corresponding Stream_ID
+  stream_id <- chemistry %>%
+    dplyr::filter(Stream_Element_ID == river) %>%
+    dplyr::select(Stream_ID) %>%
+    unique() %>%
+    as.character()
+  
+  # Also element
+  element <- chemistry %>%
+    dplyr::filter(Stream_Element_ID == river) %>%
+    dplyr::select(variable) %>%
+    unique() %>%
+    as.character()
+
+  # Subset chemistry
+  river_chem <- chemistry %>%
+    dplyr::filter(Stream_Element_ID == river) %>%
+    # Drop unneeded columns
+    dplyr::select(-Stream_Element_ID, -Stream_ID, -variable)
   
   # Subset discharge to correct river
   river_disc <- discharge %>%
-    dplyr::filter(Stream_ID == river) %>%
+    dplyr::filter(Stream_ID == stream_id) %>%
     dplyr::select(Date, Q)
   
-  # Subset chemistry to the right river (but still all chemicals)
-  chem_partial <- chemistry %>%
-    dplyr::filter(Stream_ID == river)
+  # Create a common prefix for all outputs from this run of the loop
+  out_prefix <- paste0(stream_id, "_", element, "_") 
   
-  # Again, including "actual" and "test" loop heads  
-  for(element in unique(chem_partial$variable)){
-  # for(element in "DSi"){
+  # If the file exists
+  if(file.exists(file.path(server_path, "WRTDS Loop Diagnostic", paste0(out_prefix, "Loop_Diagnostic.csv"))) == TRUE) {
+    message("Processing complete for ", river, ", element ", element)
+  } else {
     
-    # Create a common prefix for all outputs from this run of the loop
-    out_prefix <- paste0(river, "_", element, "_") 
+  # Grab start time for processing
+  start <- Sys.time()
+  
+  # Information also subsetted to right river
+  river_info <- information %>%
+    dplyr::filter(Stream_ID == stream_id) %>%
+    # Generate correct information for this element
+    dplyr::mutate(constitAbbrev = element) %>%
+    dplyr::mutate(paramShortName = dplyr::case_when(
+      constitAbbrev == "DSi" ~ "Silicon",
+      constitAbbrev == "NOx" ~ "Nitrate",
+      constitAbbrev == "P" ~ "Phosphorous",
+      constitAbbrev == "NH4" ~ "Ammonium")) %>%
+    # Create another needed column
+    dplyr::mutate(staAbbrev = shortName) %>%
+    # Drop stream ID now that subsetting is complete
+    dplyr::select(-Stream_ID)
     
-    # If the file exists
-    if(file.exists(file.path(server_path, "WRTDS Loop Diagnostic", paste0(out_prefix, "Loop_Diagnostic.csv"))) == TRUE) {
-      message("Processing complete for ", river, ", element ", element)
-    } else {
-    
-    # Grab start time for processing
-    start <- Sys.time()
-    
-    # Subset chemistry to right river *and* right element
-    river_chem <- chem_partial %>%
-      dplyr::filter(variable == element) %>%
-      dplyr::select(Date, remarks, value_mgL)
-    
-    # Information also subsetted to right river
-    river_info <- information %>%
-      dplyr::filter(Stream_ID == river) %>%
-      # Generate correct information for this element
-      dplyr::mutate(constitAbbrev = element) %>%
-      dplyr::mutate(paramShortName = dplyr::case_when(
-        constitAbbrev == "DSi" ~ "Silicon",
-        constitAbbrev == "NOx" ~ "Nitrate",
-        constitAbbrev == "P" ~ "Phosphorous",
-        constitAbbrev == "NH4" ~ "Ammonium")) %>%
-      # Create another needed column
-      dplyr::mutate(staAbbrev = shortName) %>%
-      # Drop stream ID now that subsetting is complete
-      dplyr::select(-Stream_ID)
-    
-# Save these as CSVs with generic names
-## This means each iteration of the loop will overwrite them so this folder won't become gigantic
-write.csv(x = river_disc, row.names = F, na = "",
-          file = file.path(server_path, "WRTDS Temporary Files", "discharge.csv"))
-write.csv(x = river_chem, row.names = F, na = "",
-          file = file.path(server_path, "WRTDS Temporary Files", "chemistry.csv"))
-write.csv(x = river_info, row.names = F, na = "",
-          file = file.path(server_path, "WRTDS Temporary Files", "information.csv"))
+  # Save these as CSVs with generic names
+  ## This means each iteration of the loop will overwrite them so this folder won't become gigantic
+  write.csv(x = river_disc, row.names = F, na = "",
+            file = file.path(server_path, "WRTDS Temporary Files", "discharge.csv"))
+  write.csv(x = river_chem, row.names = F, na = "",
+            file = file.path(server_path, "WRTDS Temporary Files", "chemistry.csv"))
+  write.csv(x = river_info, row.names = F, na = "",
+            file = file.path(server_path, "WRTDS Temporary Files", "information.csv"))
+  
+  # Then read them back in with EGRET's special acquisition functions
+  egret_disc <- EGRET::readUserDaily(filePath = file.path(server_path, "WRTDS Temporary Files"), fileName = "discharge.csv", qUnit = 2, verbose = F)
+  egret_chem <- EGRET::readUserSample(filePath = file.path(server_path, "WRTDS Temporary Files"), fileName = "chemistry.csv", verbose = F)
+  egret_info <- EGRET::readUserInfo(filePath = file.path(server_path, "WRTDS Temporary Files"), fileName = "information.csv", interactive = F)
+  
+  # Create a list of the discharge, chemistry, and information files
+  egret_list <- EGRET::mergeReport(INFO = egret_info, Daily = egret_disc, Sample = egret_chem, verbose = F)
 
-# Then read them back in with EGRET's special acquisition functions
-egret_disc <- EGRET::readUserDaily(filePath = file.path(server_path, "WRTDS Temporary Files"), fileName = "discharge.csv", qUnit = 2, verbose = F)
-egret_chem <- EGRET::readUserSample(filePath = file.path(server_path, "WRTDS Temporary Files"), fileName = "chemistry.csv", verbose = F)
-egret_info <- EGRET::readUserInfo(filePath = file.path(server_path, "WRTDS Temporary Files"), fileName = "information.csv", interactive = F)
-
-# Create a list of the discharge, chemistry, and information files
-egret_list <- EGRET::mergeReport(INFO = egret_info, Daily = egret_disc, Sample = egret_chem, verbose = F)
-## Getting a weird "duplicated dates" message/warning...
-
-# Fit original model
-egret_estimation <- EGRET::modelEstimation(eList = egret_list, minNumObs = 50, verbose = F)
-
-# Fit "GFN" (?) model
-egret_list_out <- EGRET::runSeries(eList = egret_list, windowSide = 11, minNumObs = 50, verbose = F)
-
-# Identify error statistics
-egret_error <- EGRET::errorStats(eList = egret_estimation)
-
-# Save the error stats out
-write.csv(x = egret_error, file = file.path(server_path, "WRTDS Outputs", paste0(out_prefix, "ErrorStats_WRTDS.csv")), row.names = F, na = "")
-
-# Create PDF report
-## Start the PDF
-pdf(file = file.path(server_path, "WRTDS Outputs", paste0(out_prefix, "WRTDS_GFN_output.pdf")))
-
-## Residual plots
-EGRET::fluxBiasMulti(eList = egret_estimation)
-
-## Model Fit
-EGRET::plotConcTimeDaily(eList = egret_list_out)
-
-## Concentration
-EGRET::plotConcHist(eList = egret_list_out) # minYP, maxYP)
-
-## Flux
-EGRET::plotFluxHist(eList = egret_list_out) #, minYP, maxYP)
-
-## Data
-EGRET::multiPlotDataOverview(eList = egret_list_out)
-
-## Actually create PDF report
-dev.off()
-
-# Create annual averages
-egret_annual <- EGRET::tableResults(eList = egret_list_out)
-## Can't silence this function... >:(
-
-# Export that as a CSV also
-write.csv(x = egret_annual, file.path(server_path, "WRTDS Outputs", paste0(out_prefix, "ResultsTable_GFN_WRTDS.csv")), row.names = F, na = "")
-
-# Identify monthly results
-egret_monthly <- EGRET::calculateMonthlyResults(eList = egret_list_out)
-
-# Export that
-write.csv(x = egret_monthly, file.path(server_path, "WRTDS Outputs", paste0(out_prefix, "Monthly_GFN_WRTDS.csv")), row.names = F, na = "")
-
-# Extract daily chemical value from run
-egret_concentration <- egret_list_out$Daily
-
-# Export that as well
-write.csv(x = egret_concentration, file.path(server_path, "WRTDS Outputs", paste0(out_prefix, "GFN_WRTDS.csv")), row.names = F, na = "")
-
-# Make a new column for year
-egret_concentration$Year <- format(as.Date(egret_concentration$Date), "%Y")
-
-# Find min & max year
-min_year <- as.numeric(min(egret_concentration$Year, na.rm = T)) + 1
-max_year <- as.numeric(max(egret_concentration$Year, na.rm = T)) - 1
-
-# Set them as a vector
-year_points <- c(min_year, max_year)
-
-# Calculate concentration trend
-egret_conc_trend_v1 <- EGRET::tableChangeSingle(eList = egret_list_out, fluxUnit = 8, yearPoints = year_points, flux = FALSE)
-## Can't silence this function either
-
-# Calculate flux trend
-egret_flux_trend <- EGRET::tableChangeSingle(eList = egret_list_out, fluxUnit = 8, yearPoints = year_points, flux = TRUE)
-## Can't silence this function either
-
-# Add a column to each of these indicating whether it's flux or conc.
-egret_conc_trend_v1$Metric <- "Concentration"
-egret_flux_trend$Metric <- "Flux"
-
-# Rename two columns in the concentration dataframe
-egret_conc_trend <- egret_conc_trend_v1 %>%
-  dplyr::rename(`change[percent]` = `change[%]`,
-                `slope [percent/yr]` = `slope [%/yr]`)
-
-# Bind these dataframes together
-egret_trends <- egret_conc_trend %>%
-  dplyr::bind_rows(egret_flux_trend) %>%
-  # Move the metric column before everything else
-  dplyr::select(Metric, dplyr::everything())
-
-# Export it!
-write.csv(x = egret_trends, file.path(server_path, "WRTDS Outputs", paste0(out_prefix, "TrendsTable_GFN_WRTDS.csv")), row.names = F, na = "")
-
-# Grab the end processing time
-end <- Sys.time()
-
-# Combine timing into a dataframe
-loop_diagnostic <- data.frame("stream" = river,
-                              "chemical" = element,
-                              "loop_start" = start,
-                              "loop_end" = end)
-
-# Export this as well
-write.csv(x = loop_diagnostic, file.path(server_path, "WRTDS Loop Diagnostic", paste0(out_prefix, "Loop_Diagnostic.csv")), row.names = F, na = "")
-
-# Message completion of loop
-message("Processing complete for ", element, " at stream '", river, "'")
-    
+  # Fit original model
+  egret_estimation <- EGRET::modelEstimation(eList = egret_list, minNumObs = 50, verbose = F)
+  
+  # Fit "GFN" model
+  egret_list_out <- EGRET::runSeries(eList = egret_list, windowSide = 11, minNumObs = 50, verbose = F)
+  
+  # Identify error statistics
+  egret_error <- EGRET::errorStats(eList = egret_estimation)
+  
+  # Save the error stats out
+  write.csv(x = egret_error, file = file.path(server_path, "WRTDS Outputs", paste0(out_prefix, "ErrorStats_WRTDS.csv")), row.names = F, na = "")
+  
+  # Create PDF report
+  ## Start the PDF
+  pdf(file = file.path(server_path, "WRTDS Outputs", paste0(out_prefix, "WRTDS_GFN_output.pdf")))
+  
+  ## Residual plots
+  EGRET::fluxBiasMulti(eList = egret_estimation)
+  
+  ## Model Fit
+  EGRET::plotConcTimeDaily(eList = egret_list_out)
+  
+  ## Concentration
+  EGRET::plotConcHist(eList = egret_list_out) # minYP, maxYP)
+  
+  ## Flux
+  EGRET::plotFluxHist(eList = egret_list_out) #, minYP, maxYP)
+  
+  ## Data
+  EGRET::multiPlotDataOverview(eList = egret_list_out)
+  
+  ## Actually create PDF report
+  dev.off()
+  
+  # Create annual averages
+  egret_annual <- EGRET::tableResults(eList = egret_list_out)
+  ## Can't silence this function... >:(
+  
+  # Export that as a CSV also
+  write.csv(x = egret_annual, file.path(server_path, "WRTDS Outputs", paste0(out_prefix, "ResultsTable_GFN_WRTDS.csv")), row.names = F, na = "")
+  
+  # Identify monthly results
+  egret_monthly <- EGRET::calculateMonthlyResults(eList = egret_list_out)
+  
+  # Export that
+  write.csv(x = egret_monthly, file.path(server_path, "WRTDS Outputs", paste0(out_prefix, "Monthly_GFN_WRTDS.csv")), row.names = F, na = "")
+  
+  # Extract daily chemical value from run
+  egret_concentration <- egret_list_out$Daily
+  
+  # Export that as well
+  write.csv(x = egret_concentration, file.path(server_path, "WRTDS Outputs", paste0(out_prefix, "GFN_WRTDS.csv")), row.names = F, na = "")
+  
+  # Make a new column for year
+  egret_concentration$Year <- format(as.Date(egret_concentration$Date), "%Y")
+  
+  # Find min & max year
+  min_year <- as.numeric(min(egret_concentration$Year, na.rm = T)) + 1
+  max_year <- as.numeric(max(egret_concentration$Year, na.rm = T)) - 1
+  
+  # Set them as a vector
+  year_points <- c(min_year, max_year)
+  
+  # Calculate concentration trend
+  egret_conc_trend_v1 <- EGRET::tableChangeSingle(eList = egret_list_out, fluxUnit = 8, yearPoints = year_points, flux = FALSE)
+  ## Can't silence this function either
+  
+  # Calculate flux trend
+  egret_flux_trend <- EGRET::tableChangeSingle(eList = egret_list_out, fluxUnit = 8, yearPoints = year_points, flux = TRUE)
+  ## Can't silence this function either
+  
+  # Add a column to each of these indicating whether it's flux or conc.
+  egret_conc_trend_v1$Metric <- "Concentration"
+  egret_flux_trend$Metric <- "Flux"
+  
+  # Rename two columns in the concentration dataframe
+  egret_conc_trend <- egret_conc_trend_v1 %>%
+    dplyr::rename(`change[percent]` = `change[%]`,
+                  `slope [percent/yr]` = `slope [%/yr]`)
+  
+  # Bind these dataframes together
+  egret_trends <- egret_conc_trend %>%
+    dplyr::bind_rows(egret_flux_trend) %>%
+    # Move the metric column before everything else
+    dplyr::select(Metric, dplyr::everything())
+  
+  # Export it!
+  write.csv(x = egret_trends, file.path(server_path, "WRTDS Outputs", paste0(out_prefix, "TrendsTable_GFN_WRTDS.csv")), row.names = F, na = "")
+  
+  # Grab the end processing time
+  end <- Sys.time()
+  
+  # Combine timing into a dataframe
+  loop_diagnostic <- data.frame("stream" = stream_id,
+                                "chemical" = element,
+                                "loop_start" = start,
+                                "loop_end" = end)
+  
+  # Export this as well
+  write.csv(x = loop_diagnostic, file.path(server_path, "WRTDS Loop Diagnostic", paste0(out_prefix, "Loop_Diagnostic.csv")), row.names = F, na = "")
+  
+  # Message completion of loop
+  message("Processing complete for ", element, " at stream '", river, "'")
+      
     } # Close `else` part of whether file exists
     
-  } # End "element" loop
-  
-} # End "river" loop
+} # End loop
 
 # End ----
