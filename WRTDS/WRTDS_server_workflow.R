@@ -372,9 +372,10 @@ information <- read.csv(file.path(server_path, "WRTDS Inputs", "WRTDS-input_info
 
 # Drop problem rivers from the loop
 bad_rivers <- c(
-  # "Error in runSurvReg(SampleCrossV$DecYear[i], SampleCrossV$LogQ[i], DecLow,  : 
-  # minNumUncen is greater than total number of samples"
-  
+  # Error in `EGRET::modelEstimation`
+  ### "Error in runSurvReg(SampleCrossV$DecYear[i], SampleCrossV$LogQ[i], DecLow,  : 
+  ### minNumUncen is greater than total number of samples"
+  "AND__GSWS06_NOx"
   
 )
 
