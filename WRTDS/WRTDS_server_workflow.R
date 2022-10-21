@@ -349,15 +349,15 @@ write.csv(x = information, row.names = F, na = "",
           file = file.path(server_path, "WRTDS Inputs",
                            "WRTDS-input_information.csv"))
 
-# Remove *everything* from environment (we need the vector memory below)
-rm(list = ls())
-
 ## ---------------------------------------------- ##
                     # Run WRTDS ----
 ## ---------------------------------------------- ##
 # "Run" Structure:
 ## Big for loop that iterates across "Stream_Name" names
 ## Within that loop, a smaller loop iterates across chemicals sampled there
+
+# Remove *everything* from environment (we need the vector memory below)
+rm(list = ls())
 
 # Re-define server path
 server_path <- file.path('/', "home", "shares", "lter-si", "WRTDS")
@@ -367,39 +367,38 @@ discharge <- read.csv(file.path(server_path, "WRTDS Inputs", "WRTDS-input_discha
 chemistry <- read.csv(file.path(server_path, "WRTDS Inputs", "WRTDS-input_chemistry.csv"))
 information <- read.csv(file.path(server_path, "WRTDS Inputs", "WRTDS-input_information.csv"))
 
-# Add "bad" rivers to this vector as they are discovered
+# Drop problem rivers from the loop
 bad_rivers <- c(
-  # "Error in EGRET::runPairs" ... "year1 is outside the Sample range"
-  "AND_GSWS02_Q", "AND_GSWS06_Q", "AND_GSWS07_Q", "AND_GSWS08_Q",
-  "AND_GSWS09_Q", "AND_GSWS10_Q",
-  # "Error in EGRET::runPairs" ... "year2 is outside the Sample range"
-  "HBR_ws1_Q", "HBR_ws2_Q", "HBR_ws3_Q", "HBR_ws4_Q", "HBR_ws5_Q",
-  "HBR_ws6_Q", "HBR_ws7_Q", "HBR_ws8_Q", "HBR_ws9_Q",
-  # File too large (I think?) so R dies trying to do the loop
-  "ARC_Imnavait_fill_Q",
-  # Unknown issue crashes R (need to diagnose step-by-step)
-  "KRR_S65_Q", "KRR_S65B_Q", "KRR_S65C_Q", "KRR_S65D_Q", "KRR_S65E_Q", "KRR_S65A_Q")
+  # "Error in runSurvReg(SampleCrossV$DecYear[i], SampleCrossV$LogQ[i], DecLow,  : 
+  # minNumUncen is greater than total number of samples"
+  "NIVA__AAGEVEG"
+  
+)
 
-# River after "KNZ_n04d_Q" is maybe blowing up because of too many rows
-for(river in setdiff(x = unique(discharge$Discharge_Stream), y = bad_rivers)){
+# Loop across rivers and elements to run WRTDS workflow!
+for(river in setdiff(x = unique(discharge$Stream_ID), y = bad_rivers)){
 # (^^^) Actual loop (uncomment when you are ready)
 # (vvv) Test loop for a single site
-# for(river in "AND_GSWSMC_Q"){
+# for(river in "AND__GSWS06"){
   
   # Subset discharge to correct river
   river_disc <- discharge %>%
-    dplyr::filter(Discharge_Stream == river) %>%
+    dplyr::filter(Stream_ID == river) %>%
     dplyr::select(Date, Q)
   
   # Subset chemistry to the right river (but still all chemicals)
   chem_partial <- chemistry %>%
-    dplyr::filter(Discharge_Stream == river)
+    dplyr::filter(Stream_ID == river)
   
   # Again, including "actual" and "test" loop heads  
-  for(element in unique(chem_partial$variable_simp)){
+  for(element in unique(chem_partial$variable)){
   # for(element in "DSi"){
     
-    if(file.exists(file.path(server_path, "WRTDS Loop Diagnostic", paste0(river, "_", element, "_", "Loop_Diagnostic.csv"))) == TRUE) {
+    # Create a common prefix for all outputs from this run of the loop
+    out_prefix <- paste0(river, "_", element, "_") 
+    
+    # If the file exists
+    if(file.exists(file.path(server_path, "WRTDS Loop Diagnostic", paste0(out_prefix, "Loop_Diagnostic.csv"))) == TRUE) {
       message("Processing complete for ", river, ", element ", element)
     } else {
     
@@ -408,19 +407,23 @@ for(river in setdiff(x = unique(discharge$Discharge_Stream), y = bad_rivers)){
     
     # Subset chemistry to right river *and* right element
     river_chem <- chem_partial %>%
-      dplyr::filter(variable_simp == element) %>%
+      dplyr::filter(variable == element) %>%
       dplyr::select(Date, remarks, value_mgL)
     
-    # Information also subseted to right river + element
+    # Information also subsetted to right river
     river_info <- information %>%
-      dplyr::filter(Discharge_Stream == river & param.nm == element) %>%
-      dplyr::select(param.units, shortName, paramShortName, constitAbbrev,
-                    drainSqKm, station.nm, param.nm, staAbbrev)
-    
-    # # If the river isn't in the chemistry data, skip the rest!
-    if(nrow(river_info) == 0){
-      message("Missing information file for ", river, " / element ", element, "!")
-    } else {
+      dplyr::filter(Stream_ID == river) %>%
+      # Generate correct information for this element
+      dplyr::mutate(constitAbbrev = element) %>%
+      dplyr::mutate(paramShortName = dplyr::case_when(
+        constitAbbrev == "DSi" ~ "Silicon",
+        constitAbbrev == "NOx" ~ "Nitrate",
+        constitAbbrev == "P" ~ "Phosphorous",
+        constitAbbrev == "NH4" ~ "Ammonium")) %>%
+      # Create another needed column
+      dplyr::mutate(staAbbrev = shortName) %>%
+      # Drop stream ID now that subsetting is complete
+      dplyr::select(-Stream_ID)
     
 # Save these as CSVs with generic names
 ## This means each iteration of the loop will overwrite them so this folder won't become gigantic
@@ -433,11 +436,8 @@ write.csv(x = river_info, row.names = F, na = "",
 
 # Then read them back in with EGRET's special acquisition functions
 egret_disc <- EGRET::readUserDaily(filePath = file.path(server_path, "WRTDS Temporary Files"), fileName = "discharge.csv", qUnit = 2, verbose = F)
-egret_chem_v1 <- EGRET::readUserSample(filePath = file.path(server_path, "WRTDS Temporary Files"), fileName = "chemistry.csv", verbose = F)
+egret_chem <- EGRET::readUserSample(filePath = file.path(server_path, "WRTDS Temporary Files"), fileName = "chemistry.csv", verbose = F)
 egret_info <- EGRET::readUserInfo(filePath = file.path(server_path, "WRTDS Temporary Files"), fileName = "information.csv", interactive = F)
-
-# Remove any duplicates from chemistry file
-egret_chem <- EGRET::removeDuplicates(Sample = egret_chem_v1)
 
 # Create a list of the discharge, chemistry, and information files
 egret_list <- EGRET::mergeReport(INFO = egret_info, Daily = egret_disc, Sample = egret_chem, verbose = F)
@@ -448,9 +448,6 @@ egret_estimation <- EGRET::modelEstimation(eList = egret_list, minNumObs = 50, v
 
 # Fit "GFN" (?) model
 egret_list_out <- EGRET::runSeries(eList = egret_list, windowSide = 11, minNumObs = 50, verbose = F)
-
-# Create a common prefix for all outputs from this run of the loop
-out_prefix <- paste0(river, "_", element, "_") 
 
 # Identify error statistics
 egret_error <- EGRET::errorStats(eList = egret_estimation)
@@ -535,36 +532,6 @@ egret_trends <- egret_conc_trend %>%
 # Export it!
 write.csv(x = egret_trends, file.path(server_path, "WRTDS Outputs", paste0(out_prefix, "TrendsTable_GFN_WRTDS.csv")), row.names = F, na = "")
 
-# Run trend estimate for GFN method between start/end years
-egret_pairs <- EGRET::runPairs(eList = egret_list_out, windowSide = 11, minNumObs = 50,
-                               # year1 = min_year,
-                               year1 = min(egret_list_out$Sample$waterYear, na.rm = T),
-                               # year2 = max_year)
-                               year2 = max(egret_list_out$Sample$waterYear, na.rm = T))
-
-# Export those values as well
-write.csv(x = egret_pairs, file.path(server_path, "WRTDS Outputs", paste0(out_prefix, "ListPairs_GFN_WRTDS.csv")), row.names = F, na = "")
-
-# Estimate trend uncertainty
-egret_boot <- EGRETci::runPairsBoot(eList = egret_list_out, pairResults = egret_pairs, nBoot = 100, blockLength = 200)
-
-# Strip out key results
-egret_boot_results <- data.frame(
-  Solute = rep(element, times = length(egret_boot$xConc)),
-  xConc = egret_boot$xConc,
-  xFlux = egret_boot$xFlux,
-  pConc = egret_boot$pConc,
-  pFlux = egret_boot$pFlux)
-
-# Export the results
-write.csv(x = egret_boot_results, file.path(server_path, "WRTDS Outputs", paste0(out_prefix, "EGRETCi_GFN_bootstraps.csv")), row.names = F, na = "")
-
-# Also grab the summary information
-egret_boot_summary <- as.data.frame(egret_boot$bootOut)
-
-# And export it as well
-write.csv(x = egret_boot_summary, file.path(server_path, "WRTDS Outputs", paste0(out_prefix, "EGRETCi_GFN_Trend.csv")), row.names = F, na = "")
-
 # Grab the end processing time
 end <- Sys.time()
 
@@ -576,8 +543,9 @@ loop_diagnostic <- data.frame("stream" = river,
 
 # Export this as well
 write.csv(x = loop_diagnostic, file.path(server_path, "WRTDS Loop Diagnostic", paste0(out_prefix, "Loop_Diagnostic.csv")), row.names = F, na = "")
-    
-} # Close `else` part of whether information file includes the selected river/element
+
+# Message completion of loop
+message("Processing complete for ", element, " at stream '", river, "'")
     
     } # Close `else` part of whether file exists
     
