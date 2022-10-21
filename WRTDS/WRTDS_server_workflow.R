@@ -56,7 +56,7 @@ chem_main <- read.csv(file = file.path(server_path, "WRTDS Source Files", names[
 mdl_info <- read.csv(file = file.path(server_path, "WRTDS Source Files", names[4]))
 
 # Clean up the environment before continuing
-rm(list = setdiff(ls(), c("ref_table", "disc_main", "chem_main", "mdl_info")))
+rm(list = setdiff(ls(), c("server_path", "ref_table", "disc_main", "chem_main", "mdl_info")))
 ## Above line removes anything *other* than objects specified
 
 # Load in the custom function for converting calendar dates to hydro dates
@@ -76,16 +76,16 @@ hydro.day.new = function(x, start.month = 10L){
 
 # Wrangle the discharge data objects to standardize naming somewhat
 disc_v2 <- disc_main %>%
-  # Drop row number column
-  dplyr::select(-X) %>%
   # Rename site column as it appears in the discharge log file
-  dplyr::rename(Discharge_Stream = DischargeFileName) %>%
+  dplyr::rename(Discharge_File_Name = DischargeFileName) %>%
   # Convert date to true date format
   dplyr::mutate(Date = as.Date(Date, "%Y-%m-%d")) %>%
-  # Reorder columns
-  dplyr::select(Discharge_Stream, Date, Qcms)
-  
-# Check that out
+  # Average through duplicate LTER-stream-date combinations to get rid of them
+  dplyr::group_by(LTER, Discharge_File_Name, Date) %>%
+  dplyr::summarize(Qcms = mean(Qcms, na.rm = T)) %>%
+  dplyr::ungroup()
+
+# Take a look
 dplyr::glimpse(disc_v2)
 
 # Clean up the chemistry data
@@ -102,30 +102,44 @@ chem_v2 <- chem_main %>%
     variable_simp == "DSi" ~ (((value / 10^6) * 28.0855) * 1000),
     variable_simp == "NOx" ~ (((value / 10^6) * 14.0067) * 1000),
     variable_simp == "NH4" ~ (((value / 10^6) * 14.0067) * 1000))) %>%
+  # Drop units, site, value, and variable columns because they're outdated now
+  dplyr::select(-units, -site, -variable, -value) %>%
   # Rename some columns
-  dplyr::rename(Stream = Site.Stream.Name, Date = Sampling.Date) %>%
+  dplyr::rename(Stream_Name = Site.Stream.Name,
+                Date = Sampling.Date,
+                variable = variable_simp) %>%
   # Convert date to true date format
-  dplyr::mutate(Date = as.Date(Date, "%Y-%m-%d"))
-
+  dplyr::mutate(Date = as.Date(Date, "%Y-%m-%d")) %>%
+  # Average through duplicate LTER-stream-date-variable combinations to get rid of them
+  dplyr::group_by(LTER, Stream_Name, variable, Date) %>%
+  dplyr::summarize(value_mgL = mean(value_mgL, na.rm = T),
+                   obs_count = dplyr::n()) %>%
+  dplyr::ungroup()
+  
 # Examine that as well
 dplyr::glimpse(chem_v2)
 
-# Wrangle the discharge log information as well
-ref_table <- disc_log %>%
-  # Rename file name columns
-  dplyr::rename(Discharge_Stream = DischargeFileName) %>%
-  # Crop down to only needed columns
-  dplyr::select(Discharge_Stream, Stream)
 
-# Check it
-dplyr::glimpse(ref_table)
+
+
+
+
+# Wrangle the discharge log information as well
+# ref_table <- disc_log %>%
+#   # Rename file name columns
+#   dplyr::rename(Discharge_Stream = DischargeFileName) %>%
+#   # Crop down to only needed columns
+#   dplyr::select(Discharge_Stream, Stream)
+# 
+# # Check it
+# dplyr::glimpse(ref_table)
 
 # Wrangle minimum detection limit file too
 mdl_v2 <- mdl_info %>%
   # Drop unneeded columns
   dplyr::select(site, dplyr::ends_with("_MDL"), -NH4_uM_MDL) %>%
   # Rename the stream column and remaining NH4 column
-  dplyr::rename(Stream = site, NH4_MDL = NH4_mgL_MDL) %>%
+  dplyr::rename(Stream_Name = site, NH4_MDL = NH4_mgL_MDL) %>%
   # Pivot longer
   tidyr::pivot_longer(cols = dplyr::ends_with("MDL"),
                       names_to = "variable",
@@ -139,58 +153,12 @@ mdl_v2 <- mdl_info %>%
     variable == "NH4_MDL" ~ "NH4",
     TRUE ~ variable), .after = variable) %>%
   # And drop the old one
-  dplyr::select(-variable)
+  dplyr::select(-variable) %>%
+  # Rename remaining column
+  dplyr::rename(variable = variable_simp)
 
 # Check it
 dplyr::glimpse(mdl_v2)
-
-# Wrangle the information dataframe as well
-info_v2_p <- info_v1 %>%
-  # Make a new column to match with ref_table later
-  dplyr::mutate(Stream = station.nm) %>%
-  # Pivot longer to build in other compounds
-  tidyr::pivot_longer(cols = c(paramShortName, constitAbbrev, param.nm), names_to = "param_col", values_to = "values")
-
-# Cumbersome, but duplicate this dataframe for each chemical
-## Silica
-info_v2_si <- info_v2_p %>%
-  dplyr::mutate(values = dplyr::case_when(
-    values == "Phosphate" ~ "Silicon",
-    values == "PO4" ~ "DSi")) %>%
-  # Once fixed, pivot back to wide format
-  tidyr::pivot_wider(names_from = param_col,
-                     values_from = values)
-## Ammonium
-info_v2_nh4 <- info_v2_p %>%
-  dplyr::mutate(values = dplyr::case_when(
-    values == "Phosphate" ~ "Ammonium",
-    values == "PO4" ~ "NH4")) %>%
-  tidyr::pivot_wider(names_from = param_col,
-                     values_from = values)
-## Nitrate
-info_v2_nox <- info_v2_p %>%
-  dplyr::mutate(values = dplyr::case_when(
-    values == "Phosphate" ~ "Nitrate",
-    values == "PO4" ~ "NOx")) %>%
-  tidyr::pivot_wider(names_from = param_col,
-                     values_from = values)
-## Pivot phosphorous wider too
-info_v2_p_v2 <- info_v2_p %>%
-  tidyr::pivot_wider(names_from = param_col,
-                     values_from = values)
-
-# Bind all four chemicals together
-info_v2 <- info_v2_p_v2 %>%
-  dplyr::bind_rows(info_v2_si) %>%
-  dplyr::bind_rows(info_v2_nh4) %>%
-  dplyr::bind_rows(info_v2_nox) %>%
-  # And reorder columns to original order
-  dplyr::select(Stream, param.units, shortName, paramShortName, constitAbbrev, drainSqKm, station.nm, param.nm, staAbbrev) %>%
-  # Simplify the phosphate entry
-  dplyr::mutate(param.nm = ifelse(param.nm == "PO4", yes = "P", no = param.nm))
-
-# Look at it
-dplyr::glimpse(info_v2)
 
 ## ---------------------------------------------- ##
     # Prep - Wrangle Response Dataframes ----
