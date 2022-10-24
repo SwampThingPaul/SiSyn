@@ -387,10 +387,14 @@ bad_rivers <- c(
   # Warning in ` EGRET::modelEstimation`
   ### "Problems converging"
   # Eventual downstream error message:
-  ### Error in if (lastMonth == 2 & (lastYear%%4 == 0) & ((lastYear%%100 !=  : 
-  ### missing value where TRUE/FALSE needed
-  "LUQ__RI_DSi", "LUQ__RI_NH4", "LUQ__RI_NOx", "LUQ__RI_P"
+  ### "Error in if (lastMonth == 2 & (lastYear%%4 == 0) & ((lastYear%%100 !=  : 
+  ### missing value where TRUE/FALSE needed"
+  "LUQ__RI_DSi", "LUQ__RI_NH4", "LUQ__RI_NOx", "LUQ__RI_P",
+  # Warning about "duplicated Daily dates" and "duplicated Sample dates"
+  ### "Error in seq.Date(surfaceStart, by = "1 year", length.out = nSeg) : 
+  ###'from' must be of length 1""
   
+  "USGS__Wild River_DSi"
 )
 
 # Loop across rivers and elements to run WRTDS workflow!
