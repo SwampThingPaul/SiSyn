@@ -375,7 +375,16 @@ bad_rivers <- c(
   # Error in `EGRET::modelEstimation`
   ### "Error in runSurvReg(SampleCrossV$DecYear[i], SampleCrossV$LogQ[i], DecLow,  : 
   ### minNumUncen is greater than total number of samples"
-  "AND__GSWS06_NOx", "AND__GSWS07_NOx"
+  "AND__GSWS06_NOx", "AND__GSWS07_NOx", "HBR__ws1_P", "HBR__ws2_P", "HBR__ws3_P",
+  "HBR__ws4_P", "HBR__ws5_P", "HBR__ws6_P", "HBR__ws7_P", "HBR__ws8_P", "HBR__ws9_P",
+  # Warning in `EGRET::mergeReport`
+  ### "Some Sample dates do not have corresponding flow data. Not all EGRET functions will work correctly."
+  # Warning in ` EGRET::modelEstimation`
+  ### "Problems converging"
+  # Eventual downstream error message:
+  ### Error in if (lastMonth == 2 & (lastYear%%4 == 0) & ((lastYear%%100 !=  : 
+  ### missing value where TRUE/FALSE needed
+  "LUQ__RI_DSi", "LUQ__RI_NH4", "LUQ__RI_NOx", "LUQ__RI_P"
   
 )
 
@@ -415,9 +424,12 @@ for(river in setdiff(x = unique(chemistry$Stream_Element_ID), y = bad_rivers)){
   
   # If the file exists
   if(file.exists(file.path(server_path, "WRTDS Loop Diagnostic", paste0(out_prefix, "Loop_Diagnostic.csv"))) == TRUE) {
-    message("WRTDS already run for ", element, " at river '", river, "'")
+    message("WRTDS already run for ", element, " at stream '", river, "'")
   } else {
-    
+  
+  # Message completion of loop
+  message("Processing begun for ", element, " at stream '", river, "'")
+  
   # Grab start time for processing
   start <- Sys.time()
   
