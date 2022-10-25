@@ -9,15 +9,113 @@
 ## ---------------------------------------------- ##
 # Load libraries
 # install.packages("librarian")
-librarian::shelf(tidyverse, googledrive, lubridate, EGRET, EGRETci, njlyon0/helpR, NCEAS/scicomptools)
+librarian::shelf(tidyverse, googledrive, NCEAS/scicomptools)
 
 # Clear environment
 rm(list = ls())
 
 # If working on server, need to specify correct path
-(path <- scicomptools::wd_loc(local = TRUE, remote_path = file.path('/', "home", "shares", "lter-si", "WRTDS")))
+(path <- scicomptools::wd_loc(local = FALSE, remote_path = file.path('/', "home", "shares", "lter-si", "WRTDS")))
 
+# Create a new folder for saving temporary results
+dir.create(path = file.path(path, "WRTDS Results"), showWarnings = F)
 
+# Define the GoogleDrive URL to upload to as an object
+dest_url <- googledrive::as_id("https://drive.google.com/drive/folders/1842KSgp48k_DwvNeYbmz-_b4PSH-vrxg")
+
+# Check the contents of the folder we'll export the results reports to
+googledrive::drive_ls(path = dest_url)
+## This is only necessary to ensure that you've authorized the `googledrive` package
+## Better to find out now than blow up in the loop
+
+# List all files in "WRTDS Outputs"
+wrtds_outs_v0 <- dir(path = file.path(path, "WRTDS Outputs"))
+
+## ---------------------------------------------- ##
+          # Identify WRTDS Outputs ----
+## ---------------------------------------------- ##
+
+# Do some useful processing of that object
+wrtds_outs <- data.frame("file_name" = wrtds_outs_v0) %>%
+  # Split LTER off the file name
+  tidyr::separate(col = file_name, into = c("LTER", "other_content"),
+                  sep = "__", remove = FALSE, fill = "right", extra = "merge") %>%
+  # Separate the remaining content further
+  tidyr::separate(col = other_content, into = c("stream", "chemical", "data_type"),
+                  sep = "_", remove = TRUE, fill = "right", extra = "merge") %>%
+  # Recreate the "Stream_Element_ID" column
+  dplyr::mutate(Stream_Element_ID = paste0(LTER, "__", stream, "_", chemical)) %>%
+  # Remove the PDFs of exploratory graphs
+  dplyr::filter(data_type != "WRTDS_GFN_output.pdf")
+
+# Glimpse it
+dplyr::glimpse(wrtds_outs)
+
+# Create an empty list
+out_list <- list()
+
+# Define the types of output file suffixes that are allowed
+(out_types <- unique(wrtds_outs$data_type))
+
+# For each data type...
+for(type in out_types){
+
+  # Return processing message
+  message("Processing ", type, " outputs.")
+  
+  # Identify all files of that type
+  file_set <- wrtds_outs %>%
+    dplyr::filter(data_type == type) %>%
+    dplyr::pull(var = file_name)
+  
+  # Make a counter set to 1
+  k <- 1
+  
+  # Make an empty list
+  sub_list <- list()
+  
+  # Read them all in!
+  for(file in file_set){
+   
+    # Read in CSV and add it to the list
+    datum <- read.csv(file = file.path(path, "WRTDS Outputs", file))
+    
+    # Add it to the list
+    sub_list[[paste0(type, "_", k)]] <- datum %>%
+      # Add a column for the name of the file
+      dplyr::mutate(file_name = file, .before = dplyr::everything())
+    
+    # Advance counter
+    k <- k + 1
+  }
+  
+  # Once all files of that type are retrieved, unlist the sub_list!
+  type_df <- sub_list %>%
+    # Actual unlisting of the list
+    purrr::map_dfr(.f = dplyr::select, dplyr::everything()) %>%
+    # Bring in other desired columns
+    dplyr::left_join(y = wrtds_outs, by = "file_name") %>%
+    # Drop the redundant data_type column
+    dplyr::select(-data_type) %>%
+    # Relocate other joined columns to front
+    dplyr::relocate(Stream_Element_ID, LTER, stream, chemical,
+                    .after = file_name)
+  
+  # Define name for this file
+  report_file <- file.path(path, "WRTDS Results", paste0("Full_Results_", type))
+  
+  # Write this CSV out
+  write.csv(x = type_df, na = "", row.names = F, file = report_file)
+  
+  # Upload that object to GoogleDrive
+  googledrive::drive_upload(media = report_file, overwrite = T, path = dest_url)
+  
+  # Completion message
+  message("Completed processing ", type, " outputs.")
+}
+
+# Check the structure of the last dataframe
+dplyr::glimpse(type_df)
 
 
 # Identify all files in "WRTDS Outputs" folder
@@ -25,11 +123,6 @@ rm(list = ls())
 # Unlist them into a dataframe
 # Export that dataframe to GoogleDrive here:
 #### https://drive.google.com/drive/folders/1842KSgp48k_DwvNeYbmz-_b4PSH-vrxg
-
-
-
-
-# Split prep and the for loop into separate scripts!
 
 
 
