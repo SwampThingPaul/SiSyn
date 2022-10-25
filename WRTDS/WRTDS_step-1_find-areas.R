@@ -12,8 +12,7 @@
 ## ---------------------------------------------- ##
 # Read needed libraries
 # install.packages("librarian")
-librarian::shelf(tidyverse, googledrive, readxl, sf,
-                 terra, nngeo, NCEAS/scicomptools)
+librarian::shelf(tidyverse, googledrive, sf, terra, nngeo, NCEAS/scicomptools)
 
 # Clear environment
 rm(list = ls())
