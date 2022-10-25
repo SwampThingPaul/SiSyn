@@ -352,4 +352,96 @@ write.csv(x = information, row.names = F, na = "",
           file = file.path(path, "WRTDS Inputs",
                            "WRTDS-input_information.csv"))
 
+## ---------------------------------------------- ##
+     # Check - Compare Sites Raw vs. Tidy ----
+## ---------------------------------------------- ##
+
+# We want to be super sure we didn't (somehow) drop any sites in the wrangling steps above.
+# Data versions are as follows:
+## [disc/chem]_main = "Raw" data (i.e., initial master files)
+## [disc/chem]_v2 = Coarse wrangling and averaging within date-stream- combos
+## [disc/chem]_v3 = Integration with lookup table to get other data's naming convention
+## [disc/chem]_v4 = Cropping by date
+
+# Make a streams only version of each of the discharge objects
+d1 <- disc_main %>%
+  dplyr::select(Discharge_File_Name = DischargeFileName) %>%
+  unique() %>%
+  dplyr::mutate(in_d1 = 1)
+d2 <- disc_v2 %>%
+  dplyr::select(Discharge_File_Name) %>%
+  unique() %>%
+  dplyr::mutate(in_d2 = 1)
+d3 <- disc_v3 %>%
+  dplyr::select(LTER, Discharge_File_Name, Stream_Name) %>%
+  unique() %>%
+  dplyr::mutate(in_d3 = 1)
+d4 <- disc_v4 %>%
+  dplyr::select(Stream_ID, LTER, Discharge_File_Name, Stream_Name) %>%
+  unique() %>%
+  dplyr::mutate(in_d4 = 1)
+d5 <- discharge %>%
+  dplyr::select(Stream_ID) %>%
+  unique() %>%
+  dplyr::mutate(in_d5 = 1)
+
+# Make one for chemistry as well
+c1 <- chem_main %>%
+  dplyr::select(Stream_Name = site) %>%
+  unique() %>%
+  dplyr::mutate(in_c1 = 1)
+c2 <- chem_v2 %>%
+  dplyr::select(Stream_Name) %>%
+  unique() %>%
+  dplyr::mutate(in_c2 = 1)
+c3 <- chem_v3 %>%
+  dplyr::select(LTER, Discharge_File_Name, Stream_Name) %>%
+  unique() %>%
+  dplyr::mutate(in_c3 = 1)
+c4 <- chem_v4 %>%
+  dplyr::select(Stream_ID, LTER, Discharge_File_Name, Stream_Name) %>%
+  unique() %>%
+  dplyr::mutate(in_c4 = 1)
+c5 <- chemistry %>%
+  dplyr::select(Stream_ID) %>%
+  unique() %>%
+  dplyr::mutate(in_c5 = 1)
+
+# Prep a 'name_check' object by streamlining the ref table
+name_check_v0 <- ref_table %>%
+  # Pare down to needed columns only
+  dplyr::select(LTER, Discharge_File_Name, Stream_Name) %>%
+  # Create a "Stream_ID"
+  dplyr::mutate(Stream_ID = paste0(LTER, "__", Stream_Name),
+                .before = dplyr::everything()) %>%
+  # Bind in version 1 data
+  dplyr::full_join(y = d1, by = "Discharge_File_Name") %>%
+  dplyr::full_join(y = c1, by = "Stream_Name") %>%
+  # Bind in version 2 data
+  dplyr::full_join(y = d2, by = "Discharge_File_Name") %>%
+  dplyr::full_join(y = c2, by = "Stream_Name") %>%
+  # Bind in version 3 data
+  dplyr::full_join(y = d3, by = c("LTER", "Discharge_File_Name", "Stream_Name")) %>%
+  dplyr::full_join(y = c3, by = c("LTER", "Discharge_File_Name", "Stream_Name")) %>%
+  # Version 4
+  dplyr::full_join(y = d4, by = c("Stream_ID", "LTER", "Discharge_File_Name", "Stream_Name")) %>%
+  dplyr::full_join(y = c4, by = c("Stream_ID", "LTER", "Discharge_File_Name", "Stream_Name")) %>%
+  # Version 5
+  dplyr::full_join(y = d5, by = "Stream_ID") %>%
+  dplyr::full_join(y = c5, by = "Stream_ID")
+
+# Drop any rows without NAs (i.e., those in the data at all stages)
+name_check <- name_check_v0[ !complete.cases(name_check_v0), ] %>%
+  # Get rowSums to figure out how many versions of data include a given stream
+  dplyr::mutate(incl_data_count = rowSums(dplyr::across(dplyr::starts_with("in_")), na.rm = T)) %>%
+  # Order by that column
+  dplyr::arrange(desc(incl_data_count))
+
+# Take a look!
+glimpse(name_check)
+
+# Export this!
+write.csv(x = name_check, na = "", row.names = F,
+          file.path(path, "WRTDS Source Files", "WRTDS_ref_table_check.csv"))
+
 # End ----
