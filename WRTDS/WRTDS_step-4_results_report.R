@@ -9,15 +9,13 @@
 ## ---------------------------------------------- ##
 # Load libraries
 # install.packages("librarian")
-librarian::shelf(tidyverse, googledrive, lubridate, EGRET, EGRETci, njlyon0/helpR)
+librarian::shelf(tidyverse, googledrive, lubridate, EGRET, EGRETci, njlyon0/helpR, NCEAS/scicomptools)
 
 # Clear environment
 rm(list = ls())
 
 # If working on server, need to specify correct path
-server_path <- file.path('/', "home", "shares", "lter-si", "WRTDS")
-
-
+(path <- scicomptools::wd_loc(local = TRUE, remote_path = file.path('/', "home", "shares", "lter-si", "WRTDS")))
 
 ### Generates summary data files for WRTDS model run
 # For trend, annual, monthly, and daily results this code:
