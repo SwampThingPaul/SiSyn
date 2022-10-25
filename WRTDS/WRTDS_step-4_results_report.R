@@ -17,6 +17,23 @@ rm(list = ls())
 # If working on server, need to specify correct path
 (path <- scicomptools::wd_loc(local = TRUE, remote_path = file.path('/', "home", "shares", "lter-si", "WRTDS")))
 
+
+
+
+# Identify all files in "WRTDS Outputs" folder
+# Read in all of the CSVs of each type
+# Unlist them into a dataframe
+# Export that dataframe to GoogleDrive here:
+#### https://drive.google.com/drive/folders/1842KSgp48k_DwvNeYbmz-_b4PSH-vrxg
+
+
+
+
+# Split prep and the for loop into separate scripts!
+
+
+
+
 ### Generates summary data files for WRTDS model run
 # For trend, annual, monthly, and daily results this code:
 # Reads in csv files for each site, 
