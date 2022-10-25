@@ -15,7 +15,7 @@ librarian::shelf(tidyverse, googledrive, lubridate, EGRET, EGRETci, njlyon0/help
 rm(list = ls())
 
 # Need to specify correct path for local versus server work
-(path <- scicomptools::wd_loc(local = TRUE, remote_path = file.path('/', "home", "shares", "lter-si", "WRTDS")))
+(path <- scicomptools::wd_loc(local = FALSE, remote_path = file.path('/', "home", "shares", "lter-si", "WRTDS")))
 
 # Create a folder for (1) source files, (2) direct inputs, (3) site-specific files, and (4) outputs
 dir.create(path = file.path(path, "WRTDS Source Files"), showWarnings = F)
@@ -129,6 +129,10 @@ disc_v2 <- disc_main %>%
 # Take a look
 dplyr::glimpse(disc_v2)
 
+# Check for lost/gained streams
+helpR::diff_chk(old = unique(disc_main$DischargeFileName),
+                new = unique(disc_v2$Discharge_File_Name))
+
 # Clean up the chemistry data
 chem_v2 <- chem_main %>%
   # Simplify phosphorous for later
@@ -172,6 +176,10 @@ chem_v2 <- chem_main %>%
 # Examine that as well
 dplyr::glimpse(chem_v2)
 
+# Check for lost/gained streams
+helpR::diff_chk(old = unique(chem_main$site),
+                new = unique(chem_v2$Stream_Name))
+
 ## ---------------------------------------------- ##
            # Match Stream "Aliases" ----
 ## ---------------------------------------------- ##
@@ -189,6 +197,10 @@ disc_v3 <- disc_v2 %>%
 # Glimpse it
 dplyr::glimpse(disc_v3)
 
+# Check for gained/lost streams
+helpR::diff_chk(old = unique(disc_v2$Discharge_File_Name),
+                new = unique(disc_v3$Discharge_File_Name))
+
 # Wrangle the chemistry data
 chem_v3 <- chem_v2 %>%
   # Standardize some LTER names to match the lookup table
@@ -204,6 +216,10 @@ chem_v3 <- chem_v2 %>%
 
 # Take a quick look
 glimpse(chem_v3)
+
+# Check for gained/lost streams
+helpR::diff_chk(old = unique(chem_v2$Stream_Name),
+                new = unique(chem_v3$Stream_Name))
 
 ## ---------------------------------------------- ##
           # Crop Time Series for WRTDS ----
@@ -264,6 +280,10 @@ disc_v4 <- disc_v3 %>%
 # Take another look
 dplyr::glimpse(disc_v4)
 
+# Check for gained/lost streams
+helpR::diff_chk(old = unique(disc_v3$Discharge_File_Name),
+                new = unique(disc_v4$Discharge_File_Name))
+
 # Check for unintentionally lost columns
 helpR::diff_chk(old = names(disc_v3), new = names(disc_v4))
 ## Change to discharge column name is fine
@@ -284,6 +304,11 @@ chem_v4 <- chem_v3 %>%
   
 # Glimpse it
 dplyr::glimpse(chem_v4)
+
+# Check for gained/lost streams
+helpR::diff_chk(old = unique(chem_v3$Stream_Name),
+                new = unique(chem_v4$Stream_Name))
+## Any streams lost here are lost because somehow *all* chemistry dates are outside of the allowed range defined by the min and max dates found in the discharge data.
 
 # Check for unintentionally lost columns
 helpR::diff_chk(old = names(chem_v3), new = names(chem_v4))
@@ -322,6 +347,10 @@ discharge <- disc_v4 %>%
 # Final glimpse
 dplyr::glimpse(discharge)
 
+# Check for gained/lost streams
+helpR::diff_chk(old = unique(disc_v4$Stream_ID),
+                new = unique(discharge$Stream_ID))
+
 # Do the same for chemistry
 chemistry <- chem_v4 %>%
   dplyr::filter(Stream_ID %in% incl_streams) %>%
@@ -333,6 +362,10 @@ chemistry <- chem_v4 %>%
 # Check it
 dplyr::glimpse(chemistry)
 
+# Check for gained/lost streams
+helpR::diff_chk(old = unique(chem_v4$Stream_ID),
+                new = unique(chemistry$Stream_ID))
+
 # And finally for information
 information <- info_v2 %>%
   dplyr::filter(Stream_ID %in% incl_streams) %>%
@@ -340,6 +373,10 @@ information <- info_v2 %>%
 
 # Final glimpse
 dplyr::glimpse(information)
+
+# Check for gained/lost streams
+helpR::diff_chk(old = unique(info_v2$Stream_ID),
+                new = unique(information$Stream_ID))
 
 # Write these final products out for posterity
 write.csv(x = discharge, row.names = F, na = "",
