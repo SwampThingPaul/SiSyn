@@ -22,6 +22,31 @@ discharge <- read.csv(file.path(path, "WRTDS Inputs", "WRTDS-input_discharge.csv
 chemistry <- read.csv(file.path(path, "WRTDS Inputs", "WRTDS-input_chemistry.csv"))
 information <- read.csv(file.path(path, "WRTDS Inputs", "WRTDS-input_information.csv"))
 
+
+
+# NOTE TO SELF
+# Need to create separate workflows for sites that need adjustments to `EGRET` pipeline
+
+# MARTINELLI: eList1 <- setPA(eList1, paStart=5, paLong=5)
+#             eListOut <- setPA(eListOut, paStart=5, paLong=5)
+
+# SADDLE STREAM 007: eList1 <- setPA(eList1, paStart=5, paLong=3)
+#                    eListOut <- setPA(eListOut, paStart=5, paLong=3)
+
+# McMurdo sites: eList1 <- setPA(eList1, paStart=12, paLong=2)
+#                eListOut <- setPA(eListOut, paStart=12, paLong=2)
+
+# Sagehen: eList1 <- blankTime(eList1, startBlank = "1996-01-01", endBlank = "2001-01-01")
+#          eListOut <- blankTime(eListOut, startBlank = "1996-01-01", endBlank = "2001-01-01")
+
+
+
+
+
+
+
+
+
 ## ---------------------------------------------- ##
            # WRTDS - Standard Workflow ----
 ## ---------------------------------------------- ##
