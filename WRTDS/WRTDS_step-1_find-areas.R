@@ -12,13 +12,14 @@
 ## ---------------------------------------------- ##
 # Read needed libraries
 # install.packages("librarian")
-librarian::shelf(tidyverse, googledrive, readxl, sf, terra, nngeo)
+librarian::shelf(tidyverse, googledrive, readxl, sf,
+                 terra, nngeo, NCEAS/scicomptools)
 
 # Clear environment
 rm(list = ls())
 
 # Identify path to location of shared data
-(path <- file.path('/', "home", "shares", "lter-si", "si-watershed-extract"))
+(path <- scicomptools::wd_loc(local = F, remote_path = file.path('/', "home", "shares", "lter-si", "si-watershed-extract")))
 
 # Site coordinate retrieval and preparation --------------------
 
