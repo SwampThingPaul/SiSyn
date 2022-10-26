@@ -9,7 +9,8 @@
 ## ---------------------------------------------- ##
 # Load libraries
 # install.packages("librarian")
-librarian::shelf(tidyverse, googledrive, lubridate, EGRET, EGRETci, njlyon0/helpR)
+librarian::shelf(tidyverse, googledrive, lubridate, EGRET, EGRETci,
+                 lter/HERON, njlyon0/helpR)
 
 # Clear environment
 rm(list = ls())
@@ -100,7 +101,7 @@ sage_blanks <- c(
   "Sagehen__Sagehen_NOx", "Sagehen__Sagehen_P")
 
 # Standard rivers!
-## I.e., all rivers without special diagnoses
+## I.e., all rivers not in one of the special diagnosis vectors
 standard_rivers <- setdiff(x = unique(chemistry$Stream_Element_ID),
                            y = unique(c(missing_data, few_data, duplicate_data,
                                         pa12_2, pa5_5, pa5_3, sage_blanks)))
@@ -108,18 +109,12 @@ standard_rivers <- setdiff(x = unique(chemistry$Stream_Element_ID),
 ## ---------------------------------------------- ##
            # WRTDS - Standard Workflow ----
 ## ---------------------------------------------- ##
-# Structure:
-## Big for loop that iterates across "Stream_Name" names
-## Within that loop, a smaller loop iterates across chemicals sampled there
-
-# Drop problem rivers from the loop
+# Set of problem rivers to drop from the loop
 bad_rivers <- c()
 
 # Loop across rivers and elements to run WRTDS workflow!
 for(river in setdiff(x = unique(standard_rivers), y = bad_rivers)){
-  # (^^^) Actual loop (uncomment when you are ready)
-  # (vvv) Test loop for a single site
-  # for(river in "AND__GSWS02_DSi"){
+# for(river in "AND__GSMACK_DSi"){
   
   # Identify corresponding Stream_ID
   stream_id <- chemistry %>%
@@ -204,27 +199,9 @@ for(river in setdiff(x = unique(standard_rivers), y = bad_rivers)){
     # Save the error stats out
     write.csv(x = egret_error, file = file.path(path, "WRTDS Outputs", paste0(out_prefix, "ErrorStats_WRTDS.csv")), row.names = F, na = "")
     
-    # Create PDF report
-    ## Start the PDF
-    pdf(file = file.path(path, "WRTDS Outputs", paste0(out_prefix, "WRTDS_GFN_output.pdf")))
-    
-    ## Residual plots
-    EGRET::fluxBiasMulti(eList = egret_estimation)
-    
-    ## Model Fit
-    EGRET::plotConcTimeDaily(eList = egret_list_out)
-    
-    ## Concentration
-    EGRET::plotConcHist(eList = egret_list_out) # minYP, maxYP)
-    
-    ## Flux
-    EGRET::plotFluxHist(eList = egret_list_out) #, minYP, maxYP)
-    
-    ## Data
-    EGRET::multiPlotDataOverview(eList = egret_list_out)
-    
-    ## Actually create PDF report
-    dev.off()
+    # Create PDF report of preliminary graphs
+    HERON::egret_report(eList_estim = egret_estimation, eList_series = egret_list_out,
+                        out_path = file.path(path, "WRTDS Outputs", paste0(out_prefix, "WRTDS_GFN_output.pdf")))
     
     # Create annual averages
     egret_annual <- EGRET::tableResults(eList = egret_list_out)
@@ -245,41 +222,11 @@ for(river in setdiff(x = unique(standard_rivers), y = bad_rivers)){
     # Export that as well
     write.csv(x = egret_concentration, file.path(path, "WRTDS Outputs", paste0(out_prefix, "GFN_WRTDS.csv")), row.names = F, na = "")
     
-    # Make a new column for year
-    egret_concentration$Year <- format(as.Date(egret_concentration$Date), "%Y")
-    
-    # Find min & max year
-    min_year <- as.numeric(min(egret_concentration$Year, na.rm = T)) + 1
-    max_year <- as.numeric(max(egret_concentration$Year, na.rm = T)) - 1
-    
-    # Set them as a vector
-    year_points <- c(min_year, max_year)
-    
-    # Calculate concentration trend
-    egret_conc_trend_v1 <- EGRET::tableChangeSingle(eList = egret_list_out, fluxUnit = 8, yearPoints = year_points, flux = FALSE)
-    ## Can't silence this function either
-    
-    # Calculate flux trend
-    egret_flux_trend <- EGRET::tableChangeSingle(eList = egret_list_out, fluxUnit = 8, yearPoints = year_points, flux = TRUE)
-    ## Can't silence this function either
-    
-    # Add a column to each of these indicating whether it's flux or conc.
-    egret_conc_trend_v1$Metric <- "Concentration"
-    egret_flux_trend$Metric <- "Flux"
-    
-    # Rename two columns in the concentration dataframe
-    egret_conc_trend <- egret_conc_trend_v1 %>%
-      dplyr::rename(`change[percent]` = `change[%]`,
-                    `slope [percent/yr]` = `slope [%/yr]`)
-    
-    # Bind these dataframes together
-    egret_trends <- egret_conc_trend %>%
-      dplyr::bind_rows(egret_flux_trend) %>%
-      # Move the metric column before everything else
-      dplyr::select(Metric, dplyr::everything())
+    # Get flow normalized trends (flux and concentration)
+    egret_flownorm <- HERON::egret_trends(eList_series = egret_list_out, flux_unit = 8)
     
     # Export it!
-    write.csv(x = egret_trends, file.path(path, "WRTDS Outputs", paste0(out_prefix, "TrendsTable_GFN_WRTDS.csv")), row.names = F, na = "")
+    write.csv(x = egret_flownorm, file.path(path, "WRTDS Outputs", paste0(out_prefix, "TrendsTable_GFN_WRTDS.csv")), row.names = F, na = "")
     
     # Grab the end processing time
     end <- Sys.time()
