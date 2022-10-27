@@ -196,8 +196,8 @@ for(river in setdiff(x = unique(good_rivers), y = bad_rivers)){
     # Set period of analysis differences for rivers that need it
     ## Period of analysis 12 - 2
     if(river %in% unique(pa12_2)){
-    egret_list <- EGRET::setPA(eList = egret_list, paStart = 12, paLong = 2)
-    egret_list_out <- EGRET::setPA(eList = egret_list_out, paStart = 12, paLong = 2) }
+      egret_list <- EGRET::setPA(eList = egret_list, paStart = 12, paLong = 2)
+      egret_list_out <- EGRET::setPA(eList = egret_list_out, paStart = 12, paLong = 2) }
     if(river %in% unique(pa5_5)){
       egret_list <- EGRET::setPA(eList = egret_list, paStart = 5, paLong = 5)
       egret_list_out <- EGRET::setPA(eList = egret_list_out, paStart = 5, paLong = 5) }
