@@ -51,6 +51,8 @@ few_data <- c(
   "AND__GSWS06_NOx", "AND__GSWS07_NOx", "HBR__ws1_P", "HBR__ws2_P", "HBR__ws3_P",
   "HBR__ws4_P", "HBR__ws5_P", "HBR__ws6_P", "HBR__ws7_P", "HBR__ws8_P", "HBR__ws9_P",
   "MCM__Canada Stream at F1_P", "MCM__Onyx River at Lake Vanda Weir_NH4",
+  "GRO__Lena_DSi", "GRO__Lena_NH4", "GRO__Lena_NOx", "GRO__Lena_P",
+  "GRO__Ob_DSi", "GRO__Ob_NH4", "GRO__Ob_NOx", "GRO__Ob_P",
   "MCM__Onyx River at Lake Vanda Weir_P", "MCM__Onyx River at Lower Wright Weir_P",
   "NIVA__AAGEVEG_DSi", "NIVA__FINEPAS_DSi", "NIVA__FINETAN_DSi", "NIVA__HOREVOS_DSi",
   "NIVA__MROEDRI_DSi", "NIVA__OSLEALN_DSi", "NIVA__ROGEBJE_DSi", "NIVA__ROGEVIK_DSi",
@@ -96,18 +98,11 @@ pa5_3 <- setdiff(x = c(
   "NWT__SADDLE STREAM 007_NOx", "NWT__SADDLE STREAM 007_P"),
   y = unique(few_data, missing_data))
 
-# Rivers with blank periods
-sage_blanks <- setdiff(x = c(
-  # EGRET::blankTime(eList = egret_list[_out], startBlank = "1996-01-01", endBlank = "2001-01-01")
-  "Sagehen__Sagehen_DSi", "Sagehen__Sagehen_NH4",
-  "Sagehen__Sagehen_NOx", "Sagehen__Sagehen_P"),
-  y = unique(few_data, missing_data))
-
 # Standard rivers!
 ## I.e., all rivers not in one of the special diagnosis vectors
 standard_rivers <- setdiff(x = unique(chemistry$Stream_Element_ID),
                            y = unique(c(missing_data, few_data, duplicate_data,
-                                        pa12_2, pa5_5, pa5_3, sage_blanks)))
+                                        pa12_2, pa5_5, pa5_3)))
 
 ## ---------------------------------------------- ##
       # WRTDS - Period of Analysis 12 - 2 ----
@@ -490,152 +485,6 @@ for(river in setdiff(x = unique(pa5_5), y = bad_rivers)){
     egret_list <- EGRET::setPA(eList = egret_list, paStart = 5, paLong = 5)
     egret_list_out <- EGRET::setPA(eList = egret_list_out, paStart = 5, paLong = 5)
     
-    # Identify error statistics
-    egret_error <- EGRET::errorStats(eList = egret_estimation)
-    
-    # Save the error stats out
-    write.csv(x = egret_error, file = file.path(path, "WRTDS Outputs", paste0(out_prefix, "ErrorStats_WRTDS.csv")), row.names = F, na = "")
-    
-    # Create PDF report of preliminary graphs
-    HERON::egret_report(eList_estim = egret_estimation, eList_series = egret_list_out,
-                        out_path = file.path(path, "WRTDS Outputs", paste0(out_prefix, "WRTDS_GFN_output.pdf")))
-    
-    # Create annual averages
-    egret_annual <- EGRET::tableResults(eList = egret_list_out)
-    ## Can't silence this function... >:(
-    
-    # Export that as a CSV also
-    write.csv(x = egret_annual, file.path(path, "WRTDS Outputs", paste0(out_prefix, "ResultsTable_GFN_WRTDS.csv")), row.names = F, na = "")
-    
-    # Identify monthly results
-    egret_monthly <- EGRET::calculateMonthlyResults(eList = egret_list_out)
-    
-    # Export that
-    write.csv(x = egret_monthly, file.path(path, "WRTDS Outputs", paste0(out_prefix, "Monthly_GFN_WRTDS.csv")), row.names = F, na = "")
-    
-    # Extract daily chemical value from run
-    egret_concentration <- egret_list_out$Daily
-    
-    # Export that as well
-    write.csv(x = egret_concentration, file.path(path, "WRTDS Outputs", paste0(out_prefix, "GFN_WRTDS.csv")), row.names = F, na = "")
-    
-    # Get flow normalized trends (flux and concentration)
-    egret_flownorm <- HERON::egret_trends(eList_series = egret_list_out, flux_unit = 8)
-    
-    # Export it!
-    write.csv(x = egret_flownorm, file.path(path, "WRTDS Outputs", paste0(out_prefix, "TrendsTable_GFN_WRTDS.csv")), row.names = F, na = "")
-    
-    # Grab the end processing time
-    end <- Sys.time()
-    
-    # Combine timing into a dataframe
-    loop_diagnostic <- data.frame("stream" = stream_id,
-                                  "chemical" = element,
-                                  "loop_start" = start,
-                                  "loop_end" = end)
-    
-    # Export this as well
-    write.csv(x = loop_diagnostic, file.path(path, "WRTDS Loop Diagnostic", paste0(out_prefix, "Loop_Diagnostic.csv")), row.names = F, na = "")
-    
-    # Message completion of loop
-    message("Processing complete for ", element, " at stream '", river, "'")
-    
-  } # Close `else` part of whether file exists
-  
-} # End loop
-
-## ---------------------------------------------- ##
-      # WRTDS - Blank Periods - Sagehen ----
-## ---------------------------------------------- ##
-# Set of problem rivers to drop from the loop
-bad_rivers <- c()
-
-# Loop across rivers and elements to run WRTDS workflow!
-for(river in setdiff(x = unique(sage_blanks), y = bad_rivers)){
-  # for(river in "AND__GSMACK_DSi"){
-  
-  # Identify corresponding Stream_ID
-  stream_id <- chemistry %>%
-    dplyr::filter(Stream_Element_ID == river) %>%
-    dplyr::select(Stream_ID) %>%
-    unique() %>%
-    as.character()
-  
-  # Also element
-  element <- chemistry %>%
-    dplyr::filter(Stream_Element_ID == river) %>%
-    dplyr::select(variable) %>%
-    unique() %>%
-    as.character()
-  
-  # Subset chemistry
-  river_chem <- chemistry %>%
-    dplyr::filter(Stream_Element_ID == river) %>%
-    # Drop unneeded columns
-    dplyr::select(-Stream_Element_ID, -Stream_ID, -variable)
-  
-  # Subset discharge to correct river
-  river_disc <- discharge %>%
-    dplyr::filter(Stream_ID == stream_id) %>%
-    dplyr::select(Date, Q)
-  
-  # Create a common prefix for all outputs from this run of the loop
-  out_prefix <- paste0(stream_id, "_", element, "_") 
-  
-  # If the file exists
-  if(file.exists(file.path(path, "WRTDS Loop Diagnostic", paste0(out_prefix, "Loop_Diagnostic.csv"))) == TRUE) {
-    message("WRTDS already run for ", element, " at stream '", river, "'")
-  } else {
-    
-    # Message completion of loop
-    message("Processing begun for ", element, " at stream '", river, "'")
-    
-    # Grab start time for processing
-    start <- Sys.time()
-    
-    # Information also subsetted to right river
-    river_info <- information %>%
-      dplyr::filter(Stream_ID == stream_id) %>%
-      # Generate correct information for this element
-      dplyr::mutate(constitAbbrev = element) %>%
-      dplyr::mutate(paramShortName = dplyr::case_when(
-        constitAbbrev == "DSi" ~ "Silicon",
-        constitAbbrev == "NOx" ~ "Nitrate",
-        constitAbbrev == "P" ~ "Phosphorous",
-        constitAbbrev == "NH4" ~ "Ammonium")) %>%
-      # Create another needed column
-      dplyr::mutate(staAbbrev = shortName) %>%
-      # Drop stream ID now that subsetting is complete
-      dplyr::select(-Stream_ID)
-    
-    # Save these as CSVs with generic names
-    ## This means each iteration of the loop will overwrite them so this folder won't become gigantic
-    write.csv(x = river_disc, row.names = F, na = "",
-              file = file.path(path, "WRTDS Temporary Files", "discharge.csv"))
-    write.csv(x = river_chem, row.names = F, na = "",
-              file = file.path(path, "WRTDS Temporary Files", "chemistry.csv"))
-    write.csv(x = river_info, row.names = F, na = "",
-              file = file.path(path, "WRTDS Temporary Files", "information.csv"))
-    
-    # Then read them back in with EGRET's special acquisition functions
-    egret_disc <- EGRET::readUserDaily(filePath = file.path(path, "WRTDS Temporary Files"), fileName = "discharge.csv", qUnit = 2, verbose = F)
-    egret_chem <- EGRET::readUserSample(filePath = file.path(path, "WRTDS Temporary Files"), fileName = "chemistry.csv", verbose = F)
-    egret_info <- EGRET::readUserInfo(filePath = file.path(path, "WRTDS Temporary Files"), fileName = "information.csv", interactive = F)
-    
-    # Create a list of the discharge, chemistry, and information files
-    egret_list <- EGRET::mergeReport(INFO = egret_info, Daily = egret_disc, Sample = egret_chem, verbose = F)
-    
-    # Fit original model
-    egret_estimation <- EGRET::modelEstimation(eList = egret_list, minNumObs = 50, verbose = F)
-    
-    # Fit "GFN" model
-    egret_list_out <- EGRET::runSeries(eList = egret_list, windowSide = 11, minNumObs = 50, verbose = F)
-    
-    # Set blank period for rivers in this loop
-    egret_list <- EGRET::blankTime(eList = egret_list,
-                                   startBlank = "1996-01-01", endBlank = "2001-01-01")
-    egret_list_out <- EGRET::blankTime(eList = egret_list_out,
-                                   startBlank = "1996-01-01", endBlank = "2001-01-01")    
     # Identify error statistics
     egret_error <- EGRET::errorStats(eList = egret_estimation)
     
