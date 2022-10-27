@@ -27,6 +27,8 @@ dir.create(path = file.path(path, "WRTDS Loop Diagnostic"), showWarnings = F)
 # Define the names of the Drive files we need
 names <- c("WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv", # No.1 Ref table
            "UpdatedAll_Q_master_10262022.csv", # No.2 Main discharge
+
+>>>>>>> 4cf1dfc171a9d8c0b28d9c4897f55b70738a73f5
            "20221026_masterdata_chem.csv", # No.3 Main chemistry
            "20220909_master_min_det_limit.csv") # No.4 Minimum detection limit info
 
