@@ -51,8 +51,6 @@ few_data <- c(
   "AND__GSWS06_NOx", "AND__GSWS07_NOx", "HBR__ws1_P", "HBR__ws2_P", "HBR__ws3_P",
   "HBR__ws4_P", "HBR__ws5_P", "HBR__ws6_P", "HBR__ws7_P", "HBR__ws8_P", "HBR__ws9_P",
   "MCM__Canada Stream at F1_P", "MCM__Onyx River at Lake Vanda Weir_NH4",
-  "GRO__Lena_DSi", "GRO__Lena_NH4", "GRO__Lena_NOx", "GRO__Lena_P",
-  "GRO__Ob_DSi", "GRO__Ob_NH4", "GRO__Ob_NOx", "GRO__Ob_P",
   "MCM__Onyx River at Lake Vanda Weir_P", "MCM__Onyx River at Lower Wright Weir_P",
   "NIVA__AAGEVEG_DSi", "NIVA__FINEPAS_DSi", "NIVA__FINETAN_DSi", "NIVA__HOREVOS_DSi",
   "NIVA__MROEDRI_DSi", "NIVA__OSLEALN_DSi", "NIVA__ROGEBJE_DSi", "NIVA__ROGEVIK_DSi",
