@@ -26,7 +26,7 @@ dir.create(path = file.path(path, "WRTDS Loop Diagnostic"), showWarnings = F)
 
 # Define the names of the Drive files we need
 names <- c("WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv", # No.1 Ref table
-           "UpdatedAll_Q_master_10262022.csv", # No.2 Main discharge
+           "UpdatedAll_Q_master_10272022.csv", # No.2 Main discharge
            "20221026_masterdata_chem.csv", # No.3 Main chemistry
            "20220909_master_min_det_limit.csv") # No.4 Minimum detection limit info
 
@@ -35,7 +35,8 @@ ids <- googledrive::drive_ls(as_id("https://drive.google.com/drive/u/1/folders/1
   dplyr::bind_rows(googledrive::drive_ls(as_id("https://drive.google.com/drive/u/1/folders/1BAs0y1hHArW8BANUFJrXOXcoMHIk25Pp")))
 
 # Check that no file names have changed!
-if(unique(names %in% unique(ids$name))!= TRUE){
+if(!names[1] %in% ids$name | !names[2] %in% ids$name |
+   !names[3] %in% ids$name | !names[4] %in% ids$name){
   message("At least one source file name has changed! Update the 'names' vector before proceeding") } else {
     message("All file names found in Google Drive. Please continue") }
 
