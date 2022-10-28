@@ -159,7 +159,8 @@ for(river in setdiff(x = unique(good_rivers), y = bad_rivers)){
       dplyr::mutate(constitAbbrev = element) %>%
       dplyr::mutate(paramShortName = dplyr::case_when(
         constitAbbrev == "DSi" ~ "Silicon",
-        constitAbbrev == "NOx" ~ "Nitrate",
+        constitAbbrev == "NOx" ~ "Nitrate_NOx",
+        constitAbbrev == "NO3" ~ "Nitrate_NO3",
         constitAbbrev == "P" ~ "Phosphorous",
         constitAbbrev == "NH4" ~ "Ammonium",
         constitAbbrev == "TP" ~ "Total_Phosphorous",
