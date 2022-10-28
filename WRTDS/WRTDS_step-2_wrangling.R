@@ -396,7 +396,7 @@ write.csv(x = information, row.names = F, na = "",
                            "WRTDS-input_information.csv"))
 
 ## ---------------------------------------------- ##
-     # Check - Compare Sites Raw vs. Tidy ----
+        # Check - Find Dropped Streams ----
 ## ---------------------------------------------- ##
 
 # We want to be super sure we didn't (somehow) drop any sites in the wrangling steps above.
@@ -451,7 +451,7 @@ c5 <- chemistry %>%
   dplyr::mutate(in_c5 = 1)
 
 # Prep a 'name_check' object by streamlining the ref table
-name_check_v0 <- ref_table %>%
+sab_check_v0 <- ref_table %>%
   # Pare down to needed columns only
   dplyr::select(LTER, Discharge_File_Name, Stream_Name) %>%
   # Create a "Stream_ID"
@@ -474,17 +474,17 @@ name_check_v0 <- ref_table %>%
   dplyr::full_join(y = c5, by = "Stream_ID")
 
 # Drop any rows without NAs (i.e., those in the data at all stages)
-name_check <- name_check_v0[ !complete.cases(name_check_v0), ] %>%
+sab_check <- name_check_v0[ !complete.cases(sab_check_v0), ] %>%
   # Get rowSums to figure out how many versions of data include a given stream
   dplyr::mutate(incl_data_count = rowSums(dplyr::across(dplyr::starts_with("in_")), na.rm = T)) %>%
   # Order by that column
   dplyr::arrange(desc(incl_data_count))
 
 # Take a look!
-glimpse(name_check)
+glimpse(sab_check)
 
 # Export this!
 write.csv(x = name_check, na = "", row.names = F,
-          file.path(path, "WRTDS Source Files", "WRTDS_ref_table_check.csv"))
+          file.path(path, "WRTDS Source Files", "WRTDS_sabotage_check.csv"))
 
 # End ----
