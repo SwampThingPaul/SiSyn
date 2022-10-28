@@ -96,9 +96,7 @@ mdl_v2 <- mdl_info %>%
     variable == "NH4_MDL" ~ "NH4",
     TRUE ~ variable), .after = variable) %>%
   # And drop the old one
-  dplyr::select(-variable) %>%
-  # Rename remaining column
-  dplyr::rename(variable = variable_simp)
+  dplyr::select(-variable)
 
 # Check it
 dplyr::glimpse(mdl_v2)
@@ -141,28 +139,23 @@ helpR::diff_chk(old = unique(disc_main$DischargeFileName),
 
 # Clean up the chemistry data
 chem_v2 <- chem_main %>%
-  # Simplify phosphorous and nitrate for later
-  dplyr::mutate(variable_simp = dplyr::case_when(
-    variable == "SRP" ~ "P",
-    variable == "PO4" ~ "P",
-    variable == "NO3" ~ "NOx",
-    TRUE ~ variable))  %>%
-  # That done, drop all chemicals other than the core ones we're interested in
-  dplyr::filter(variable_simp %in% c("P", "DSi", "NOx", "NH4", "TN", "TP")) %>%
+  # Drop all chemicals other than the core ones we're interested in
+  dplyr::filter(variable %in% c("SRP", "PO4", "DSi", "NO3", "NOx", "NH4", "TN", "TP")) %>%
   # Calculate the mg/L (from micro moles) for each of these chemicals
   dplyr::mutate(value_mgL = dplyr::case_when(
-    variable_simp == "P" ~ (((value / 10^6) * 30.973762) * 1000),
-    variable_simp == "DSi" ~ (((value / 10^6) * 28.0855) * 1000),
-    variable_simp == "NOx" ~ (((value / 10^6) * 14.0067) * 1000),
-    variable_simp == "NH4" ~ (((value / 10^6) * 14.0067) * 1000),
-    variable_simp == "TN" ~ (((value / 10^6) * 14.0067) * 1000),
-    variable_simp == "TP" ~ (((value / 10^6) * 30.973762) * 1000))) %>%
-  # Drop units, site, value, and variable columns because they're outdated now
-  dplyr::select(-units, -site, -variable, -value) %>%
+    variable == "SRP" ~ (((value / 10^6) * 30.973762) * 1000),
+    variable == "PO4" ~ (((value / 10^6) * 30.973762) * 1000),
+    variable == "DSi" ~ (((value / 10^6) * 28.0855) * 1000),
+    variable == "NOx" ~ (((value / 10^6) * 14.0067) * 1000),
+    variable == "NO3" ~ (((value / 10^6) * 14.0067) * 1000),
+    variable == "NH4" ~ (((value / 10^6) * 14.0067) * 1000),
+    variable == "TN" ~ (((value / 10^6) * 14.0067) * 1000),
+    variable == "TP" ~ (((value / 10^6) * 30.973762) * 1000))) %>%
+  # Drop units, site, and value columns because they're outdated now
+  dplyr::select(-units, -site, -value) %>%
   # Rename some columns
   dplyr::rename(Stream_Name = Site.Stream.Name,
-                Date = Sampling.Date,
-                variable = variable_simp) %>%
+                Date = Sampling.Date) %>%
   # Filter out streams not found in the name look-up 
   ## The lookup table is an exhaustive set of all sites to include
   dplyr::filter(Stream_Name %in% name_lkup$Stream_Name) %>%
@@ -176,13 +169,24 @@ chem_v2 <- chem_main %>%
   dplyr::filter(!is.na(value_mgL)) %>%
   # Keep all data from non-Andrews (AND) sites, but drop pre-1983 Andrews data
   dplyr::filter(LTER != "AND" | (LTER == "AND" & lubridate::year(Date) > 1983)) %>%
+  # Create a simplified variable column
+  dplyr::mutate(variable_simp = dplyr::case_when(
+    variable == "SRP" ~ "P",
+    variable == "PO4" ~ "P",
+    variable == "NO3" ~ "NOx",
+    TRUE ~ variable))  %>%
   # Attach the minimum detection limit information where it is known
-  dplyr::left_join(y = mdl_v2, by = c("Stream_Name", "variable")) %>%
+  dplyr::left_join(y = mdl_v2, by = c("Stream_Name", "variable_simp")) %>%
   # Using this, create a "remarks" column that indicates whether a value is below the MDL
   dplyr::mutate(remarks = ifelse(test = (value_mgL < MDL), yes = "<", no = ""),
                 .after = Date) %>%
   # Now we can safely drop the MDL information because we have what we need
-  dplyr::select(-MDL)
+  dplyr::select(-MDL) %>%
+  # Now let's make an "actual" variable column and ditch the others
+  dplyr::mutate(variable_actual = ifelse(test = (variable == "SRP" | variable == "PO4"),
+                                         yes = "P", no = variable), .after = variable) %>%
+  dplyr::select(-variable, -variable_simp) %>%
+  dplyr::rename(variable = variable_actual)
   
 # Examine that as well
 dplyr::glimpse(chem_v2)
