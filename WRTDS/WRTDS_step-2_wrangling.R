@@ -141,17 +141,22 @@ helpR::diff_chk(old = unique(disc_main$DischargeFileName),
 
 # Clean up the chemistry data
 chem_v2 <- chem_main %>%
-  # Simplify phosphorous for later
-  dplyr::mutate(variable_simp = ifelse(variable == "SRP" | variable == "PO4",
-                                       yes = "P", no = variable)) %>%
+  # Simplify phosphorous and nitrate for later
+  dplyr::mutate(variable_simp = dplyr::case_when(
+    variable == "SRP" ~ "P",
+    variable == "PO4" ~ "P",
+    variable == "NO3" ~ "NOx",
+    TRUE ~ variable))  %>%
   # That done, drop all chemicals other than the core ones we're interested in
-  dplyr::filter(variable_simp %in% c("P", "DSi", "NOx", "NH4")) %>%
+  dplyr::filter(variable_simp %in% c("P", "DSi", "NOx", "NH4", "TN", "TP")) %>%
   # Calculate the mg/L (from micro moles) for each of these chemicals
   dplyr::mutate(value_mgL = dplyr::case_when(
     variable_simp == "P" ~ (((value / 10^6) * 30.973762) * 1000),
     variable_simp == "DSi" ~ (((value / 10^6) * 28.0855) * 1000),
     variable_simp == "NOx" ~ (((value / 10^6) * 14.0067) * 1000),
-    variable_simp == "NH4" ~ (((value / 10^6) * 14.0067) * 1000))) %>%
+    variable_simp == "NH4" ~ (((value / 10^6) * 14.0067) * 1000),
+    variable_simp == "TN" ~ (((value / 10^6) * 14.0067) * 1000),
+    variable_simp == "TP" ~ (((value / 10^6) * 30.973762) * 1000))) %>%
   # Drop units, site, value, and variable columns because they're outdated now
   dplyr::select(-units, -site, -variable, -value) %>%
   # Rename some columns
@@ -474,17 +479,17 @@ sab_check_v0 <- ref_table %>%
   dplyr::full_join(y = c5, by = "Stream_ID")
 
 # Drop any rows without NAs (i.e., those in the data at all stages)
-sab_check <- name_check_v0[ !complete.cases(sab_check_v0), ] %>%
+sab_check <- sab_check_v0[ !complete.cases(sab_check_v0), ] %>%
   # Get rowSums to figure out how many versions of data include a given stream
   dplyr::mutate(incl_data_count = rowSums(dplyr::across(dplyr::starts_with("in_")), na.rm = T)) %>%
   # Order by that column
   dplyr::arrange(desc(incl_data_count))
 
 # Take a look!
-glimpse(sab_check)
+dplyr::glimpse(sab_check)
 
 # Export this!
-write.csv(x = name_check, na = "", row.names = F,
+write.csv(x = sab_check, na = "", row.names = F,
           file.path(path, "WRTDS Source Files", "WRTDS_sabotage_check.csv"))
 
 # End ----
