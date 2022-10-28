@@ -161,7 +161,9 @@ for(river in setdiff(x = unique(good_rivers), y = bad_rivers)){
         constitAbbrev == "DSi" ~ "Silicon",
         constitAbbrev == "NOx" ~ "Nitrate",
         constitAbbrev == "P" ~ "Phosphorous",
-        constitAbbrev == "NH4" ~ "Ammonium")) %>%
+        constitAbbrev == "NH4" ~ "Ammonium",
+        constitAbbrev == "TP" ~ "Total_Phosphorous",
+        constitAbbrev == "TN" ~ "Total_Nitrogen")) %>%
       # Create another needed column
       dplyr::mutate(staAbbrev = shortName) %>%
       # Drop stream ID now that subsetting is complete
