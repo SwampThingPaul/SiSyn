@@ -217,4 +217,38 @@ for(name in names(export_list)){
   
 }
 
+## ---------------------------------------------- ##
+            # Export PDF Reports ----
+## ---------------------------------------------- ##
+
+# The "step 3" script also creates a PDF for every site
+# We want to make those available outside of the server for later exploration and use
+
+# Identify all PDFs
+# Do some useful processing of that object
+pdf_outs <- data.frame("file_name" = wrtds_outs_v0) %>%
+  # Split LTER off the file name
+  tidyr::separate(col = file_name, into = c("LTER", "other_content"),
+                  sep = "__", remove = FALSE, fill = "right", extra = "merge") %>%
+  # Separate the remaining content further
+  tidyr::separate(col = other_content, into = c("stream", "chemical", "data_type"),
+                  sep = "_", remove = TRUE, fill = "right", extra = "merge") %>%
+  # Recreate the "Stream_Element_ID" column
+  dplyr::mutate(Stream_Element_ID = paste0(LTER, "__", stream, "_", chemical)) %>%
+  # Remove the PDFs of exploratory graphs
+  dplyr::filter(data_type == "WRTDS_GFN_output.pdf")
+
+# Glimpse it
+dplyr::glimpse(pdf_outs)
+
+# Loop across these PDFs and put them into GoogleDrive
+for(report in unique(pdf_outs$file_name)){
+# for(report in "Walker Branch__west fork_DSi_WRTDS_GFN_output.pdf"){
+  
+  # Send that report to a GoogleDrive folder
+  googledrive::drive_upload(media = file.path(path, "WRTDS Outputs", report), overwrite = T,
+                            path = googledrive::as_id("https://drive.google.com/drive/folders/1ZG5DnW_fu65bmCgh0GnCYK89QaT9n3Ea"))
+  
+}
+
 # End ----
