@@ -107,8 +107,6 @@ good_rivers <- setdiff(x = unique(chemistry$Stream_Element_ID),
 # Set of problem rivers to drop from the loop
 bad_rivers <- c()
 
-# Loop - START ----
-
 # Loop across rivers and elements to run WRTDS workflow!
 for(river in setdiff(x = unique(good_rivers), y = bad_rivers)){
 # for(river in "AND__GSMACK_DSi"){
@@ -258,8 +256,170 @@ for(river in setdiff(x = unique(good_rivers), y = bad_rivers)){
     
   } # Close `else` part of whether file exists
   
-  # Loop - END ----
-  
 } # End loop
+
+## ---------------------------------------------- ##
+              # Bootstrap Workflow ----
+## ---------------------------------------------- ##
+# Create necessary folders for bootstrap outputs
+dir.create(path = file.path(path, "WRTDS Bootstrap Diagnostic"), showWarnings = F)
+dir.create(path = file.path(path, "WRTDS Bootstrap Outputs"), showWarnings = F)
+
+# Set of problem rivers to drop from the loop
+bad_boot_rivers <- c()
+
+# Loop across rivers and elements to run WRTDS workflow!
+for(river in setdiff(x = unique(good_rivers), y = bad_boot_rivers)){
+# for(river in "AND__GSMACK_DSi"){
+  
+  # Identify corresponding Stream_ID
+  stream_id <- chemistry %>%
+    dplyr::filter(Stream_Element_ID == river) %>%
+    dplyr::select(Stream_ID) %>%
+    unique() %>%
+    as.character()
+  
+  # Also element
+  element <- chemistry %>%
+    dplyr::filter(Stream_Element_ID == river) %>%
+    dplyr::select(variable) %>%
+    unique() %>%
+    as.character()
+  
+  # Subset chemistry
+  river_chem <- chemistry %>%
+    dplyr::filter(Stream_Element_ID == river) %>%
+    # Drop unneeded columns
+    dplyr::select(-Stream_Element_ID, -Stream_ID, -variable)
+  
+  # Subset discharge to correct river
+  river_disc <- discharge %>%
+    dplyr::filter(Stream_ID == stream_id) %>%
+    dplyr::select(Date, Q)
+  
+  # Create a common prefix for all outputs from this run of the loop
+  out_prefix <- paste0(stream_id, "_", element, "_") 
+  
+  # Bootstrap - File Exists Check ----
+  
+  # If the file exists
+  if(file.exists(file.path(path, "WRTDS Bootstrap Diagnostic", paste0(out_prefix, "Boot_Loop_Diagnostic.csv"))) == TRUE) {
+    message("WRTDS bootstrapping already done for ", element, " at stream '", river, "'")
+  } else {
+    
+    # Message completion of loop
+    message("Bootstrapping workflow begun for ", element, " at stream '", river, "'")
+    
+    # Grab start time for processing
+    start <- Sys.time()
+    
+    # Information also subsetted to right river
+    river_info <- information %>%
+      dplyr::filter(Stream_ID == stream_id) %>%
+      # Generate correct information for this element
+      dplyr::mutate(constitAbbrev = element) %>%
+      dplyr::mutate(paramShortName = dplyr::case_when(
+        constitAbbrev == "DSi" ~ "Silicon",
+        constitAbbrev == "NOx" ~ "Nitrate",
+        constitAbbrev == "P" ~ "Phosphorous",
+        constitAbbrev == "NH4" ~ "Ammonium")) %>%
+      # Create another needed column
+      dplyr::mutate(staAbbrev = shortName) %>%
+      # Drop stream ID now that subsetting is complete
+      dplyr::select(-Stream_ID)
+    
+    # Save these as CSVs with generic names
+    ## This means each iteration of the loop will overwrite them so this folder won't become gigantic
+    write.csv(x = river_disc, row.names = F, na = "",
+              file = file.path(path, "WRTDS Temporary Files", "discharge.csv"))
+    write.csv(x = river_chem, row.names = F, na = "",
+              file = file.path(path, "WRTDS Temporary Files", "chemistry.csv"))
+    write.csv(x = river_info, row.names = F, na = "",
+              file = file.path(path, "WRTDS Temporary Files", "information.csv"))
+    
+    # Then read them back in with EGRET's special acquisition functions
+    egret_disc <- EGRET::readUserDaily(filePath = file.path(path, "WRTDS Temporary Files"), fileName = "discharge.csv", qUnit = 2, verbose = F)
+    egret_chem <- EGRET::readUserSample(filePath = file.path(path, "WRTDS Temporary Files"), fileName = "chemistry.csv", verbose = F)
+    egret_info <- EGRET::readUserInfo(filePath = file.path(path, "WRTDS Temporary Files"), fileName = "information.csv", interactive = F)
+    
+    # Create a list of the discharge, chemistry, and information files
+    egret_list <- EGRET::mergeReport(INFO = egret_info, Daily = egret_disc, Sample = egret_chem, verbose = F)
+    
+    # Fit "GFN" model
+    egret_list_out <- EGRET::runSeries(eList = egret_list, windowSide = 11, minNumObs = 50, verbose = F)
+    
+    # Bootstrap - Handle Weird Sites ----
+    
+    # Set period of analysis differences for rivers that need it
+    ## Period of analysis 12 - 2
+    if(river %in% unique(pa12_2)){
+      egret_list_out <- EGRET::setPA(eList = egret_list_out, paStart = 12, paLong = 2) }
+    if(river %in% unique(pa5_5)){
+      egret_list_out <- EGRET::setPA(eList = egret_list_out, paStart = 5, paLong = 5) }
+    if(river %in% unique(pa5_3)){
+      egret_list_out <- EGRET::setPA(eList = egret_list_out, paStart = 5, paLong = 3) }
+    
+    # Run trend estimate for GFN method between start/end years
+    egret_pairs <- EGRET::runPairs(eList = egret_list_out, windowSide = 11, minNumObs = 50,
+                                   # year1 = min_year,
+                                   year1 = min(egret_list_out$Sample$waterYear, na.rm = T),
+                                   # year2 = max_year)
+                                   year2 = max(egret_list_out$Sample$waterYear, na.rm = T))
+    
+    # Make a version of that where we have stream and chemical included
+    egret_pairs_v2 <- egret_pairs %>%
+      dplyr::mutate(Stream_ID = rep(stream_id, times = nrow(egret_pairs)),
+                    Solute = rep(element, times = nrow(egret_pairs)),
+                    .before = dplyr::everything())
+    
+    # Export those values as well
+    write.csv(x = egret_pairs_v2, row.names = F, na = "",
+              file.path(path, "WRTDS Bootstrap Outputs", paste0(out_prefix, "ListPairs_GFN_WRTDS.csv")))
+    
+    # Estimate trend uncertainty
+    egret_boot <- EGRETci::runPairsBoot(eList = egret_list_out, pairResults = egret_pairs, nBoot = 100, blockLength = 200)
+    
+    # Strip out key results
+    egret_boot_results <- data.frame(
+      Stream_ID = rep(stream_id, times = length(egret_boot$xConc)),
+      Solute = rep(element, times = length(egret_boot$xConc)),
+      xConc = egret_boot$xConc,
+      xFlux = egret_boot$xFlux,
+      pConc = egret_boot$pConc,
+      pFlux = egret_boot$pFlux)
+    
+    # Export the results
+    write.csv(x = egret_boot_results, row.names = F, na = "",
+              file.path(path, "WRTDS Bootstrap Outputs", paste0(out_prefix, "EGRETCi_GFN_bootstraps.csv")))
+    
+    # Also grab the summary information
+    egret_boot_summary <- as.data.frame(egret_boot$bootOut)
+    
+    # Add needed information to this one as well
+    egret_boot_summary_v2 <- egret_boot_summary %>%
+      dplyr::mutate(Stream_ID = rep(stream_id, times = nrow(egret_boot_summary)),
+                    Solute = rep(element, times = nrow(egret_boot_summary)),
+                    .before = dplyr::everything())
+    
+    # And export it as well
+    write.csv(x = egret_boot_summary_v2, file.path(path, "WRTDS Bootstrap Outputs", paste0(out_prefix, "EGRETCi_GFN_Trend.csv")), row.names = F, na = "")
+    
+    # Grab the end processing time
+    end <- Sys.time()
+    
+    # Combine timing into a dataframe
+    loop_diagnostic <- data.frame("stream" = stream_id,
+                                  "chemical" = element,
+                                  "loop_start" = start,
+                                  "loop_end" = end)
+    
+    # Export this as well
+    write.csv(x = loop_diagnostic, row.names = F, na = "",
+              file.path(path, "WRTDS Bootstrap Diagnostic", paste0(out_prefix, "Boot_Loop_Diagnostic.csv")))
+    
+    # Message completion of loop
+    message("Bootstrapping workflow complete for ", element, " at stream '", river, "'")
+    
+  }  } # End `else` and loop
 
 # End ----
