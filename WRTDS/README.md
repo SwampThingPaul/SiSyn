@@ -8,6 +8,6 @@ The WRTDS workflow includes a substantial amount of code that--while broadly lin
 
 - **WRTDS_step-3_analysis.R**: Runs WRTDS and exports outputs for later use. Includes separate workflows for different "types" of sites (i.e., those that require modifications away from default `EGRET` function settings)
 
-- **WRTDS_step-4_results-report.R**: Reads in outputs of step 3 and creates one flat file for each data type for ease of downstream use. Uploads these to GoogleDrive.
+    - Step 3 also includes a separate workflow for handling bootstrapping due to how computationally intensive these `EGRET` functions are. Separating this from the rest of the workflow allows for quicker retrieval of "main" results and easier maintenance of both parts
 
-- **WRTDS_step-5_bootstrap.R**: Separate workflow for handling bootstrapping due to how computationally intensive these `EGRET` functions are. Separating this from step 3 allows quicker retrieval of "main" results while encouraging interested parties to run only this script if those are the data they are interested in.
+- **WRTDS_step-4_results-report.R**: Reads in outputs of step 3 and creates one flat file for each data type for ease of downstream use. Uploads these to GoogleDrive.
