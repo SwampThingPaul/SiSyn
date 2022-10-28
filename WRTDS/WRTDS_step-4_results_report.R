@@ -121,7 +121,8 @@ str(out_list)
 names(out_list)
 
 # Clear environment of everything but the filepath, destination URL, out_list, & ref_table
-rm(list = setdiff(ls(), c("path", "dest_url", "out_list", "ref_table")))
+rm(list = setdiff(ls(), c("path", "dest_url", "out_list", "ref_table",
+                          "wrtds_outs", "wrtds_outs_v0")))
 
 ## ---------------------------------------------- ##
              # Process WRTDS Outputs ----
@@ -211,9 +212,6 @@ for(name in names(export_list)){
   
   # Upload that object to GoogleDrive
   googledrive::drive_upload(media = report_file, overwrite = T, path = dest_url) }
-
-# Clear environment of everything but the filepath, destination URL, and ref_table
-rm(list = setdiff(ls(), c("path", "dest_url", "ref_table")))
 
 ## ---------------------------------------------- ##
             # Export PDF Reports ----
@@ -379,8 +377,5 @@ for(name in names(boot_export_list)){
   
   # Upload that object to GoogleDrive
   googledrive::drive_upload(media = boot_report_file, overwrite = T, path = dest_url) }
-
-# Clear environment of everything but the filepath, destination URL, and ref_table
-rm(list = setdiff(ls(), c("path", "dest_url", "ref_table")))
 
 # End ----
