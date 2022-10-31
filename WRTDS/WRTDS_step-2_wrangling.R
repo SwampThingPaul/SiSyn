@@ -412,6 +412,18 @@ write.csv(x = information, row.names = F, na = "",
           file = file.path(path, "WRTDS Inputs",
                            "WRTDS-input_information.csv"))
 
+# Export them to Google Drive to in case anyone has other uses for them
+tidy_dest <- googledrive::as_id("https://drive.google.com/drive/folders/1hOIJRg4XZa3czMU6bskSgAPTlMj25ET-")
+googledrive::drive_upload(path = tidy_dest, overwrite = T,
+                          media = file.path(path, "WRTDS Inputs",
+                                            "WRTDS-input_discharge.csv"))
+googledrive::drive_upload(path = tidy_dest, overwrite = T,
+                          media = file.path(path, "WRTDS Inputs",
+                                            "WRTDS-input_chemistry.csv"))
+googledrive::drive_upload(path = tidy_dest, overwrite = T,
+                          media = file.path(path, "WRTDS Inputs",
+                                            "WRTDS-input_information.csv"))
+
 ## ---------------------------------------------- ##
         # Check - Find Dropped Streams ----
 ## ---------------------------------------------- ##
