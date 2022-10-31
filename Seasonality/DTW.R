@@ -12,12 +12,17 @@ require(dtwclust)
 require(cluster)
 require(purrr)
 require(tibble)
+require(zoo)
 
 setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
 
-monthly_results<-read.csv("WRTDS_GFN_MonthlyResults_AllSites_050422.csv")
+monthly_results<-read.csv("Monthly_Results_PA_Interp.csv")
 
-month_agg<-aggregate(monthly_results, by=list(monthly_results$site, monthly_results$Month), 
+monthly_results$chemical<-ifelse(is.na(monthly_results$chemical), "DSi", monthly_results$chemical)
+
+monthly_results<-subset(monthly_results, monthly_results$chemical=="DSi")
+
+month_agg<-aggregate(monthly_results, by=list(monthly_results$stream, monthly_results$Month), 
                      FUN=mean, na.rm=TRUE)
 
 names(month_agg)[c(1,2)]<-c("Site", "Month")
@@ -28,9 +33,9 @@ month_cast<-dcast(month_conc, formula = Month~Site)
 
 month_norm<-month_cast
 
-month_norm[2:61]<-as.data.frame(scale(month_cast[2:61]))
+month_norm[2:125]<-as.data.frame(scale(month_cast[2:125]))
 
-month_norm_t<-as.data.frame(t(month_norm[2:61]))
+month_norm_t<-as.data.frame(t(month_norm[2:125]))
 
 # m <- c( "average", "single", "complete", "ward")
 # names(m) <- c( "average", "single", "complete", "ward")
@@ -69,23 +74,23 @@ month_norm_t<-as.data.frame(t(month_norm[2:61]))
 
 pdf("CVI_Cluster_Eval.pdf")
 
-for (i in 1:6) {
+for (i in 4:10) {
   
-  # clust.tadpole <- tsclust(month_norm_t, type="tadpole", seed = 8,
-  #                          control = tadpole_control(dc = 1.5,
-  #                                                    window.size = 2L), k=i)
-  # 
-  # #plot(clust.tadpole, type = "sc")
-  # 
-  # clust.pam <- tsclust(month_norm_t, type="partitional", centroid = "pam", distance = "dtw",
-  #                      window.size=2L, k=i, seed = 8)
+  clust.tadpole <- tsclust(month_norm_t, type="tadpole", seed = 8,
+                            control = tadpole_control(dc = 1.5,
+                                                      window.size = 2L), k=i)
   
-  #plot(clust.pam, type = "sc")
+  plot(clust.tadpole, type = "sc")
+  
+  clust.pam <- tsclust(month_norm_t, type="partitional", centroid = "pam", distance = "dtw",
+                        window.size=1L, k=7L, seed = 8)
+
+  plot(clust.pam, type = "sc")
   
   clust.dba <- tsclust(month_norm_t, type="partitional", centroid = "dba", distance = "dtw",
-                       window.size=i, k=6L, seed = 8)
+                       window.size=1, k=7L, seed = 8)
   
-  #plot(clust.dba, type = "sc")
+  plot(clust.dba, type = "sc")
   
   cvi_df<-lapply(list(PAM = clust.pam, TADPole = clust.tadpole, DBA = clust.dba),
                  cvi, type = "internal")
@@ -113,7 +118,7 @@ for (i in 1:6) {
 }
 
 clust.dba <- tsclust(month_norm_t, type="partitional", centroid = "dba", distance = "dtw",
-                     window.size=2L, k=3L:10L, seed = 8)
+                     window.size=1L, k=5L:10L, seed = 8)
 
 cvi_df<-lapply(clust.dba, cvi)
 
@@ -121,15 +126,19 @@ cluster_stats<-do.call(rbind, cvi_df)
 
 cluster_stats_melt<-melt(cluster_stats)
 
+cluster_stats_melt$Var1<-cluster_stats_melt$Var1+4
+
 colnames(cluster_stats_melt)[2]<-"index"
 
 cluster_stats_melt<-merge(cluster_stats_melt, cvi_index, by="index")
 
+colnames(cluster_stats_melt)[2]<-"number_of_clusters"
+
 cluster_stats_melt$cvi_goal<-paste0(cluster_stats_melt$index, "-", cluster_stats_melt$cvi_ideal)
 
-ggplot(cluster_stats_melt, aes(Var1, value))+geom_line()+facet_wrap(~cvi_goal, scales = "free")+
+ggplot(cluster_stats_melt, aes(number_of_clusters, value))+geom_line()+facet_wrap(~cvi_goal, scales = "free")+
   theme_classic()
-  
+
 
 dev.off()
 
@@ -145,7 +154,7 @@ clust.pam <- tsclust(month_norm_t, type="partitional", centroid = "pam", distanc
 #plot(clust.pam, type = "sc")
 
 clust.dba <- tsclust(month_norm_t, type="partitional", centroid = "dba", distance = "dtw",
-                     window.size=5L, k=6L, seed = 8)
+                     window.size=1, k=7L, seed = 8)
 
 plot(clust.dba, type = "sc")
 
@@ -157,22 +166,25 @@ data_df<-t(do.call(cbind, mydata))
 
 fviz_cluster(object = list(data=data_df, cluster = clust.dba@cluster),
              data = month_norm_t, stand = TRUE,
-             labelsize = 0, , ellipse.type = "t", ellipse.level = 0.9)+theme_classic()
+             labelsize = 0, , ellipse.type = "t", ellipse.level = 0.9)+theme_classic()+theme(text = element_text(size = 20))
 
 month_clusters<-as.data.frame(cbind(data_df, clust.dba@cluster))
 colnames(month_clusters)<-c(paste(seq(1:12)), "Cluster")
 month_clusters<-rownames_to_column(month_clusters, "Site")
 #month_clusters$Site<-str_sub(month_clusters$SiteYear,1,nchar(month_clusters$SiteYear)-5)
 
-biomes<-read.csv("Biome.csv")
+biomes<-read.csv("Koeppen_Geiger.csv")
+names(biomes)[2]<-"Site"
 month_clusters<-merge(month_clusters, biomes, by="Site")
 
+month_clusters<-month_clusters[,-c(15:17,19,20)]
+
 #reorder the names of Biome so that they plot in this order on axis and legens
-month_clusters$Biome2<-factor(month_clusters$Biome_new, levels = c("Tropical rainforest","Temperate coniferous forest",
-                                                                   "Temperate grassland","Boreal forest",
-                                                                   "Temperate deciduous forest", 
-                                                                   "Tropical savanna","Alpine tundra", 
-                                                                   "Polar desert", "Arctic tundra"))
+# month_clusters$Biome2<-factor(month_clusters$Biome_new, levels = c("Tropical rainforest","Temperate coniferous forest",
+#                                                                    "Temperate grassland","Boreal forest",
+#                                                                    "Temperate deciduous forest", 
+#                                                                    "Tropical savanna","Alpine tundra", 
+#                                                                    "Polar desert", "Arctic tundra"))
 
 #set color palette
 #color_pal<-c("lawngreen", "goldenrod1", "darkgreen", "darkorange2", "firebrick1", "mediumpurple3", 
@@ -197,19 +209,31 @@ col_values<-c("Boreal forest" = cols_final[1],
               "Temperate coniferous forest" = cols_final[9])
 
 month_clusters_melt<-melt(month_clusters, id.vars = c("Site", "Cluster",
-                                                      "LTER", "Biome_new", "Biome2"))
+                                                      "LTER", "ClimateZ"))
 
 
 ggplot(month_clusters_melt, aes(variable, value))+
-  geom_line(aes(col=Biome2, group=Site))+
-  theme_bw()+facet_wrap(~Cluster, nrow = 2)+
-  scale_color_manual(values = col_values)
+  geom_line(aes(col=ClimateZ, group=Site), size=1)+
+  theme_bw()+facet_wrap(~Cluster, nrow = 2)+scale_color_manual(values = carto_pal(n=12, "Bold"))+
+  theme(text = element_text(size = 20))+labs(col="Climate Zone", x="Flow Period", y="Normalized Si Concentration")
+
+cluster_sum<-month_clusters_melt %>%
+  dplyr::group_by(Cluster) %>%
+  dplyr::summarise(count = n_distinct(Site))
+
+cluster_summary<-subset(month_clusters_melt, month_clusters_melt$variable==1)
+
+ID <- 1:7
+
+ggplot(cluster_summary, aes(Cluster))+geom_bar(aes(fill=ClimateZ))+scale_fill_manual(values = carto_pal(n=12, "Bold"))+
+  scale_x_continuous(labels = as.character(ID), breaks = ID)+
+  theme_classic()+labs(col="Climate Zone", x="Cluster Number", y="Count")+theme(text = element_text(size = 20), legend.position = "none")
 
 #unique(month_clusters[which(month_clusters$cluster_num==1),]$variable)
 
 #fviz_cluster(clusters, data = dtw_matrix)+theme_classic()
 
-# cluster_sum<-month_clusters_melt %>% 
+# cluster_sum<-month_clusters_melt %>%
 #   group_by(Site) %>%
 #   summarise(count = n_distinct(Cluster))
 # 
@@ -227,16 +251,46 @@ ggplot(month_clusters_melt, aes(variable, value))+
 #                                                              "Polar desert", "Arctic tundra"))
 
 cluster_avg<-month_clusters_melt %>% 
-  group_by(Cluster, variable) %>%
-  summarise(avergae_cluster = mean(value))
+  dplyr::group_by(Cluster, variable) %>%
+  dplyr::summarise(average_cluster = mean(value))
 
-ggplot(cluster_avg, aes(variable, avergae_cluster))+geom_line(aes(group=Cluster))+
-  facet_wrap(~Cluster)+theme_bw()
-
-
+ggplot(cluster_avg, aes(variable, average_cluster))+geom_line(aes(group=Cluster))+
+  facet_wrap(~Cluster, nrow = 2)+theme_bw()+theme(text = element_text(size=20))+labs(x="Flow Period", y="Normalized Si Concentration")
 
 
+LTER_unique<-unique(month_clusters_melt$LTER)
 
+
+### make plots of LTER average curves
+
+pdf("LTER_Cluster_SurveyPlots.pdf", width =10, height = 8)
+
+pdf("LTER_SiPlots_Survey.pdf", width = 10, height = 8)
+
+for (i in 1:length(LTER_unique)) {
+  
+  clusters_LTER<-subset(month_clusters_melt, month_clusters_melt$LTER==LTER_unique[i])
+  
+  # p1<-ggplot()+
+  #   geom_line(month_clusters_melt, mapping=aes(variable, value, group=Site), size=1)+
+  #   geom_line(clusters_LTER, mapping=aes(variable, value, group=Site), size=1, col="red")+
+  #   theme_bw()+facet_wrap(~Cluster, nrow = 2)+
+  #   theme(text = element_text(size = 20))+labs(x="Flow Period", y="Normalized Si Concentration")+
+  #   ggtitle(LTER_unique[i])
+  # 
+  # print(p1)
+  
+  p2<-ggplot(clusters_LTER)+geom_line(mapping=aes(variable, value, group=Site, col=Site), size=2)+
+    theme_bw()+
+    theme(text = element_text(size = 20))+labs(x="Flow Period", y="Normalized Si Concentration")+
+    ggtitle(LTER_unique[i])
+  
+  print(p2)
+  
+  
+}
+
+dev.off()
 
 
 

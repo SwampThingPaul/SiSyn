@@ -30,19 +30,18 @@ master<-read.csv("20220531_masterdata.csv")
 master_si<-subset(master, master$variable=="DSi")
 master_si$Sampling.Date<-as.Date(master_si$Sampling.Date)
 
-
 min_date <- master_si %>%
-  group_by(site) %>%
-  summarise(min(Sampling.Date))
+  dplyr::group_by(site) %>%
+  dplyr::summarise(min=min(Sampling.Date))
   
   
 max_date <- master_si %>%
-  group_by(site) %>%
-  summarise(max(Sampling.Date))
+  dplyr::group_by(site) %>%
+  dplyr::summarise(max(Sampling.Date))
 
 counts_table<- master_si %>%
-  group_by(site) %>%
-  tally()
+  dplyr::group_by(site) %>%
+  dplyr::tally()
 
 Si_df<-merge(min_date, max_date, by="site")
 Si_df<-merge(Si_df, counts_table, by="site")
@@ -67,6 +66,8 @@ date_diff<-list()
 min_date<-list()
 max_date<-list()
 
+setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/All_Q")
+
 for (i in 1:length(RefTable$Stream)) {
   
   file<-RefTable$name[i]
@@ -77,9 +78,9 @@ for (i in 1:length(RefTable$Stream)) {
   
   data_file$Date<-as.Date(data_file$Date)
   
-  min_date[[i]]<-min(data_file$Date)
+  min_date[[i]]<-min(data_file$Date, na.rm = TRUE)
   
-  max_date[[i]]<-max(data_file$Date)
+  max_date[[i]]<-max(data_file$Date, na.rm = TRUE)
   
   date_diff[[i]]<-difftime(max_date[[i]][1],min_date[[i]][1], units = "days")/365 
   
