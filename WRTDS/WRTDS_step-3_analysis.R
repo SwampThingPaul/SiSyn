@@ -149,11 +149,11 @@ for(river in setdiff(x = unique(good_rivers), y = bad_rivers)){
   
   # If the file exists
   if(file.exists(file.path(path, "WRTDS Loop Diagnostic", paste0(out_prefix, "Loop_Diagnostic.csv"))) == TRUE) {
-    message("WRTDS already run for ", element, " at stream '", stream_id, "'")
+    message("WRTDS already run for '", element, "' at stream '", stream_id, "'")
   } else {
     
     # Message completion of loop
-    message("Processing begun for ", element, " at stream '", stream_id, "'")
+    message("Processing begun for '", element, "' at stream '", stream_id, "'")
     
     # Grab start time for processing
     start <- Sys.time()
@@ -261,7 +261,7 @@ for(river in setdiff(x = unique(good_rivers), y = bad_rivers)){
     write.csv(x = loop_diagnostic, file.path(path, "WRTDS Loop Diagnostic", paste0(out_prefix, "Loop_Diagnostic.csv")), row.names = F, na = "")
     
     # Message completion of loop
-    message("Processing complete for ", element, " at stream '", stream_id, "'")
+    message("Processing complete for '", element, "' at stream '", stream_id, "'")
     
   } # Close `else` part of whether file exists
   
