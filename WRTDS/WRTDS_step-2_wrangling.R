@@ -28,7 +28,9 @@ dir.create(path = file.path(path, "WRTDS Loop Diagnostic"), showWarnings = F)
 names <- c("WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv", # No.1 Ref table
            "UpdatedAll_Q_master_10272022.csv", # No.2 Main discharge
            "20221030_masterdata_chem.csv", # No.3 Main chemistry
-           "20220909_master_min_det_limit.csv") # No.4 Minimum detection limit info
+           "20220909_master_min_det_limit.csv", # No.4 Minimum detection limit info
+           # No.5 (vvv) Set of chemistry streams w/o corresponding discharge data
+           "WRTDS_known_chem_streams_w-o_discharge.csv") 
 
 # Find folders for those files
 ids <- googledrive::drive_ls(as_id("https://drive.google.com/drive/u/1/folders/1HQtpWYoq_YQwj_bDNNbv8D-0swi00o_s"), pattern = ".csv") %>%
@@ -36,7 +38,8 @@ ids <- googledrive::drive_ls(as_id("https://drive.google.com/drive/u/1/folders/1
 
 # Check that no file names have changed!
 if(!names[1] %in% ids$name | !names[2] %in% ids$name |
-   !names[3] %in% ids$name | !names[4] %in% ids$name){
+   !names[3] %in% ids$name | !names[4] %in% ids$name |
+   !names[5] %in% ids$name){
   message("At least one source file name has changed! Update the 'names' vector before proceeding") } else {
     message("All file names found in Google Drive. Please continue") }
 
@@ -55,11 +58,16 @@ for(k in 1:length(names)){
                                 path = file.path(path, "WRTDS Source Files", names[k]))
 }
 
-# Now read in those files!
+# Now read in the metadata files
 ref_table <- read.csv(file = file.path(path, "WRTDS Source Files", names[1]))
-disc_main <- read.csv(file = file.path(path, "WRTDS Source Files", names[2]))
-chem_main <- read.csv(file = file.path(path, "WRTDS Source Files", names[3]))
 mdl_info <- read.csv(file = file.path(path, "WRTDS Source Files", names[4]))
+drop_chems <- read.csv(file = file.path(path, "WRTDS Source Files", names[5]))
+
+# And the discharge & chemistry data
+disc_main <- read.csv(file = file.path(path, "WRTDS Source Files", names[2]))
+chem_main <- read.csv(file = file.path(path, "WRTDS Source Files", names[3])) %>%
+  # Filter to only streams we know *should* have corresponding discharge data
+  dplyr::filter(!site %in% drop_chems$Stream_Name)
 
 # Clean up the environment before continuing
 rm(list = setdiff(ls(), c("path", "ref_table", "disc_main", "chem_main", "mdl_info")))
@@ -496,5 +504,12 @@ dplyr::glimpse(sab_check)
 write.csv(x = sab_check, na = "", row.names = F,
           file.path(path, "WRTDS Source Files",
                     paste0("WRTDS_", Sys.Date(), "_sabotage_check.csv")))
+
+# Export it to GoogleDrive too
+googledrive::drive_upload(media = file.path(path, "WRTDS Source Files", paste0("WRTDS_", Sys.Date(), "_sabotage_check.csv")),
+                          name = "WRTDS_Sabotage_Check.csv",
+                          overwrite = T,
+                          path = googledrive::as_id("https://drive.google.com/drive/u/1/folders/1HQtpWYoq_YQwj_bDNNbv8D-0swi00o_s"))
+
 
 # End ----
