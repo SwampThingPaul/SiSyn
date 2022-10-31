@@ -113,8 +113,7 @@ for(type in out_types){
   out_list[[type]] <- type_df
   
   # Completion message
-  message("Completed processing ", type, " outputs")
-}
+  message("Completed processing ", type, " outputs") }
 
 # Check the structure of the whole output list
 str(out_list)
@@ -185,7 +184,29 @@ results_table <- out_list[["ResultsTable_GFN_WRTDS.csv"]] %>%
   dplyr::left_join(y = ref_table, by = c("LTER", "stream")) %>%
   # Calculate some additional columns
   dplyr::mutate(Yield = Flux_10_6kg_yr / drainSqKm,
-                FNYield = FNFlux_10_6kg_yr / drainSqKm)
+                FNYield = FNFlux_10_6kg_yr / drainSqKm) %>%
+  # Do some unit conversions as well
+  dplyr::mutate(
+    Conc_uM = dplyr::case_when(
+      chemical %in% c("DSi") ~ (Conc_mgL / 28) * 1000,
+      chemical %in% c("NOx", "NH4", "NO3", "TN") ~ (Conc_mgL / 14) * 1000,
+      chemical %in% c("P", "TP") ~ (Conc_mgL / 30.9) * 1000),
+    FNConc_uM = dplyr::case_when(
+      chemical %in% c("DSi") ~ (FNConc_mgL / 28) * 1000,
+      chemical %in% c("NOx", "NH4", "NO3", "TN") ~ (FNConc_mgL / 14) * 1000,
+      chemical %in% c("P", "TP") ~ (FNConc_mgL / 30.9) * 1000),
+    Flux_10_6kmol_yr = dplyr::case_when(
+      chemical %in% c("DSi") ~ (Flux_10_6kg_yr / 28),
+      chemical %in% c("NOx", "NH4", "NO3", "TN") ~ (Flux_10_6kg_yr / 14),
+      chemical %in% c("P", "TP") ~ (Flux_10_6kg_yr / 30.9)),
+    FNFlux_10_6kmol_yr = dplyr::case_when(
+      chemical %in% c("DSi") ~ (FNFlux_10_6kg_yr / 28),
+      chemical %in% c("NOx", "NH4", "NO3", "TN") ~ (FNFlux_10_6kg_yr / 14),
+      chemical %in% c("P", "TP") ~ (FNFlux_10_6kg_yr / 30.9))
+    ) %>%
+  # Recalculate yield and flow-normalized yield
+  dplyr::mutate(Yield_10_6kmol_yr = Flux_10_6kmol_yr / drainSqKm,
+                FNYield_10_6kmol_yr = FNFlux_10_6kmol_yr / drainSqKm)
 
 # Glimpse this as well
 dplyr::glimpse(results_table)
@@ -237,15 +258,21 @@ pdf_outs <- data.frame("file_name" = wrtds_outs_v0) %>%
 # Glimpse it
 dplyr::glimpse(pdf_outs)
 
+# Identify PDFs already in GoogleDrive
+drive_pdfs <- googledrive::drive_ls(path = googledrive::as_id("https://drive.google.com/drive/folders/1ZG5DnW_fu65bmCgh0GnCYK89QaT9n3Ea"))
+
+# Use that to identify new PDFs!
+new_pdfs <- setdiff(pdf_outs$file_name, drive_pdfs$name)
+
 # Loop across these PDFs and put them into GoogleDrive
-for(report in unique(pdf_outs$file_name)){
-# for(report in "Walker Branch__west fork_DSi_WRTDS_GFN_output.pdf"){
-  
+## (vvv) Upload all PDFs regardless of whether they're in the Drive
+# for(report in unique(pdf_outs$file_name)){
+## (vvv) Upload only new PDFs
+for(report in new_pdfs){
+
   # Send that report to a GoogleDrive folder
   googledrive::drive_upload(media = file.path(path, "WRTDS Outputs", report), overwrite = T,
-                            path = googledrive::as_id("https://drive.google.com/drive/folders/1ZG5DnW_fu65bmCgh0GnCYK89QaT9n3Ea"))
-  
-}
+                            path = googledrive::as_id("https://drive.google.com/drive/folders/1ZG5DnW_fu65bmCgh0GnCYK89QaT9n3Ea")) }
 
 # Clear environment of everything but the filepath, destination URL, and ref_table
 rm(list = setdiff(ls(), c("path", "dest_url", "ref_table")))
