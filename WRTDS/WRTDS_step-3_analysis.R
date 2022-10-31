@@ -54,7 +54,12 @@ few_data <- c(
   "MCM__Onyx River at Lake Vanda Weir_P", "MCM__Onyx River at Lower Wright Weir_P",
   "NIVA__AAGEVEG_DSi", "NIVA__FINEPAS_DSi", "NIVA__FINETAN_DSi", "NIVA__HOREVOS_DSi",
   "NIVA__MROEDRI_DSi", "NIVA__OSLEALN_DSi", "NIVA__ROGEBJE_DSi", "NIVA__ROGEVIK_DSi",
-  "NIVA__SFJENAU_DSi", "NIVA__STRENID_DSi")
+  "NIVA__SFJENAU_DSi", "NIVA__STRENID_DSi", "USGS__ANDREWS CREEK_TN",
+  # Error in ...
+  ### "Error in runSurvReg(estPtYear, estPtLogQ, DecLow, DecHigh, localSample,  : 
+  ### minNumObs is greater than total number of samples"
+  "USGS__ANDREWS CREEK_NH4", "USGS__ANDREWS CREEK_P", "USGS__ANDREWS CREEK_TP"
+  )
 
 # Rivers with warning that there are duplicated dates (should be impossible)
 duplicate_data <- c(
@@ -269,7 +274,17 @@ dir.create(path = file.path(path, "WRTDS Bootstrap Diagnostic"), showWarnings = 
 dir.create(path = file.path(path, "WRTDS Bootstrap Outputs"), showWarnings = F)
 
 # Set of problem rivers to drop from the loop
-bad_boot_rivers <- c()
+bad_boot_rivers <- c(
+  # R crashes running these sites:
+  "ARC__Imnavait Weir_DSi", "ARC__Imnavait Weir_NH4",
+  ## Pre-emptively moving some other sites here that are likely to cause errors
+  ## Will double check whether these fail once other streams are done
+  "ARC__Imnavait Weir_NOx", "ARC__Imnavait Weir_P",
+  "ARC__Imnavait Weir_TN", "ARC__Imnavait Weir_TP"  
+  
+  
+  
+)
 
 # Loop across rivers and elements to run WRTDS workflow!
 for(river in setdiff(x = unique(good_rivers), y = bad_boot_rivers)){
