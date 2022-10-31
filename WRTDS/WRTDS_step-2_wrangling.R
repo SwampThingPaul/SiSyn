@@ -27,12 +27,12 @@ dir.create(path = file.path(path, "WRTDS Loop Diagnostic"), showWarnings = F)
 # Define the names of the Drive files we need
 names <- c("WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv", # No.1 Ref table
            "UpdatedAll_Q_master_10272022.csv", # No.2 Main discharge
-           "20221026_masterdata_chem.csv", # No.3 Main chemistry
+           "20221030_masterdata_chem.csv", # No.3 Main chemistry
            "20220909_master_min_det_limit.csv") # No.4 Minimum detection limit info
 
 # Find folders for those files
-ids <- googledrive::drive_ls(as_id("https://drive.google.com/drive/u/1/folders/1HQtpWYoq_YQwj_bDNNbv8D-0swi00o_s")) %>%
-  dplyr::bind_rows(googledrive::drive_ls(as_id("https://drive.google.com/drive/u/1/folders/1BAs0y1hHArW8BANUFJrXOXcoMHIk25Pp")))
+ids <- googledrive::drive_ls(as_id("https://drive.google.com/drive/u/1/folders/1HQtpWYoq_YQwj_bDNNbv8D-0swi00o_s"), pattern = ".csv") %>%
+  dplyr::bind_rows(googledrive::drive_ls(as_id("https://drive.google.com/drive/u/1/folders/1BAs0y1hHArW8BANUFJrXOXcoMHIk25Pp"), pattern = ".csv"))
 
 # Check that no file names have changed!
 if(!names[1] %in% ids$name | !names[2] %in% ids$name |
@@ -494,6 +494,7 @@ dplyr::glimpse(sab_check)
 
 # Export this!
 write.csv(x = sab_check, na = "", row.names = F,
-          file.path(path, "WRTDS Source Files", "WRTDS_sabotage_check.csv"))
+          file.path(path, "WRTDS Source Files",
+                    paste0("WRTDS_", Sys.Date(), "_sabotage_check.csv")))
 
 # End ----
