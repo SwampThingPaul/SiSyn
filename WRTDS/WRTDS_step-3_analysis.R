@@ -55,6 +55,7 @@ few_data <- c(
   "NIVA__AAGEVEG_DSi", "NIVA__FINEPAS_DSi", "NIVA__FINETAN_DSi", "NIVA__HOREVOS_DSi",
   "NIVA__MROEDRI_DSi", "NIVA__OSLEALN_DSi", "NIVA__ROGEBJE_DSi", "NIVA__ROGEVIK_DSi",
   "NIVA__SFJENAU_DSi", "NIVA__STRENID_DSi", "USGS__ANDREWS CREEK_TN",
+  "USGS__Canadian River_TN",
   # Error in ...
   ### "Error in runSurvReg(estPtYear, estPtLogQ, DecLow, DecHigh, localSample,  : 
   ### minNumObs is greater than total number of samples"
