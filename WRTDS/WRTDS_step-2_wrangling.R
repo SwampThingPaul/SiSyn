@@ -500,7 +500,10 @@ sab_check <- sab_check_v0[ !complete.cases(sab_check_v0), ] %>%
 # Take a look!
 dplyr::glimpse(sab_check)
 
-# Export this!
+# If there are any streams in the sabotage object, export a list for later diagnosis!
+if(nrow(sab_check) > 0){
+
+# Export locally
 write.csv(x = sab_check, na = "", row.names = F,
           file.path(path, "WRTDS Source Files",
                     paste0("WRTDS_", Sys.Date(), "_sabotage_check.csv")))
@@ -511,5 +514,6 @@ googledrive::drive_upload(media = file.path(path, "WRTDS Source Files", paste0("
                           overwrite = T,
                           path = googledrive::as_id("https://drive.google.com/drive/u/1/folders/1HQtpWYoq_YQwj_bDNNbv8D-0swi00o_s"))
 
+}
 
 # End ----
