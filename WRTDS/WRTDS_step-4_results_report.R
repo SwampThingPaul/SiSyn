@@ -182,10 +182,7 @@ results_table <- out_list[["ResultsTable_GFN_WRTDS.csv"]] %>%
                 FNFlux_10_6kg_yr = FN.Flux..10.6kg.yr.) %>%
   # Attach basin area
   dplyr::left_join(y = ref_table, by = c("LTER", "stream")) %>%
-  # Calculate some additional columns
-  dplyr::mutate(Yield = Flux_10_6kg_yr / drainSqKm,
-                FNYield = FNFlux_10_6kg_yr / drainSqKm) %>%
-  # Do some unit conversions as well
+  # Do some unit conversions
   dplyr::mutate(
     Conc_uM = dplyr::case_when(
       chemical %in% c("DSi") ~ (Conc_mgL / 28) * 1000,
@@ -202,12 +199,60 @@ results_table <- out_list[["ResultsTable_GFN_WRTDS.csv"]] %>%
     FNFlux_10_6kmol_yr = dplyr::case_when(
       chemical %in% c("DSi") ~ (FNFlux_10_6kg_yr / 28),
       chemical %in% c("NOx", "NH4", "NO3", "TN") ~ (FNFlux_10_6kg_yr / 14),
-      chemical %in% c("P", "TP") ~ (FNFlux_10_6kg_yr / 30.9))
-    ) %>%
-  # Recalculate yield and flow-normalized yield
-  dplyr::mutate(Yield_10_6kmol_yr_km2 = Flux_10_6kmol_yr / drainSqKm,
+      chemical %in% c("P", "TP") ~ (FNFlux_10_6kg_yr / 30.9)) ) %>%
+  # Calculate ratios of different chemicals
+  ## Move area to the left
+  dplyr::relocate(drainSqKm, .after = stream) %>%
+  ## Pivot longer to get various responses into a column
+  tidyr::pivot_longer(cols = Discharge_cms:FNFlux_10_6kmol_yr,
+                      names_to = "response_types",
+                      values_to = "response_values") %>%
+  # Handle "duplicate" values for sites that break across a year so have two values for one year
+  ## Only relevant to the McMurdo sites where we altered period of analysis
+  dplyr::group_by(file_name, Stream_Element_ID, LTER, stream, drainSqKm, chemical, Year, response_types) %>%
+  dplyr::summarize(response_values = mean(response_values, na.rm = TRUE)) %>%
+  dplyr::ungroup() %>%
+  ## Drop Stream_Element_ID to allow for pivot wider
+  dplyr::select(-Stream_Element_ID, -file_name) %>%
+  ## Pivot back wider but with chemicals as columns
+  tidyr::pivot_wider(names_from = chemical,
+                     values_from = response_values) %>%
+  ## Calculate DIN (DIN = NOx <or> NO3 + NH4)
+  dplyr::mutate(DIN = dplyr::case_when(
+    ### NOx is preferred for calculating DIN because it is NO3 + NOx
+    !is.na(NOx) & !is.na(NH4) ~ (NOx + NH4),
+    !is.na(NO3) & !is.na(NH4) ~ (NO3 + NH4))) %>%
+  ## Calculate ratios
+  dplyr::mutate(Si_to_DIN = ifelse(test = (!is.na(DSi) & !is.na(DIN)),
+                                   yes = (DSi / DIN), no = NA),
+                Si_to_P = ifelse(test = (!is.na(DSi) & !is.na(P)),
+                                   yes = (DSi / P), no = NA)) %>%
+  ## Pivot back long
+  tidyr::pivot_longer(cols = DSi:Si_to_P,
+                      names_to = "chemical",
+                      values_to = "response_values") %>%
+  ## Drop NAs this pivot introduces
+  dplyr::filter(!is.na(response_values)) %>%
+  ## Pivot back wide *again* using the original column names
+  tidyr::pivot_wider(names_from = response_types,
+                     values_from = response_values) %>%
+  ## Fix the ratio specification now that they're not column names
+  dplyr::mutate(
+   chemical = gsub(pattern = "_to_", replacement = ":", x = chemical),
+    ## Re-create "file_name" and "Stream_Element_ID
+    Stream_Element_ID = paste0(LTER, "__", stream, "_", chemical),
+    file_name = paste0(Stream_Element_ID, "_ResultsTable_GFN_WRTDS.csv"),
+   .before = dplyr::everything()) %>%
+  # Reorder column names
+  dplyr::select(file_name, Stream_Element_ID, LTER:chemical, Discharge_cms,
+                dplyr::ends_with("Conc_mgL"), dplyr::ends_with("Conc_uM"),
+                dplyr::ends_with("Flux_10_6kg_yr"), dplyr::ends_with("Flux_10_6kmol_yr")) %>%
+  # Calculate yield for both units
+  dplyr::mutate(Yield = Flux_10_6kg_yr / drainSqKm,
+                FNYield = FNFlux_10_6kg_yr / drainSqKm,
+                Yield_10_6kmol_yr_km2 = Flux_10_6kmol_yr / drainSqKm,
                 FNYield_10_6kmol_yr_km2 = FNFlux_10_6kmol_yr / drainSqKm)
-
+  
 # Glimpse this as well
 dplyr::glimpse(results_table)
 
