@@ -32,45 +32,15 @@ information <- read.csv(file.path(path, "WRTDS Inputs", "WRTDS-input_information
 ## For now, we are hard coding the set of sites that need special treatment
 # --- (^) NOTE (^) ---
 
-# Rivers without matching chemistry/discharge data
-missing_data <- c(
-  # Warning in `EGRET::mergeReport`
-  ### "Some Sample dates do not have corresponding flow data. Not all EGRET functions will work correctly."
-  # Warning in ` EGRET::modelEstimation`
-  ### "Problems converging"
-  # Eventual downstream error message:
-  ### "Error in if (lastMonth == 2 & (lastYear%%4 == 0) & ((lastYear%%100 !=  : 
-  ### missing value where TRUE/FALSE needed"
-  "LUQ__RI_DSi", "LUQ__RI_NH4", "LUQ__RI_NOx", "LUQ__RI_P")
-
-# Rivers without sufficient data
-few_data <- c(
-  # Error in `EGRET::modelEstimation`
-  ### "Error in runSurvReg(SampleCrossV$DecYear[i], SampleCrossV$LogQ[i], DecLow,  : 
-  ### minNumUncen is greater than total number of samples"
-  "AND__GSWS06_NOx", "AND__GSWS07_NOx", "HBR__ws1_P", "HBR__ws2_P", "HBR__ws3_P",
-  "HBR__ws4_P", "HBR__ws5_P", "HBR__ws6_P", "HBR__ws7_P", "HBR__ws8_P", "HBR__ws9_P",
-  "MCM__Canada Stream at F1_P", "MCM__Onyx River at Lake Vanda Weir_NH4",
-  "MCM__Onyx River at Lake Vanda Weir_P", "MCM__Onyx River at Lower Wright Weir_P",
-  "NIVA__AAGEVEG_DSi", "NIVA__FINEPAS_DSi", "NIVA__FINETAN_DSi", "NIVA__HOREVOS_DSi",
-  "NIVA__MROEDRI_DSi", "NIVA__OSLEALN_DSi", "NIVA__ROGEBJE_DSi", "NIVA__ROGEVIK_DSi",
-  "NIVA__SFJENAU_DSi", "NIVA__STRENID_DSi", "USGS__ANDREWS CREEK_TN",
-  "USGS__Canadian River_TN",
-  # Error in ...
-  ### "Error in runSurvReg(estPtYear, estPtLogQ, DecLow, DecHigh, localSample,  : 
-  ### minNumObs is greater than total number of samples"
-  "USGS__ANDREWS CREEK_NH4", "USGS__ANDREWS CREEK_P", "USGS__ANDREWS CREEK_TP"
-  )
-
 # Rivers with warning that there are duplicated dates (should be impossible)
 duplicate_data <- c(
-# Warning about "duplicated Daily dates" and "duplicated Sample dates"
-### "Error in seq.Date(surfaceStart, by = "1 year", length.out = nSeg) : 
-###'from' must be of length 1"
+  # Warning about "duplicated Daily dates" and "duplicated Sample dates"
+  ### "Error in seq.Date(surfaceStart, by = "1 year", length.out = nSeg) : 
+  ###'from' must be of length 1"
   "USGS__Wild River_DSi")
 
 # Separate period of analysis rivers
-pa12_2 <- setdiff(x = c(
+pa12_2 <- c(
   # EGRET::setPA(eList = egret_list[_out], paStart = 12, paLong = 2)
   "MCM__Andersen Creek at H1_DSi", "MCM__Andersen Creek at H1_NH4",
   "MCM__Andersen Creek at H1_NOx", "MCM__Andersen Creek at H1_P",
@@ -87,24 +57,60 @@ pa12_2 <- setdiff(x = c(
   "MCM__Priscu Stream at B1_DSi", "MCM__Priscu Stream at B1_NH4", 
   "MCM__Priscu Stream at B1_NOx", "MCM__Priscu Stream at B1_P", 
   "MCM__Von Guerard Stream at F6_DSi", "MCM__Von Guerard Stream at F6_NH4",
-  "MCM__Von Guerard Stream at F6_NOx", "MCM__Von Guerard Stream at F6_P"),
-  y = unique(few_data, missing_data))
+  "MCM__Von Guerard Stream at F6_NOx", "MCM__Von Guerard Stream at F6_P")
 
-pa5_5 <- setdiff(x = c(
+pa5_5 <- c(
   # EGRET::setPA(eList = egret_list[_out], paStart = 5, paLong = 5)
   "NWT__MARTINELLI_DSi", "NWT__MARTINELLI_NH4", 
-  "NWT__MARTINELLI_NOx", "NWT__MARTINELLI_P"),
-  y = unique(few_data, missing_data))
+  "NWT__MARTINELLI_NOx", "NWT__MARTINELLI_P")
 
-pa5_3 <- setdiff(x = c(
+pa5_3 <- c(
   # EGRET::setPA(eList = egret_list[_out], paStart = 5, paLong = 3)
   "NWT__SADDLE STREAM 007_DSi", "NWT__SADDLE STREAM 007_NH4", 
-  "NWT__SADDLE STREAM 007_NOx", "NWT__SADDLE STREAM 007_P"),
-  y = unique(few_data, missing_data))
+  "NWT__SADDLE STREAM 007_NOx", "NWT__SADDLE STREAM 007_P")
+
+# Rivers without matching chemistry/discharge data
+missing_data <- c(
+  # Warning in `EGRET::mergeReport`
+  ### "Some Sample dates do not have corresponding flow data. Not all EGRET functions will work correctly."
+  # Warning in ` EGRET::modelEstimation`
+  ### "Problems converging"
+  # Eventual downstream error message:
+  ### "Error in if (lastMonth == 2 & (lastYear%%4 == 0) & ((lastYear%%100 !=  : 
+  ### missing value where TRUE/FALSE needed"
+  "LUQ__RI_DSi", "LUQ__RI_NH4", "LUQ__RI_NOx", "LUQ__RI_P")
+
+# Other odd errors
+odd_ones <- c(
+  # Error in ...
+  ## "Error in if (is.na(yDif)) blankHolder else format(yDif, digits = 2,
+  ## width = widthLength) : argument is of length zero"
+  "USGS__GORE CREEK AT MOUTH_TN"
+)
+
+# Rivers without sufficient data
+few_data <- c(
+  # Error in `EGRET::modelEstimation`
+  ### "Error in runSurvReg(SampleCrossV$DecYear[i], SampleCrossV$LogQ[i], DecLow,  : 
+  ### minNumUncen is greater than total number of samples"
+  "AND__GSWS06_NOx", "AND__GSWS07_NOx", "HBR__ws1_P", "HBR__ws2_P", "HBR__ws3_P",
+  "HBR__ws4_P", "HBR__ws5_P", "HBR__ws6_P", "HBR__ws7_P", "HBR__ws8_P", "HBR__ws9_P",
+  "MCM__Canada Stream at F1_P", "MCM__Onyx River at Lake Vanda Weir_NH4",
+  "MCM__Onyx River at Lake Vanda Weir_P", "MCM__Onyx River at Lower Wright Weir_P",
+  "NIVA__AAGEVEG_DSi", "NIVA__FINEPAS_DSi", "NIVA__FINETAN_DSi", "NIVA__HOREVOS_DSi",
+  "NIVA__MROEDRI_DSi", "NIVA__OSLEALN_DSi", "NIVA__ROGEBJE_DSi", "NIVA__ROGEVIK_DSi",
+  "NIVA__SFJENAU_DSi", "NIVA__STRENID_DSi", "USGS__ANDREWS CREEK_TN",
+  "USGS__Canadian River_TN", "USGS__Dismal River_TN", "USGS__Dismal River_TP",
+  "USGS__EAGLE RIVER GYPSUM_TN", "USGS__HILLABAHATCHEE CREEK_TN",
+  # Error in ...
+  ### "Error in runSurvReg(estPtYear, estPtLogQ, DecLow, DecHigh, localSample,  : 
+  ### minNumObs is greater than total number of samples"
+  "USGS__ANDREWS CREEK_NH4", "USGS__ANDREWS CREEK_P", "USGS__ANDREWS CREEK_TP"
+  )
 
 # Identify all rivers that aren't in the broken data vectors
 good_rivers <- setdiff(x = unique(chemistry$Stream_Element_ID),
-                       y = unique(c(missing_data, few_data, duplicate_data)))
+                       y = unique(c(missing_data, few_data, duplicate_data, odd_ones)))
 ## Note this includes weird rivers that need special treatment and those that don't
 
 ## ---------------------------------------------- ##
