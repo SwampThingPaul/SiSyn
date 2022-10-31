@@ -205,8 +205,8 @@ results_table <- out_list[["ResultsTable_GFN_WRTDS.csv"]] %>%
       chemical %in% c("P", "TP") ~ (FNFlux_10_6kg_yr / 30.9))
     ) %>%
   # Recalculate yield and flow-normalized yield
-  dplyr::mutate(Yield_10_6kmol_yr = Flux_10_6kmol_yr / drainSqKm,
-                FNYield_10_6kmol_yr = FNFlux_10_6kmol_yr / drainSqKm)
+  dplyr::mutate(Yield_10_6kmol_yr_km2 = Flux_10_6kmol_yr / drainSqKm,
+                FNYield_10_6kmol_yr_km2 = FNFlux_10_6kmol_yr / drainSqKm)
 
 # Glimpse this as well
 dplyr::glimpse(results_table)
