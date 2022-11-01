@@ -114,7 +114,8 @@ few_data <- c(
   ### "Error in runSurvReg(estPtYear, estPtLogQ, DecLow, DecHigh, localSample,  : 
   ### minNumObs is greater than total number of samples"
   "USGS__ANDREWS CREEK_NH4", "USGS__ANDREWS CREEK_P", "USGS__ANDREWS CREEK_TP",
-  "USGS__HILLABAHATCHEE CREEK_TP", "USGS__LITTLE RIVER_TN", "USGS__LITTLE RIVER_TP"
+  "USGS__HILLABAHATCHEE CREEK_TP", "USGS__LITTLE RIVER_TN", "USGS__LITTLE RIVER_TP",
+  "USGS__PICEANCE CREEK AT WHITE RIVER_TP"
   )
 
 # Identify all rivers that aren't in the broken data vectors
