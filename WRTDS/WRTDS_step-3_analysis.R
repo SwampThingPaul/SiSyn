@@ -9,8 +9,7 @@
 ## ---------------------------------------------- ##
 # Load libraries
 # install.packages("librarian")
-librarian::shelf(tidyverse, googledrive, lubridate, EGRET, EGRETci,
-                 lter/HERON, njlyon0/helpR)
+librarian::shelf(tidyverse, googledrive, lubridate, EGRET, EGRETci, lter/HERON, njlyon0/helpR)
 
 # Clear environment
 rm(list = ls())
@@ -85,7 +84,16 @@ odd_ones <- c(
   # Error in ...
   ## "Error in if (is.na(yDif)) blankHolder else format(yDif, digits = 2,
   ## width = widthLength) : argument is of length zero"
-  "USGS__GORE CREEK AT MOUTH_TN"
+  "USGS__GORE CREEK AT MOUTH_TN", 
+  # Error in ...
+  ## "Error in seq.default(xFirst, xLast) : 'from' must be a finite number"
+  # Looks like this may be caused by "negative flow days"?
+  ## Need to check range of values to see these problem values
+  "USGS__Lower Atchafalaya_DSi", "USGS__Lower Atchafalaya_NH4",
+  "USGS__Lower Atchafalaya_NOx", "USGS__Lower Atchafalaya_P",
+  "USGS__Lower Atchafalaya_TN", "USGS__Lower Atchafalaya_TP",
+  # Crashes R without a specific warning message
+  "USGS__McDonalds Branch_P", "USGS__MERCED R_P"
 )
 
 # Rivers without sufficient data
