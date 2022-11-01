@@ -291,7 +291,7 @@ dir.create(path = file.path(path, "WRTDS Bootstrap Outputs"), showWarnings = F)
 # Set of problem rivers to drop from the loop
 bad_boot_rivers <- c(
   # R crashes running these sites:
-  "ARC__Imnavait Weir_DSi", "ARC__Imnavait Weir_NH4",
+  "ARC__Imnavait Weir_DSi", "ARC__Imnavait Weir_NH4", "Catalina Jemez__Marshall Gulch_DSi",
   ## Pre-emptively moving some other sites here that are likely to cause errors
   ## Will double check whether these fail once other streams are done
   "ARC__Imnavait Weir_NOx", "ARC__Imnavait Weir_P",
