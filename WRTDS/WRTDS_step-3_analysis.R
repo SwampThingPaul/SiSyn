@@ -110,6 +110,8 @@ few_data <- c(
   "NIVA__SFJENAU_DSi", "NIVA__STRENID_DSi", "USGS__ANDREWS CREEK_TN",
   "USGS__Canadian River_TN", "USGS__Dismal River_TN", "USGS__Dismal River_TP",
   "USGS__EAGLE RIVER GYPSUM_TN", "USGS__HILLABAHATCHEE CREEK_TN", "USGS__ROARING FORK_TN",
+  "USGS__SOUTH PLATTE_NH4", "USGS__SOUTH PLATTE_NOx", "USGS__SOUTH PLATTE_P",
+  "USGS__SOUTH PLATTE_TP",
   # Error in ...
   ### "Error in runSurvReg(estPtYear, estPtLogQ, DecLow, DecHigh, localSample,  : 
   ### minNumObs is greater than total number of samples"
