@@ -84,7 +84,7 @@ odd_ones <- c(
   # Error in ...
   ## "Error in if (is.na(yDif)) blankHolder else format(yDif, digits = 2,
   ## width = widthLength) : argument is of length zero"
-  "USGS__GORE CREEK AT MOUTH_TN", 
+  "USGS__GORE CREEK AT MOUTH_TN", "USGS__PINE CREEK_TP",
   # Error in ...
   ## "Error in seq.default(xFirst, xLast) : 'from' must be a finite number"
   # Looks like this may be caused by "negative flow days"?
@@ -93,7 +93,7 @@ odd_ones <- c(
   "USGS__Lower Atchafalaya_NOx", "USGS__Lower Atchafalaya_P",
   "USGS__Lower Atchafalaya_TN", "USGS__Lower Atchafalaya_TP",
   # Crashes R without a specific warning message
-  "USGS__McDonalds Branch_P", "USGS__MERCED R_P"
+  "USGS__McDonalds Branch_P", "USGS__MERCED R_P", "USGS__PINE CREEK_P"
 )
 
 # Rivers without sufficient data
@@ -114,7 +114,9 @@ few_data <- c(
   ### "Error in runSurvReg(estPtYear, estPtLogQ, DecLow, DecHigh, localSample,  : 
   ### minNumObs is greater than total number of samples"
   "USGS__ANDREWS CREEK_NH4", "USGS__ANDREWS CREEK_P", "USGS__ANDREWS CREEK_TP",
-  "USGS__HILLABAHATCHEE CREEK_TP", "USGS__LITTLE RIVER_TN", "USGS__LITTLE RIVER_TP"
+  "USGS__HILLABAHATCHEE CREEK_TP", "USGS__LITTLE RIVER_TN", "USGS__LITTLE RIVER_TP",
+  "USGS__PICEANCE CREEK AT WHITE RIVER_TP", "USGS__PICEANCE CREEK RYAN GULCH_TP",
+  "USGS__PINE CREEK_TN", "USGS__POPPLE RIVER_TN"
   )
 
 # Identify all rivers that aren't in the broken data vectors
