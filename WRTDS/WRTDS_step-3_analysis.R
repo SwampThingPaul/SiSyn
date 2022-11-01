@@ -84,7 +84,7 @@ odd_ones <- c(
   # Error in ...
   ## "Error in if (is.na(yDif)) blankHolder else format(yDif, digits = 2,
   ## width = widthLength) : argument is of length zero"
-  "USGS__GORE CREEK AT MOUTH_TN", 
+  "USGS__GORE CREEK AT MOUTH_TN", "USGS__PINE CREEK_TP",
   # Error in ...
   ## "Error in seq.default(xFirst, xLast) : 'from' must be a finite number"
   # Looks like this may be caused by "negative flow days"?
