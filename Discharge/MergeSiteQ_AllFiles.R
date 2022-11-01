@@ -2,7 +2,7 @@
 # install.packages("tidyverse")
 # install.packages("gtools")
 # install.packages("rtools")
-install.packages("plyr")
+#install.packages("plyr")
 require(tidyverse)
 require(googledrive)
 require(stringr)
@@ -47,7 +47,13 @@ for (i in 1:length(csv_files$drive_resource)) {
 
 #add column for site name
 #loop through each downloaded csv file and add appropriate site name
-discharge_files = list.files(path="/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/All_Q")
+discharge_files = list.files(path="/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/All_Q", pattern = ".csv")
+
+discharge_files<-discharge_files[!(discharge_files %like% "UpdatedAll_Q_master")]
+
+remove_these<-setdiff(discharge_files, csv_files$name)
+
+discharge_files<-discharge_files[!(discharge_files %in% remove_these)]
 
 ##start here if Q files are already on computer##
 
@@ -56,17 +62,29 @@ discharge_files = list.files(path="/Users/keirajohnson/Box Sync/Keira_Johnson/Si
 
 setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
 
+ref_table_link<-"https://drive.google.com/file/d/1KXw3qQJ-z3UuE-ym3VO-gkPZ5SzrUY6U/view?usp=sharing"
+
+ref_table_folder = drive_get(as_id(ref_table_link))
+
+ref_table<-drive_download(ref_table_folder$drive_resource, overwrite = T)
+
+QLog<-read.csv(ref_table$name)
+
+#get list of csv files from folder
+#csv_files = drive_ls(folder, type="csv")
+
 #read in discharge log
-QLog<-read.csv("DischargeLog_All_011422.csv")
+#QLog<-read.csv("WRTDS_Reference_Table_LTER_V2.csv")
 
 setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/All_Q")
 
-Q<-read.csv("UpdatedAll_Q_master.csv")
+#Q<-read.csv("UpdatedAll_Q_master.csv")
 
 #create list to store output from for loop
 data_list = list()
-DischargeList<-c("MEAN_Q", "Discharge", "InstantQ", "Q_m3sec", "discharge")
-DateList<-c("Date", "dateTime", "dates", "date")
+#date_guess = list()
+DischargeList<-c("MEAN_Q", "Discharge", "InstantQ", "Q_m3sec", "discharge", "Q", "var", "Value")
+DateList<-c("Date", "dateTime", "dates", "date", "datetime")
 
 for (i in 1:length(discharge_files)) {
   LTER_name = substr(discharge_files[i],start=1,stop=3)
@@ -77,7 +95,7 @@ for (i in 1:length(discharge_files)) {
   names(d)[which(colnames(d) %in% DateList)]<-"Date"
   d<-d[,c("Q", "Date")]
   d$DischargeFileName<-file_name_nocsv
-  ref_site<-subset(QLog, QLog$DischargeFileName==file_name_nocsv)
+  ref_site<-subset(QLog, QLog$Discharge_File_Name==file_name_nocsv)
   ref_site<-ref_site[1,]
   d$Units<-ref_site$Units
   d$LTER = LTER_name
@@ -90,15 +108,51 @@ for (i in 1:length(discharge_files)) {
   
   d<-d[,c("Qcms", "Date", "LTER", "DischargeFileName")]
   
+  
+  # d$Date<-as.character(d$Date)
+  # 
+  # date_guess_unique<-date_format_guess(d,"Date", groups = TRUE, group_col = "LTER")
+  # 
+  # date_guess[[i]]<-unique(date_guess_unique$format_guess)
+  
+  if(is.Date(d$Date)){
+
+    d$Date<-d$Date
+
+  } else{
+
+    d<-date_format_guess(d,"Date", groups = TRUE, group_col = "LTER")
+    format<-"%m/%d/%Y"
+    d$Date<-as.Date(d$Date, format)
+
+  }
+
   data_list[[i]] = d
 }
 
 #use rbind to concatenate each new discharge file
 #should have 3 columns: date, site, discharge
-#all_discharge = rbindlist(data_list)
-all_discharge = ldply(data_list, data.frame)
+all_discharge = bind_rows(data_list)
 
-write.csv(all_discharge, "UpdatedAll_Q_master.csv")
+all_discharge<-all_discharge[,c("Qcms", "Date", "LTER", "DischargeFileName")]
+
+# date_guess_list<-unlist(date_guess)
+# 
+# unique(date_guess_list)
+# 
+# sum(is.na(all_discharge$Date))
+# GRO<-subset(all_discharge, all_discharge$DischargeFileName=="GRO_Ob_Q")
+# unique(GRO$DischargeFileName)
+
+write.csv(all_discharge, "UpdatedAll_Q_master_10272022.csv")
+
+allQ<-read.csv("UpdatedAll_Q_master_10262022.csv")
+
+
+GRO_min<-all_discharge %>%
+  filter(LTER=="GRO") %>%
+  dplyr::group_by(DischargeFileName) %>%
+  slice_min(Date)
 
 #which sites are included in master discharge file? Different from input files?
 discharge_sites = data.frame("site.name"=unique(all_discharge$site.name))

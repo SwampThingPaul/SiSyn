@@ -57,6 +57,10 @@ WRTDS Inputs/
 WRTDS Temporary Files/
 WRTDS Outputs/
 WRTDS Source Files/
+WRTDS Loop Diagnostic/
+WRTDS Bootstrap Outputs/
+WRTDS Bootstrap Diagnostic/
+WRTDS Bootstrap Results/
 
 # Minimum Detection Limit folder
 MDL_Prep/

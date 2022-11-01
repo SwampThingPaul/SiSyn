@@ -63,7 +63,7 @@ for (i in 1:length(K_names)) {
   
   HJ_Si<-subset(HJ_data, HJ_data$site==K_names[i])
   
-  write.csv(HJ_Si, paste0(K_names[i], "_Discharge.csv"))
+  write.csv(HJ_Si, paste0(K_names[i], "_Si.csv"))
   
 }
 
@@ -74,6 +74,27 @@ missing_df<-as.data.frame(do.call(rbind, missing))
 missing_df$site<-K_names
 
 
+setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/MacroSheds_Sites/Si")
+
+Q_files<-list.files(path = ".", pattern = "_Discharge.csv")
+
+SWE_files<-Q_files[grep("Site", Q_files)]
+
+pdf("Krycklan_Q.pdf")
+
+for (i in 1:length(SWE_files)) {
+  
+  Q<-read.csv(SWE_files[i])
+  
+  Q$val<-as.numeric(Q$val)
+  
+  Q$datetime<-as.Date(Q$datetime)
+  
+  p1<-ggplot(Q, aes(datetime, val))+geom_line()+theme_bw()+ggtitle(paste(SWE_files[i]))
+  
+  print(p1)
+  
+}
 
 
-
+dev.off()
