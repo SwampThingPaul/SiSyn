@@ -107,7 +107,37 @@ for(type in out_types){
     dplyr::select(-data_type) %>%
     # Relocate other joined columns to front
     dplyr::relocate(Stream_Element_ID, LTER, stream, chemical,
-                    .after = file_name)
+                    .after = file_name) %>%
+    # Drop file_name and stream_element_ID
+    dplyr::select(-file_name, -Stream_Element_ID) %>%
+    # Condense Finnish site synonym names
+    ## A given site has one name for silica and a diff name for all other chemicals
+    dplyr::mutate(stream = dplyr::case_when(
+      stream == "Site 1069" ~ "Mustionjoki 4,9  15500",
+      stream == "Site 11310" ~ "Virojoki 006 3020",
+      stream == "Site 11523" ~ "Kymijoki Ahvenkoski 001",
+      stream == "Site 11532" ~ "Kymijoki Kokonkoski 014",
+      stream == "Site 11564" ~ "Kymij Huruksela 033 5600",
+      stream == "Site 227" ~ "Koskenkylanjoki 6030",
+      stream == "Site 26534" ~ "Lapuanjoki 9900",
+      stream == "Site 26740" ~ "Perhonjoki 10600",
+      stream == "Site 26935" ~ "Lestijoki 10800 8-tien s",
+      stream == "Site 27095" ~ "Kalajoki 11000",
+      stream == "Site 27697" ~ "Pyhajoki Hourunk 11400",
+      stream == "Site 27880" ~ "Siikajoki 8-tien s 11600",
+      stream == "Site 28208" ~ "Oulujoki 13000",
+      stream == "Site 28414" ~ "Kiiminkij 13010 4-tien s",
+      stream == "Site 28639" ~ "Iijoki Raasakan voimal",
+      stream == "Site 36177" ~ "SIMOJOKI AS. 13500",
+      stream == "Site 397" ~ "Porvoonjoki 11,5  6022",
+      stream == "Site 39892" ~ "KEMIJOKI ISOHAARA 14000",
+      stream == "Site 39974" ~ "TORNIONJ KUKKOLA 14310",
+      stream == "Site 4081" ~ "Myllykanava vp 9100",
+      stream == "Site 4381" ~ "Skatila vp 9600",
+      stream == "Site 567" ~ "Mustijoki 4,2  6010",
+      stream == "Site 605" ~ "Vantaa 4,2  6040",
+      stream == "Site 69038" ~ "Narpionjoki mts 6761",
+      TRUE ~ stream))
   
   # Add this dataframe to the output list
   out_list[[type]] <- type_df
@@ -139,38 +169,8 @@ trends_table <- out_list[["TrendsTable_GFN_WRTDS.csv"]] %>%
     slope_10_3kg_yr_yr = dplyr::coalesce(slope_10_3kg_yr_yr, slope..10.3kg.yr.yr.)) %>%
   # Drop unneeded columns
   dplyr::select(-change.mg.L., -slope.mg.L.yr., -change.percent.,
-                -slope..percent.yr., -change..10.3kg.yr., -slope..10.3kg.yr.yr.) %>%
-  # Drop file_name and stream_element_ID
-  dplyr::select(-file_name, -Stream_Element_ID) %>%
-  # Condense Finnish site synonym names
-  ## A given site has one name for silica and a diff name for all other chemicals
-  dplyr::mutate(stream = dplyr::case_when(
-    stream == "Site 1069" ~ "Mustionjoki 4,9  15500",
-    stream == "Site 11310" ~ "Virojoki 006 3020",
-    stream == "Site 11523" ~ "Kymijoki Ahvenkoski 001",
-    stream == "Site 11532" ~ "Kymijoki Kokonkoski 014",
-    stream == "Site 11564" ~ "Kymij Huruksela 033 5600",
-    stream == "Site 227" ~ "Koskenkylanjoki 6030",
-    stream == "Site 26534" ~ "Lapuanjoki 9900",
-    stream == "Site 26740" ~ "Perhonjoki 10600",
-    stream == "Site 26935" ~ "Lestijoki 10800 8-tien s",
-    stream == "Site 27095" ~ "Kalajoki 11000",
-    stream == "Site 27697" ~ "Pyhajoki Hourunk 11400",
-    stream == "Site 27880" ~ "Siikajoki 8-tien s 11600",
-    stream == "Site 28208" ~ "Oulujoki 13000",
-    stream == "Site 28414" ~ "Kiiminkij 13010 4-tien s",
-    stream == "Site 28639" ~ "Iijoki Raasakan voimal",
-    stream == "Site 36177" ~ "SIMOJOKI AS. 13500",
-    stream == "Site 397" ~ "Porvoonjoki 11,5  6022",
-    stream == "Site 39892" ~ "KEMIJOKI ISOHAARA 14000",
-    stream == "Site 39974" ~ "TORNIONJ KUKKOLA 14310",
-    stream == "Site 4081" ~ "Myllykanava vp 9100",
-    stream == "Site 4381" ~ "Skatila vp 9600",
-    stream == "Site 567" ~ "Mustijoki 4,2  6010",
-    stream == "Site 605" ~ "Vantaa 4,2  6040",
-    stream == "Site 69038" ~ "Narpionjoki mts 6761",
-    TRUE ~ stream))
-
+                -slope..percent.yr., -change..10.3kg.yr., -slope..10.3kg.yr.yr.)
+  
 # Glimpse this
 dplyr::glimpse(trends_table)
 
@@ -184,37 +184,7 @@ gfn <- out_list[["GFN_WRTDS.csv"]] %>%
   dplyr::left_join(y = ref_table, by = c("LTER", "stream")) %>%
   # Calculate some additional columns
   dplyr::mutate(Yield = FluxDay / drainSqKm,
-                FNYield = FNFlux / drainSqKm) %>%
-  # Drop file_name and stream_element_ID
-  dplyr::select(-file_name, -Stream_Element_ID) %>%
-  # Condense Finnish site synonym names
-  ## A given site has one name for silica and a diff name for all other chemicals
-  dplyr::mutate(stream = dplyr::case_when(
-    stream == "Site 1069" ~ "Mustionjoki 4,9  15500",
-    stream == "Site 11310" ~ "Virojoki 006 3020",
-    stream == "Site 11523" ~ "Kymijoki Ahvenkoski 001",
-    stream == "Site 11532" ~ "Kymijoki Kokonkoski 014",
-    stream == "Site 11564" ~ "Kymij Huruksela 033 5600",
-    stream == "Site 227" ~ "Koskenkylanjoki 6030",
-    stream == "Site 26534" ~ "Lapuanjoki 9900",
-    stream == "Site 26740" ~ "Perhonjoki 10600",
-    stream == "Site 26935" ~ "Lestijoki 10800 8-tien s",
-    stream == "Site 27095" ~ "Kalajoki 11000",
-    stream == "Site 27697" ~ "Pyhajoki Hourunk 11400",
-    stream == "Site 27880" ~ "Siikajoki 8-tien s 11600",
-    stream == "Site 28208" ~ "Oulujoki 13000",
-    stream == "Site 28414" ~ "Kiiminkij 13010 4-tien s",
-    stream == "Site 28639" ~ "Iijoki Raasakan voimal",
-    stream == "Site 36177" ~ "SIMOJOKI AS. 13500",
-    stream == "Site 397" ~ "Porvoonjoki 11,5  6022",
-    stream == "Site 39892" ~ "KEMIJOKI ISOHAARA 14000",
-    stream == "Site 39974" ~ "TORNIONJ KUKKOLA 14310",
-    stream == "Site 4081" ~ "Myllykanava vp 9100",
-    stream == "Site 4381" ~ "Skatila vp 9600",
-    stream == "Site 567" ~ "Mustijoki 4,2  6010",
-    stream == "Site 605" ~ "Vantaa 4,2  6040",
-    stream == "Site 69038" ~ "Narpionjoki mts 6761",
-    TRUE ~ stream))
+                FNYield = FNFlux / drainSqKm)
 
 # Glimpse
 dplyr::glimpse(gfn)
@@ -224,37 +194,7 @@ dplyr::glimpse(gfn)
 ## ---------------------------------------------- ##
 
 # Error statistics
-error_stats <- out_list[["ErrorStats_WRTDS.csv"]] %>%
-  # Drop file_name and stream_element_ID
-  dplyr::select(-file_name, -Stream_Element_ID) %>%
-  # Condense Finnish site synonym names
-  ## A given site has one name for silica and a diff name for all other chemicals
-  dplyr::mutate(stream = dplyr::case_when(
-    stream == "Site 1069" ~ "Mustionjoki 4,9  15500",
-    stream == "Site 11310" ~ "Virojoki 006 3020",
-    stream == "Site 11523" ~ "Kymijoki Ahvenkoski 001",
-    stream == "Site 11532" ~ "Kymijoki Kokonkoski 014",
-    stream == "Site 11564" ~ "Kymij Huruksela 033 5600",
-    stream == "Site 227" ~ "Koskenkylanjoki 6030",
-    stream == "Site 26534" ~ "Lapuanjoki 9900",
-    stream == "Site 26740" ~ "Perhonjoki 10600",
-    stream == "Site 26935" ~ "Lestijoki 10800 8-tien s",
-    stream == "Site 27095" ~ "Kalajoki 11000",
-    stream == "Site 27697" ~ "Pyhajoki Hourunk 11400",
-    stream == "Site 27880" ~ "Siikajoki 8-tien s 11600",
-    stream == "Site 28208" ~ "Oulujoki 13000",
-    stream == "Site 28414" ~ "Kiiminkij 13010 4-tien s",
-    stream == "Site 28639" ~ "Iijoki Raasakan voimal",
-    stream == "Site 36177" ~ "SIMOJOKI AS. 13500",
-    stream == "Site 397" ~ "Porvoonjoki 11,5  6022",
-    stream == "Site 39892" ~ "KEMIJOKI ISOHAARA 14000",
-    stream == "Site 39974" ~ "TORNIONJ KUKKOLA 14310",
-    stream == "Site 4081" ~ "Myllykanava vp 9100",
-    stream == "Site 4381" ~ "Skatila vp 9600",
-    stream == "Site 567" ~ "Mustijoki 4,2  6010",
-    stream == "Site 605" ~ "Vantaa 4,2  6040",
-    stream == "Site 69038" ~ "Narpionjoki mts 6761",
-    TRUE ~ stream))
+error_stats <- out_list[["ErrorStats_WRTDS.csv"]]
 
 # Glimpse it
 dplyr::glimpse(error_stats)
@@ -269,37 +209,7 @@ monthly <- out_list[["Monthly_GFN_WRTDS.csv"]] %>%
   dplyr::left_join(y = ref_table, by = c("LTER", "stream")) %>%
   # Calculate some additional columns
   dplyr::mutate(Yield = Flux / drainSqKm,
-                FNYield = FNFlux / drainSqKm) %>%
-  # Drop file_name and stream_element_ID
-  dplyr::select(-file_name, -Stream_Element_ID) %>%
-  # Condense Finnish site synonym names
-  ## A given site has one name for silica and a diff name for all other chemicals
-  dplyr::mutate(stream = dplyr::case_when(
-    stream == "Site 1069" ~ "Mustionjoki 4,9  15500",
-    stream == "Site 11310" ~ "Virojoki 006 3020",
-    stream == "Site 11523" ~ "Kymijoki Ahvenkoski 001",
-    stream == "Site 11532" ~ "Kymijoki Kokonkoski 014",
-    stream == "Site 11564" ~ "Kymij Huruksela 033 5600",
-    stream == "Site 227" ~ "Koskenkylanjoki 6030",
-    stream == "Site 26534" ~ "Lapuanjoki 9900",
-    stream == "Site 26740" ~ "Perhonjoki 10600",
-    stream == "Site 26935" ~ "Lestijoki 10800 8-tien s",
-    stream == "Site 27095" ~ "Kalajoki 11000",
-    stream == "Site 27697" ~ "Pyhajoki Hourunk 11400",
-    stream == "Site 27880" ~ "Siikajoki 8-tien s 11600",
-    stream == "Site 28208" ~ "Oulujoki 13000",
-    stream == "Site 28414" ~ "Kiiminkij 13010 4-tien s",
-    stream == "Site 28639" ~ "Iijoki Raasakan voimal",
-    stream == "Site 36177" ~ "SIMOJOKI AS. 13500",
-    stream == "Site 397" ~ "Porvoonjoki 11,5  6022",
-    stream == "Site 39892" ~ "KEMIJOKI ISOHAARA 14000",
-    stream == "Site 39974" ~ "TORNIONJ KUKKOLA 14310",
-    stream == "Site 4081" ~ "Myllykanava vp 9100",
-    stream == "Site 4381" ~ "Skatila vp 9600",
-    stream == "Site 567" ~ "Mustijoki 4,2  6010",
-    stream == "Site 605" ~ "Vantaa 4,2  6040",
-    stream == "Site 69038" ~ "Narpionjoki mts 6761",
-    TRUE ~ stream))
+                FNYield = FNFlux / drainSqKm)
 
 # Check it out
 dplyr::glimpse(monthly)
@@ -318,36 +228,6 @@ results_table <- out_list[["ResultsTable_GFN_WRTDS.csv"]] %>%
                 FNFlux_10_6kg_yr = FN.Flux..10.6kg.yr.) %>%
   # Attach basin area
   dplyr::left_join(y = ref_table, by = c("LTER", "stream")) %>%
-  # Drop file_name and stream_element_ID
-  dplyr::select(-file_name, -Stream_Element_ID) %>%
-  # Condense Finnish site synonym names
-  ## A given site has one name for silica and a diff name for all other chemicals
-  dplyr::mutate(stream = dplyr::case_when(
-    stream == "Site 1069" ~ "Mustionjoki 4,9  15500",
-    stream == "Site 11310" ~ "Virojoki 006 3020",
-    stream == "Site 11523" ~ "Kymijoki Ahvenkoski 001",
-    stream == "Site 11532" ~ "Kymijoki Kokonkoski 014",
-    stream == "Site 11564" ~ "Kymij Huruksela 033 5600",
-    stream == "Site 227" ~ "Koskenkylanjoki 6030",
-    stream == "Site 26534" ~ "Lapuanjoki 9900",
-    stream == "Site 26740" ~ "Perhonjoki 10600",
-    stream == "Site 26935" ~ "Lestijoki 10800 8-tien s",
-    stream == "Site 27095" ~ "Kalajoki 11000",
-    stream == "Site 27697" ~ "Pyhajoki Hourunk 11400",
-    stream == "Site 27880" ~ "Siikajoki 8-tien s 11600",
-    stream == "Site 28208" ~ "Oulujoki 13000",
-    stream == "Site 28414" ~ "Kiiminkij 13010 4-tien s",
-    stream == "Site 28639" ~ "Iijoki Raasakan voimal",
-    stream == "Site 36177" ~ "SIMOJOKI AS. 13500",
-    stream == "Site 397" ~ "Porvoonjoki 11,5  6022",
-    stream == "Site 39892" ~ "KEMIJOKI ISOHAARA 14000",
-    stream == "Site 39974" ~ "TORNIONJ KUKKOLA 14310",
-    stream == "Site 4081" ~ "Myllykanava vp 9100",
-    stream == "Site 4381" ~ "Skatila vp 9600",
-    stream == "Site 567" ~ "Mustijoki 4,2  6010",
-    stream == "Site 605" ~ "Vantaa 4,2  6040",
-    stream == "Site 69038" ~ "Narpionjoki mts 6761",
-    TRUE ~ stream)) %>%
   # Do some unit conversions
   dplyr::mutate(
     Conc_uM = dplyr::case_when(
