@@ -118,6 +118,7 @@ few_data <- c(
   "MCM__Onyx River at Lake Vanda Weir_P", "MCM__Onyx River at Lower Wright Weir_P",
   "NIVA__AAGEVEG_DSi", "NIVA__FINEPAS_DSi", "NIVA__FINETAN_DSi", "NIVA__HOREVOS_DSi",
   "NIVA__MROEDRI_DSi", "NIVA__OSLEALN_DSi", "NIVA__ROGEBJE_DSi", "NIVA__ROGEVIK_DSi",
+  "Sagehen__Sagehen_NH4", "Sagehen__Sagehen_TP",
   "NIVA__SFJENAU_DSi", "NIVA__STRENID_DSi", "USGS__ANDREWS CREEK_TN",
   "USGS__Canadian River_TN", "USGS__Dismal River_TN", "USGS__Dismal River_TP",
   "USGS__EAGLE RIVER GYPSUM_TN", "USGS__HILLABAHATCHEE CREEK_TN", "USGS__ROARING FORK_TN",
