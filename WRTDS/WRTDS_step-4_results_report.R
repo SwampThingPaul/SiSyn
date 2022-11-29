@@ -349,7 +349,7 @@ pdf_outs <- data.frame("file_name" = wrtds_outs_v0) %>%
 dplyr::glimpse(pdf_outs)
 
 # Identify PDFs already in GoogleDrive
-drive_pdfs <- googledrive::drive_ls(path = googledrive::as_id("https://drive.google.com/drive/folders/1ZG5DnW_fu65bmCgh0GnCYK89QaT9n3Ea"))
+drive_pdfs <- googledrive::drive_ls(path = googledrive::as_id("https://drive.google.com/drive/folders/1udMrg4oO9xAXuPvnIcKjV55fX0N8H-XZ"))
 
 # Use that to identify new PDFs!
 new_pdfs <- setdiff(pdf_outs$file_name, drive_pdfs$name)
