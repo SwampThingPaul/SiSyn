@@ -104,7 +104,8 @@ odd_ones <- c(
   "USGS__Lower Atchafalaya_NOx", "USGS__Lower Atchafalaya_P",
   "USGS__Lower Atchafalaya_TN", "USGS__Lower Atchafalaya_TP",
   # Crashes R without a specific warning message
-  "USGS__McDonalds Branch_P", "USGS__MERCED R_P", "USGS__PINE CREEK_P"
+  "USGS__McDonalds Branch_P", "USGS__MERCED R_P", "USGS__PINE CREEK_P",
+  "USGS__GREEN RIVER_P", "USGS__SOPCHOPPY RIVER_NOx"
 )
 
 # Rivers without sufficient data
@@ -118,7 +119,7 @@ few_data <- c(
   "MCM__Onyx River at Lake Vanda Weir_P", "MCM__Onyx River at Lower Wright Weir_P",
   "NIVA__AAGEVEG_DSi", "NIVA__FINEPAS_DSi", "NIVA__FINETAN_DSi", "NIVA__HOREVOS_DSi",
   "NIVA__MROEDRI_DSi", "NIVA__OSLEALN_DSi", "NIVA__ROGEBJE_DSi", "NIVA__ROGEVIK_DSi",
-  "Sagehen__Sagehen_NH4", "Sagehen__Sagehen_TP",
+  "Sagehen__Sagehen_NH4", "Sagehen__Sagehen_TP", "USGS__GREEN RIVER_TN",
   "NIVA__SFJENAU_DSi", "NIVA__STRENID_DSi", "USGS__ANDREWS CREEK_TN",
   "USGS__Canadian River_TN", "USGS__Dismal River_TN", "USGS__Dismal River_TP",
   "USGS__EAGLE RIVER GYPSUM_TN", "USGS__HILLABAHATCHEE CREEK_TN", "USGS__ROARING FORK_TN",
@@ -130,7 +131,8 @@ few_data <- c(
   "USGS__ANDREWS CREEK_NH4", "USGS__ANDREWS CREEK_P", "USGS__ANDREWS CREEK_TP",
   "USGS__HILLABAHATCHEE CREEK_TP", "USGS__LITTLE RIVER_TN", "USGS__LITTLE RIVER_TP",
   "USGS__PICEANCE CREEK AT WHITE RIVER_TP", "USGS__PICEANCE CREEK RYAN GULCH_TP",
-  "USGS__PINE CREEK_TN", "USGS__POPPLE RIVER_TN"
+  "USGS__PINE CREEK_TN", "USGS__POPPLE RIVER_TN", "USGS__GREEN RIVER_TP",
+  "USGS__SOPCHOPPY RIVER_TN", "USGS__SOPCHOPPY RIVER_TP"
   )
 
 # Identify all rivers that aren't in the broken data vectors
