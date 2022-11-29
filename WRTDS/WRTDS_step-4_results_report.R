@@ -158,18 +158,7 @@ rm(list = setdiff(ls(), c("path", "dest_url", "out_list", "ref_table",
 ## ---------------------------------------------- ##
 
 # Handle trends table
-trends_table <- out_list[["TrendsTable_GFN_WRTDS.csv"]] %>%
-  # Handle different trend table formatting
-  dplyr::mutate(
-    change_mg_L = dplyr::coalesce(change_mg_L, change.mg.L.),
-    slope_mg_L_yr = dplyr::coalesce(slope_mg_L_yr, slope.mg.L.yr.),
-    change_percent = dplyr::coalesce(change_percent, change.percent.),
-    slope_percent_yr = dplyr::coalesce(change_percent, slope..percent.yr.),
-    change_10_3kg_yr = dplyr::coalesce(change_10_3kg_yr, change..10.3kg.yr.),
-    slope_10_3kg_yr_yr = dplyr::coalesce(slope_10_3kg_yr_yr, slope..10.3kg.yr.yr.)) %>%
-  # Drop unneeded columns
-  dplyr::select(-change.mg.L., -slope.mg.L.yr., -change.percent.,
-                -slope..percent.yr., -change..10.3kg.yr., -slope..10.3kg.yr.yr.)
+trends_table <- out_list[["TrendsTable_GFN_WRTDS.csv"]]
   
 # Glimpse this
 dplyr::glimpse(trends_table)
