@@ -46,8 +46,8 @@ info_simp <- information %>%
 ## ---------------------------------------------- ##
 
 # Loop across rivers and elements to run WRTDS workflow!
-# for(river in chem_simp$Stream_Element_ID){
-for(river in "GRO__Yenisey_NOx"){
+for(river in chem_simp$Stream_Element_ID){
+# for(river in "GRO__Yenisey_NOx"){
   
   # Identify corresponding Stream_ID
   stream_id <- chem_simp %>%
