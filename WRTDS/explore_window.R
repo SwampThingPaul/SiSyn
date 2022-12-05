@@ -116,7 +116,7 @@ for(river in "GRO__Yenisey_NOx"){
   egret_list <- EGRET::mergeReport(INFO = egret_info, Daily = egret_disc, 
                                    Sample = egret_chem, verbose = F)
   
-  for(seasonality in c(0.5)){
+  for(seasonality in c(0.25, 0.5, 0.75)){
   # Fit "GFN" model
   egret_list_out <- EGRET::runSeries(eList = egret_list, windowSide = 11, 
                                      minNumObs = 50, verbose = F,
@@ -139,7 +139,7 @@ for(river in "GRO__Yenisey_NOx"){
   
   
   # Message completion of sub-loop
-  message("Processing complete for seasonality window'", seasonality, "'") }
+  message("Processing complete for seasonality window '", seasonality, "'") }
   
   # Message completion of loop
   message("Processing complete for '", element, "' at stream '", stream_id, "'") }
