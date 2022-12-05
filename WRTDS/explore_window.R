@@ -1,11 +1,11 @@
 ## ---------------------------------------------- ##
-# WRTDS Centralized Workflow
+        # WRTDS - Explore Window Argument(s)
 ## ---------------------------------------------- ##
 # WRTDS = Weighted Regressions on Time, Discharge, and Season
 ## Nick J Lyon
 
 ## ---------------------------------------------- ##
-# Housekeeping ----
+                # Housekeeping ----
 ## ---------------------------------------------- ##
 # Load libraries
 # install.packages("librarian")
@@ -22,164 +22,48 @@ discharge <- read.csv(file.path(path, "WRTDS Inputs", "WRTDS-input_discharge.csv
 chemistry <- read.csv(file.path(path, "WRTDS Inputs", "WRTDS-input_chemistry.csv"))
 information <- read.csv(file.path(path, "WRTDS Inputs", "WRTDS-input_information.csv"))
 
-## ---------------------------------------------- ##
-# Diagnose Types of Sites ----
-## ---------------------------------------------- ##
-
-# --- (v) NOTE (v) ---
-## In future, we will build a real diagnostics section here
-## For now, we are hard coding the set of sites that need special treatment
-# --- (^) NOTE (^) ---
-
-# Rivers with warning that there are duplicated dates (should be impossible)
-duplicate_data <- c(
-  # Warning about "duplicated Daily dates" and "duplicated Sample dates"
-  ### "Error in seq.Date(surfaceStart, by = "1 year", length.out = nSeg) : 
-  ###'from' must be of length 1"
-  "USGS__Wild River_DSi", "USGS__Wild River_NH4",
-  # Preemptively placing other data from Wild River here because it is likely to have same issue
-  "USGS__Wild River_NOx", "USGS__Wild River_P", "USGS__Wild River_TN",
-  "USGS__Wild River_TP"
-)
-
-# Separate period of analysis rivers
-pa12_2 <- c(
-  # EGRET::setPA(eList = egret_list[_out], paStart = 12, paLong = 2)
-  "MCM__Andersen Creek at H1_DSi", "MCM__Andersen Creek at H1_NH4",
-  "MCM__Andersen Creek at H1_NOx", "MCM__Andersen Creek at H1_P",
-  "MCM__Canada Stream at F1_DSi", "MCM__Canada Stream at F1_NH4",
-  "MCM__Canada Stream at F1_NOx", "MCM__Canada Stream at F1_P", 
-  "MCM__Green Creek at F9_DSi", "MCM__Green Creek at F9_NH4",
-  "MCM__Green Creek at F9_NOx", "MCM__Green Creek at F9_P",
-  "MCM__Lawson Creek at B3_DSi", "MCM__Lawson Creek at B3_NH4",
-  "MCM__Lawson Creek at B3_NOx", "MCM__Lawson Creek at B3_P",
-  "MCM__Onyx River at Lake Vanda Weir_DSi", "MCM__Onyx River at Lake Vanda Weir_NH4",
-  "MCM__Onyx River at Lake Vanda Weir_NOx", "MCM__Onyx River at Lake Vanda Weir_P",
-  "MCM__Onyx River at Lower Wright Weir_DSi", "MCM__Onyx River at Lower Wright Weir_NH4",
-  "MCM__Onyx River at Lower Wright Weir_NOx", "MCM__Onyx River at Lower Wright Weir_P",
-  "MCM__Priscu Stream at B1_DSi", "MCM__Priscu Stream at B1_NH4", 
-  "MCM__Priscu Stream at B1_NOx", "MCM__Priscu Stream at B1_P", 
-  "MCM__Von Guerard Stream at F6_DSi", "MCM__Von Guerard Stream at F6_NH4",
-  "MCM__Von Guerard Stream at F6_NOx", "MCM__Von Guerard Stream at F6_P")
-
-pa5_5 <- c(
-  # EGRET::setPA(eList = egret_list[_out], paStart = 5, paLong = 5)
-  "NWT__MARTINELLI_DSi", "NWT__MARTINELLI_NH4", 
-  "NWT__MARTINELLI_NOx", "NWT__MARTINELLI_P")
-
-pa5_3 <- c(
-  # EGRET::setPA(eList = egret_list[_out], paStart = 5, paLong = 3)
-  "NWT__SADDLE STREAM 007_DSi", "NWT__SADDLE STREAM 007_NH4", 
-  "NWT__SADDLE STREAM 007_NOx", "NWT__SADDLE STREAM 007_P")
-
-# Rivers without matching chemistry/discharge data
-missing_data <- c(
-  # Warning in `EGRET::mergeReport`
-  ### "Some Sample dates do not have corresponding flow data. Not all EGRET functions will work correctly."
-  # Warning in ` EGRET::modelEstimation`
-  ### "Problems converging"
-  # Eventual downstream error message:
-  ### "Error in if (lastMonth == 2 & (lastYear%%4 == 0) & ((lastYear%%100 !=  : 
-  ### missing value where TRUE/FALSE needed"
-  "LUQ__RI_DSi", "LUQ__RI_NH4", "LUQ__RI_NOx", "LUQ__RI_P",
-  # Same upstream issue but different downstream error:
-  "USGS__YAZOO RIVER_DSi",
-  ### "Error in seq.default(xFirst, xLast) : 'from' must be a finite number"
-  # Removing other chemicals from same river
-  "USGS__YAZOO RIVER_NH4", "USGS__YAZOO RIVER_NOx", "USGS__YAZOO RIVER_P", 
-  "USGS__YAZOO RIVER_TN", "USGS__YAZOO RIVER_TP"
-)
-
-# Other odd errors
-odd_ones <- c(
-  # Error in ...
-  ## "Error in if (is.na(yDif)) blankHolder else format(yDif, digits = 2,
-  ## width = widthLength) : argument is of length zero"
-  "USGS__GORE CREEK AT MOUTH_TN", "USGS__PINE CREEK_TP",
-  # Error in ...
-  ## "Error in seq.default(xFirst, xLast) : 'from' must be a finite number"
-  # Looks like this may be caused by "negative flow days"?
-  ## Need to check range of values to see these problem values
-  "USGS__Lower Atchafalaya_DSi", "USGS__Lower Atchafalaya_NH4",
-  "USGS__Lower Atchafalaya_NOx", "USGS__Lower Atchafalaya_P",
-  "USGS__Lower Atchafalaya_TN", "USGS__Lower Atchafalaya_TP",
-  # Crashes R without a specific warning message
-  "USGS__McDonalds Branch_P", "USGS__MERCED R_P", "USGS__PINE CREEK_P",
-  "USGS__GREEN RIVER_P", "USGS__SOPCHOPPY RIVER_NOx"
-)
-
-# Rivers without sufficient data
-few_data <- c(
-  # Error in `EGRET::modelEstimation`
-  ### "Error in runSurvReg(SampleCrossV$DecYear[i], SampleCrossV$LogQ[i], DecLow,  : 
-  ### minNumUncen is greater than total number of samples"
-  "AND__GSWS06_NOx", "AND__GSWS07_NOx", "HBR__ws1_P", "HBR__ws2_P", "HBR__ws3_P",
-  "HBR__ws4_P", "HBR__ws5_P", "HBR__ws6_P", "HBR__ws7_P", "HBR__ws8_P", "HBR__ws9_P",
-  "MCM__Canada Stream at F1_P", "MCM__Onyx River at Lake Vanda Weir_NH4",
-  "MCM__Onyx River at Lake Vanda Weir_P", "MCM__Onyx River at Lower Wright Weir_P",
-  "NIVA__AAGEVEG_DSi", "NIVA__FINEPAS_DSi", "NIVA__FINETAN_DSi", "NIVA__HOREVOS_DSi",
-  "NIVA__MROEDRI_DSi", "NIVA__OSLEALN_DSi", "NIVA__ROGEBJE_DSi", "NIVA__ROGEVIK_DSi",
-  "Sagehen__Sagehen_NH4", "Sagehen__Sagehen_TP", "USGS__GREEN RIVER_TN",
-  "NIVA__SFJENAU_DSi", "NIVA__STRENID_DSi", "USGS__ANDREWS CREEK_TN",
-  "USGS__Canadian River_TN", "USGS__Dismal River_TN", "USGS__Dismal River_TP",
-  "USGS__EAGLE RIVER GYPSUM_TN", "USGS__HILLABAHATCHEE CREEK_TN", "USGS__ROARING FORK_TN",
-  "USGS__SOUTH PLATTE_NH4", "USGS__SOUTH PLATTE_NOx", "USGS__SOUTH PLATTE_P",
-  "USGS__SOUTH PLATTE_TP", "USGS__YAMPA RIVER BELOW CRAIG_TN",
-  # Error in ...
-  ### "Error in runSurvReg(estPtYear, estPtLogQ, DecLow, DecHigh, localSample,  : 
-  ### minNumObs is greater than total number of samples"
-  "USGS__ANDREWS CREEK_NH4", "USGS__ANDREWS CREEK_P", "USGS__ANDREWS CREEK_TP",
-  "USGS__HILLABAHATCHEE CREEK_TP", "USGS__LITTLE RIVER_TN", "USGS__LITTLE RIVER_TP",
-  "USGS__PICEANCE CREEK AT WHITE RIVER_TP", "USGS__PICEANCE CREEK RYAN GULCH_TP",
-  "USGS__PINE CREEK_TN", "USGS__POPPLE RIVER_TN", "USGS__GREEN RIVER_TP",
-  "USGS__SOPCHOPPY RIVER_TN", "USGS__SOPCHOPPY RIVER_TP"
-)
-
-# Identify all rivers that aren't in the broken data vectors
-good_rivers <- setdiff(x = unique(chemistry$Stream_Element_ID),
-                       y = unique(c(missing_data, few_data, duplicate_data, odd_ones)))
-## Note this includes weird rivers that need special treatment and those that don't
+# Filter these to only the desired rivers
+disc_simp <- discharge %>%
+  dplyr::filter(Stream_ID %in% c("Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000",
+                                 "GRO__Yenisey"))
+chem_simp <- chemistry %>%
+  dplyr::filter(Stream_Element_ID %in% c(
+    "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_NH4",
+    "GRO__Yenisey_DSi", "GRO__Yenisey_NOx"))
+info_simp <- information %>%
+  dplyr::filter(Stream_ID %in% c("Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000",
+                                 "GRO__Yenisey"))
 
 ## ---------------------------------------------- ##
-# Analysis Workflow ----
+              # Analysis Workflow ----
 ## ---------------------------------------------- ##
-# Set of rivers we've already run the workflow for
-done_rivers <- data.frame("file" = dir(path = file.path(path, "WRTDS Loop Diagnostic"))) %>%
-  # Drop the file suffix part of the file name 
-  dplyr::mutate(river = gsub(pattern = "\\_Loop\\_Diagnostic.csv", replacement = "", x = file))
-
-# Set of problem rivers to drop from the loop
-bad_rivers <- c()
-
-# Identify rivers to run
-rivers_to_do <- setdiff(x = unique(good_rivers), y = c(unique(done_rivers$river), bad_rivers))
 
 # Loop across rivers and elements to run WRTDS workflow!
-for(river in rivers_to_do){
-  # for(river in "AND__GSMACK_DSi"){
+# for(river in chem_simp$Stream_Element_ID){
+for(river in "GRO__Yenisey_NOx"){
   
   # Identify corresponding Stream_ID
-  stream_id <- chemistry %>%
+  stream_id <- chem_simp %>%
     dplyr::filter(Stream_Element_ID == river) %>%
     dplyr::select(Stream_ID) %>%
     unique() %>%
     as.character()
   
   # Also element
-  element <- chemistry %>%
+  element <- chem_simp %>%
     dplyr::filter(Stream_Element_ID == river) %>%
     dplyr::select(variable) %>%
     unique() %>%
     as.character()
   
   # Subset chemistry
-  river_chem <- chemistry %>%
+  river_chem <- chem_simp %>%
     dplyr::filter(Stream_Element_ID == river) %>%
     # Drop unneeded columns
     dplyr::select(-Stream_Element_ID, -Stream_ID, -variable)
   
   # Subset discharge to correct river
-  river_disc <- discharge %>%
+  river_disc <- disc_simp %>%
     dplyr::filter(Stream_ID == stream_id) %>%
     dplyr::select(Date, Q)
   
@@ -189,11 +73,8 @@ for(river in rivers_to_do){
   # Message completion of loop
   message("Processing begun for '", element, "' at stream '", stream_id, "'")
   
-  # Grab start time for processing
-  start <- Sys.time()
-  
   # Information also subsetted to right river
-  river_info <- information %>%
+  river_info <- info_simp %>%
     dplyr::filter(Stream_ID == stream_id) %>%
     # Generate correct information for this element
     dplyr::mutate(constitAbbrev = element) %>%
@@ -230,256 +111,16 @@ for(river in rivers_to_do){
   # Fit "GFN" model
   egret_list_out <- EGRET::runSeries(eList = egret_list, windowSide = 11, minNumObs = 50, verbose = F)
   
-  # Loop - Handle Weird Sites ----
-  
-  # Set period of analysis differences for rivers that need it
-  ## Period of analysis 12 - 2
-  if(river %in% unique(pa12_2)){
-    egret_list <- EGRET::setPA(eList = egret_list, paStart = 12, paLong = 2)
-    egret_list_out <- EGRET::setPA(eList = egret_list_out, paStart = 12, paLong = 2) }
-  if(river %in% unique(pa5_5)){
-    egret_list <- EGRET::setPA(eList = egret_list, paStart = 5, paLong = 5)
-    egret_list_out <- EGRET::setPA(eList = egret_list_out, paStart = 5, paLong = 5) }
-  if(river %in% unique(pa5_3)){
-    egret_list <- EGRET::setPA(eList = egret_list, paStart = 5, paLong = 3)
-    egret_list_out <- EGRET::setPA(eList = egret_list_out, paStart = 5, paLong = 3) }
-  
   # Fit original model
   egret_estimation <- EGRET::modelEstimation(eList = egret_list, minNumObs = 50, verbose = F)
-  
-  # Identify error statistics
-  egret_error <- EGRET::errorStats(eList = egret_estimation)
-  
-  # Save the error stats out
-  write.csv(x = egret_error, file = file.path(path, "WRTDS Outputs", paste0(out_prefix, "ErrorStats_WRTDS.csv")), row.names = F, na = "")
   
   # Create PDF report of preliminary graphs
   HERON::egret_report(eList_estim = egret_estimation, eList_series = egret_list_out,
                       out_path = file.path(path, "WRTDS Outputs", paste0(out_prefix, "WRTDS_GFN_output.pdf")))
   
-  # Create annual averages
-  egret_annual <- EGRET::tableResults(eList = egret_list_out)
-  ## Can't silence this function... >:(
-  
-  # Export that as a CSV also
-  write.csv(x = egret_annual, file.path(path, "WRTDS Outputs", paste0(out_prefix, "ResultsTable_GFN_WRTDS.csv")), row.names = F, na = "")
-  
-  # Identify monthly results
-  egret_monthly <- EGRET::calculateMonthlyResults(eList = egret_list_out)
-  
-  # Export that
-  write.csv(x = egret_monthly, file.path(path, "WRTDS Outputs", paste0(out_prefix, "Monthly_GFN_WRTDS.csv")), row.names = F, na = "")
-  
-  # Extract daily chemical value from run
-  egret_concentration <- egret_list_out$Daily
-  
-  # Export that as well
-  write.csv(x = egret_concentration, file.path(path, "WRTDS Outputs", paste0(out_prefix, "GFN_WRTDS.csv")), row.names = F, na = "")
-  
-  # Get flow normalized trends (flux and concentration)
-  egret_flownorm <- HERON::egret_trends(eList_series = egret_list_out, flux_unit = 8)
-  
-  # Export it!
-  write.csv(x = egret_flownorm, file.path(path, "WRTDS Outputs", paste0(out_prefix, "TrendsTable_GFN_WRTDS.csv")), row.names = F, na = "")
-  
-  # Grab the end processing time
-  end <- Sys.time()
-  
-  # Combine timing into a dataframe
-  loop_diagnostic <- data.frame("stream" = stream_id,
-                                "chemical" = element,
-                                "loop_start" = start,
-                                "loop_end" = end)
-  
-  # Export this as well
-  write.csv(x = loop_diagnostic, file.path(path, "WRTDS Loop Diagnostic", paste0(out_prefix, "Loop_Diagnostic.csv")), row.names = F, na = "")
-  
   # Message completion of loop
   message("Processing complete for '", element, "' at stream '", stream_id, "'")
   
 } # End loop
-
-## ---------------------------------------------- ##
-# Bootstrap Workflow ----
-## ---------------------------------------------- ##
-# Create necessary folders for bootstrap outputs
-dir.create(path = file.path(path, "WRTDS Bootstrap Diagnostic"), showWarnings = F)
-dir.create(path = file.path(path, "WRTDS Bootstrap Outputs"), showWarnings = F)
-
-# Set of problem rivers to drop from the loop
-bad_boot_rivers <- c(
-  # R crashes running these sites:
-  "ARC__Imnavait Weir_DSi", "ARC__Imnavait Weir_NH4", 
-  ## Pre-emptively moving some other sites here that are likely to cause errors
-  ## Will double check whether these fail once other streams are done
-  "ARC__Imnavait Weir_NOx", "ARC__Imnavait Weir_P",
-  "ARC__Imnavait Weir_TN", "ARC__Imnavait Weir_TP", 
-  # Error in ...
-  ## "Error in if (z) "Reject Ho" else "Do Not Reject Ho" : 
-  ## missing value where TRUE/FALSE needed
-  "Catalina Jemez__Marshall Gulch_DSi", "Catalina Jemez__Oracle Ridge_DSi",
-  "Finnish Environmental Institute__Iijoki Raasakan voimal_NH4", 
-  "Finnish Environmental Institute__Iijoki Raasakan voimal_NOx",
-  "Finnish Environmental Institute__Iijoki Raasakan voimal_P",
-  "Finnish Environmental Institute__Iijoki Raasakan voimal_TN",
-  "Finnish Environmental Institute__Iijoki Raasakan voimal_TP",
-  "Finnish Environmental Institute__Kalajoki 11000_NH4",
-  "Finnish Environmental Institute__Kalajoki 11000_NOx",
-  "Finnish Environmental Institute__Kalajoki 11000_P"
-)
-
-# Loop across rivers and elements to run WRTDS workflow!
-for(river in setdiff(x = unique(good_rivers), y = bad_boot_rivers)){
-  # for(river in "AND__GSMACK_DSi"){
-  
-  # Identify corresponding Stream_ID
-  stream_id <- chemistry %>%
-    dplyr::filter(Stream_Element_ID == river) %>%
-    dplyr::select(Stream_ID) %>%
-    unique() %>%
-    as.character()
-  
-  # Also element
-  element <- chemistry %>%
-    dplyr::filter(Stream_Element_ID == river) %>%
-    dplyr::select(variable) %>%
-    unique() %>%
-    as.character()
-  
-  # Subset chemistry
-  river_chem <- chemistry %>%
-    dplyr::filter(Stream_Element_ID == river) %>%
-    # Drop unneeded columns
-    dplyr::select(-Stream_Element_ID, -Stream_ID, -variable)
-  
-  # Subset discharge to correct river
-  river_disc <- discharge %>%
-    dplyr::filter(Stream_ID == stream_id) %>%
-    dplyr::select(Date, Q)
-  
-  # Create a common prefix for all outputs from this run of the loop
-  out_prefix <- paste0(stream_id, "_", element, "_") 
-  
-  # Bootstrap - File Exists Check ----
-  
-  # If the file exists
-  if(file.exists(file.path(path, "WRTDS Bootstrap Diagnostic", paste0(out_prefix, "Boot_Loop_Diagnostic.csv"))) == TRUE) {
-    message("WRTDS bootstrapping already done for ", element, " at stream '", river, "'")
-  } else {
-    
-    # Message completion of loop
-    message("Bootstrapping workflow begun for ", element, " at stream '", river, "'")
-    
-    # Grab start time for processing
-    start <- Sys.time()
-    
-    # Information also subsetted to right river
-    river_info <- information %>%
-      dplyr::filter(Stream_ID == stream_id) %>%
-      # Generate correct information for this element
-      dplyr::mutate(constitAbbrev = element) %>%
-      dplyr::mutate(paramShortName = dplyr::case_when(
-        constitAbbrev == "DSi" ~ "Silicon",
-        constitAbbrev == "NOx" ~ "Nitrate",
-        constitAbbrev == "P" ~ "Phosphorous",
-        constitAbbrev == "NH4" ~ "Ammonium")) %>%
-      # Create another needed column
-      dplyr::mutate(staAbbrev = shortName) %>%
-      # Drop stream ID now that subsetting is complete
-      dplyr::select(-Stream_ID)
-    
-    # Save these as CSVs with generic names
-    ## This means each iteration of the loop will overwrite them so this folder won't become gigantic
-    write.csv(x = river_disc, row.names = F, na = "",
-              file = file.path(path, "WRTDS Temporary Files", "discharge.csv"))
-    write.csv(x = river_chem, row.names = F, na = "",
-              file = file.path(path, "WRTDS Temporary Files", "chemistry.csv"))
-    write.csv(x = river_info, row.names = F, na = "",
-              file = file.path(path, "WRTDS Temporary Files", "information.csv"))
-    
-    # Then read them back in with EGRET's special acquisition functions
-    egret_disc <- EGRET::readUserDaily(filePath = file.path(path, "WRTDS Temporary Files"), fileName = "discharge.csv", qUnit = 2, verbose = F)
-    egret_chem <- EGRET::readUserSample(filePath = file.path(path, "WRTDS Temporary Files"), fileName = "chemistry.csv", verbose = F)
-    egret_info <- EGRET::readUserInfo(filePath = file.path(path, "WRTDS Temporary Files"), fileName = "information.csv", interactive = F)
-    
-    # Create a list of the discharge, chemistry, and information files
-    egret_list <- EGRET::mergeReport(INFO = egret_info, Daily = egret_disc, Sample = egret_chem, verbose = F)
-    
-    # Fit "GFN" model
-    egret_list_out <- EGRET::runSeries(eList = egret_list, windowSide = 11, minNumObs = 50, verbose = F)
-    
-    # Bootstrap - Handle Weird Sites ----
-    
-    # Set period of analysis differences for rivers that need it
-    ## Period of analysis 12 - 2
-    if(river %in% unique(pa12_2)){
-      egret_list_out <- EGRET::setPA(eList = egret_list_out, paStart = 12, paLong = 2) }
-    if(river %in% unique(pa5_5)){
-      egret_list_out <- EGRET::setPA(eList = egret_list_out, paStart = 5, paLong = 5) }
-    if(river %in% unique(pa5_3)){
-      egret_list_out <- EGRET::setPA(eList = egret_list_out, paStart = 5, paLong = 3) }
-    
-    # Run trend estimate for GFN method between start/end years
-    egret_pairs <- EGRET::runPairs(eList = egret_list_out, windowSide = 11, minNumObs = 50,
-                                   # year1 = min_year,
-                                   year1 = min(egret_list_out$Sample$waterYear, na.rm = T),
-                                   # year2 = max_year)
-                                   year2 = max(egret_list_out$Sample$waterYear, na.rm = T))
-    
-    # Make a version of that where we have stream and chemical included
-    egret_pairs_v2 <- egret_pairs %>%
-      dplyr::mutate(Stream_ID = rep(stream_id, times = nrow(egret_pairs)),
-                    Solute = rep(element, times = nrow(egret_pairs)),
-                    .before = dplyr::everything())
-    
-    # Export those values as well
-    write.csv(x = egret_pairs_v2, row.names = F, na = "",
-              file.path(path, "WRTDS Bootstrap Outputs", paste0(out_prefix, "ListPairs_GFN_WRTDS.csv")))
-    
-    # Estimate trend uncertainty
-    egret_boot <- EGRETci::runPairsBoot(eList = egret_list_out, pairResults = egret_pairs, nBoot = 100, blockLength = 200)
-    
-    # Strip out key results
-    egret_boot_results <- data.frame(
-      Stream_ID = rep(stream_id, times = length(egret_boot$xConc)),
-      Solute = rep(element, times = length(egret_boot$xConc)),
-      xConc = egret_boot$xConc,
-      xFlux = egret_boot$xFlux,
-      pConc = egret_boot$pConc,
-      pFlux = egret_boot$pFlux)
-    
-    # Export the results
-    write.csv(x = egret_boot_results, row.names = F, na = "",
-              file.path(path, "WRTDS Bootstrap Outputs", paste0(out_prefix, "EGRETCi_GFN_bootstraps.csv")))
-    
-    # Also grab the summary information
-    egret_boot_summary <- as.data.frame(egret_boot$bootOut)
-    
-    # Add needed information to this one as well
-    egret_boot_summary_v2 <- egret_boot_summary %>%
-      dplyr::mutate(Stream_ID = rep(stream_id, times = nrow(egret_boot_summary)),
-                    Solute = rep(element, times = nrow(egret_boot_summary)),
-                    .before = dplyr::everything())
-    
-    # And export it as well
-    write.csv(x = egret_boot_summary_v2, file.path(path, "WRTDS Bootstrap Outputs", paste0(out_prefix, "EGRETCi_GFN_Trend.csv")), row.names = F, na = "")
-    
-    # Grab the end processing time
-    end <- Sys.time()
-    
-    # Combine timing into a dataframe
-    loop_diagnostic <- data.frame("stream" = stream_id,
-                                  "chemical" = element,
-                                  "loop_start" = start,
-                                  "loop_end" = end)
-    
-    # Export this as well
-    write.csv(x = loop_diagnostic, row.names = F, na = "",
-              file.path(path, "WRTDS Bootstrap Diagnostic", paste0(out_prefix, "Boot_Loop_Diagnostic.csv")))
-    
-    # Message completion of loop
-    message("Bootstrapping workflow complete for ", element, " at stream '", river, "'")
-    
-  }  } # End `else` and loop
 
 # End ----
