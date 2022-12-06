@@ -325,7 +325,13 @@ bad_boot_rivers <- c(
   "Finnish Environmental Institute__Iijoki Raasakan voimal_TP",
   "Finnish Environmental Institute__Kalajoki 11000_NH4",
   "Finnish Environmental Institute__Kalajoki 11000_NOx",
-  "Finnish Environmental Institute__Kalajoki 11000_P"
+  "Finnish Environmental Institute__Kalajoki 11000_P",
+  "Finnish Environmental Institute__Kalajoki 11000_TN",
+  "Finnish Environmental Institute__Kalajoki 11000_TP",
+  "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_NH4",
+  "Finnish Environmental Institute__Kiiminkij 13010 4-tien s_NH4",
+  ## Rivers pre-emptively removed bcz likely to experience this error
+  "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_NOx", "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_P", "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_TN", "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_TP"
 )
 
 # Loop across rivers and elements to run WRTDS workflow!
