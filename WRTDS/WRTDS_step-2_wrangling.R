@@ -78,7 +78,9 @@ chem_main <- read.csv(file = file.path(path, "WRTDS Source Files", names[3])) %>
   dplyr::mutate(Site.Stream.Name = gsub(pattern = "[<]e4[>]", replacement = "a",
                                         x = Site.Stream.Name)) %>%
   dplyr::mutate(Site.Stream.Name = gsub(pattern = "[<]f6[>]", replacement = "o",
-                                        x = Site.Stream.Name))
+                                        x = Site.Stream.Name)) %>%
+  # Drop all chemicals other than the core ones we're interested in
+  dplyr::filter(variable %in% c("SRP", "PO4", "DSi", "NO3", "NOx", "NH4"))
 
 # Clean up the environment before continuing
 rm(list = setdiff(ls(), c("path", "ref_table", "disc_main", "chem_main", "mdl_info")))
@@ -158,8 +160,6 @@ helpR::diff_chk(old = unique(disc_main$DischargeFileName),
 
 # Clean up the chemistry data
 chem_v2 <- chem_main %>%
-  # Drop all chemicals other than the core ones we're interested in
-  dplyr::filter(variable %in% c("SRP", "PO4", "DSi", "NO3", "NOx", "NH4", "TN", "TP")) %>%
   # Calculate the mg/L (from micro moles) for each of these chemicals
   dplyr::mutate(value_mgL = dplyr::case_when(
     variable == "SRP" ~ (((value / 10^6) * 30.973762) * 1000),
