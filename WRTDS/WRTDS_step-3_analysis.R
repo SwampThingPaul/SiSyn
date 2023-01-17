@@ -139,8 +139,8 @@ bad_rivers <- c()
 rivers_to_do <- setdiff(x = unique(good_rivers), y = c(unique(done_rivers$river), bad_rivers))
 
 # Loop across rivers and elements to run WRTDS workflow!
-# for(river in rivers_to_do){
-for(river in "AND__GSMACK_DSi"){
+for(river in rivers_to_do){
+# for(river in "AND__GSMACK_DSi"){
   
   # Loop - Set Up Steps ----
   
