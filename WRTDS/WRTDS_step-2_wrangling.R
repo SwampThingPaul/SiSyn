@@ -17,12 +17,9 @@ rm(list = ls())
 # Need to specify correct path for local versus server work
 (path <- scicomptools::wd_loc(local = FALSE, remote_path = file.path('/', "home", "shares", "lter-si", "WRTDS")))
 
-# Create a folder for (1) source files, (2) direct inputs, (3) site-specific files, and (4) outputs
+# Create folders for the raw downloaded files (i.e., sources) & WRTDS inputs (created by this script)
 dir.create(path = file.path(path, "WRTDS Source Files"), showWarnings = F)
 dir.create(path = file.path(path, "WRTDS Inputs"), showWarnings = F)
-dir.create(path = file.path(path, "WRTDS Temporary Files"), showWarnings = F)
-dir.create(path = file.path(path, "WRTDS Outputs"), showWarnings = F)
-dir.create(path = file.path(path, "WRTDS Loop Diagnostic"), showWarnings = F)
 
 # Define the names of the Drive files we need
 names <- c("WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv", # No.1 Ref table
