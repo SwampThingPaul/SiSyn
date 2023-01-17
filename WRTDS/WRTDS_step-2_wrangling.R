@@ -27,16 +27,14 @@ dir.create(path = file.path(path, "WRTDS Loop Diagnostic"), showWarnings = F)
 # Define the names of the Drive files we need
 names <- c("WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv", # No.1 Ref table
            "UpdatedAll_Q_master_10272022.csv", # No.2 Main discharge
-           "20221030_masterdata_chem.csv", # No.3 Main chemistry
-           "20220909_master_min_det_limit.csv") # No.4 Minimum detection limit info
+           "20221030_masterdata_chem.csv") # No.3 Main chemistry
 
 # Find folders for those files
 ids <- googledrive::drive_ls(as_id("https://drive.google.com/drive/u/1/folders/1HQtpWYoq_YQwj_bDNNbv8D-0swi00o_s"), pattern = ".csv") %>%
   dplyr::bind_rows(googledrive::drive_ls(as_id("https://drive.google.com/drive/u/1/folders/1BAs0y1hHArW8BANUFJrXOXcoMHIk25Pp"), pattern = ".csv"))
 
 # Check that no file names have changed!
-if(!names[1] %in% ids$name | !names[2] %in% ids$name |
-   !names[3] %in% ids$name | !names[4] %in% ids$name){
+if(!names[1] %in% ids$name | !names[2] %in% ids$name | !names[3] %in% ids$name){
   message("At least one source file name has changed! Update the 'names' vector before proceeding") } else {
     message("All file names found in Google Drive. Please continue") }
 
@@ -55,22 +53,24 @@ for(k in 1:length(names)){
                                 path = file.path(path, "WRTDS Source Files", names[k]))
 }
 
-# Grab minimum detection limit file
-mdl_info <- read.csv(file = file.path(path, "WRTDS Source Files", names[4]))
+# Read in each of these files
+ref_raw <- read.csv(file = file.path(path, "WRTDS Source Files", names[1])) 
+disc_raw <- read.csv(file = file.path(path, "WRTDS Source Files", names[2]))
+chem_raw <- read.csv(file = file.path(path, "WRTDS Source Files", names[3]))
 
-# Read in reference table file
-ref_table <- read.csv(file = file.path(path, "WRTDS Source Files", names[1])) %>%
+# Wrangle the reference table file
+ref_table <- ref_raw %>%
   # Drop some wrong sites (don't want to delete from ref table in case they are correct for other related datasets)
   dplyr::filter(!Discharge_File_Name %in% c("GRO_Kolyma_Q_fill", "GRO_Mackenzie_Q_fill"))
 
-# Read in discharge
-disc_main <- read.csv(file = file.path(path, "WRTDS Source Files", names[2])) %>%
+# Wrangle discharge
+disc_main <- disc_raw %>%
   # Fix any broken names (special characters from Scandinavia)
   dplyr::mutate(DischargeFileName = gsub(pattern = "ØSTEGLO_Q", replacement = "OSTEGLO_Q",
                                            x = DischargeFileName))
 
-# Read in chemistry
-chem_main <- read.csv(file = file.path(path, "WRTDS Source Files", names[3])) %>%
+# Wrangle chemistry as well
+chem_main <- chem_raw %>%
   # Fix some Finnish site names that get messed up by some stage of this wrangling
   dplyr::mutate(site = gsub(pattern = "[<]e4[>]", replacement = "a", x = site)) %>%
   dplyr::mutate(site = gsub(pattern = "[<]f6[>]", replacement = "o", x = site)) %>%
@@ -98,29 +98,29 @@ name_lkup <- ref_table %>%
 # Glimpse it
 dplyr::glimpse(name_lkup)
 
-# Wrangle minimum detection limit file too
-mdl_v2 <- mdl_info %>%
+# Wrangle a special minimum detection limit object too
+mdl_info <- ref_table %>%
   # Drop unneeded columns
-  dplyr::select(site, dplyr::ends_with("_MDL"), -NH4_uM_MDL) %>%
-  # Rename the stream column and remaining NH4 column
-  dplyr::rename(Stream_Name = site, NH4_MDL = NH4_mgL_MDL) %>%
+  dplyr::select(Stream_Name, dplyr::starts_with("MDL_")) %>%
   # Pivot longer
-  tidyr::pivot_longer(cols = dplyr::ends_with("MDL"),
+  tidyr::pivot_longer(cols = dplyr::starts_with("MDL_"),
                       names_to = "variable",
                       values_to = "MDL") %>%
   # Drop any NAs that result from the pivoting
   dplyr::filter(!is.na(MDL)) %>%
-  # Simplify the variable column
+  # Clean up variable name
   dplyr::mutate(variable_simp = dplyr::case_when(
-    variable == "P_MDL" ~ "P",
-    variable == "NO3_MDL" ~ "NOx",
-    variable == "NH4_MDL" ~ "NH4",
-    TRUE ~ variable), .after = variable) %>%
-  # And drop the old one
+    variable == "MDL_P_mgL" ~ "P",
+    variable == "MDL_NOx_mgL" ~ "NOx",
+    variable == "MDL_NH4_mgL" ~ "NH4",
+    variable == "MDL_Si_mgL" ~ "DSi"), .after = variable) %>%
+  # Drop duplicate rows
+  unique() %>%
+  # Drop original variable column
   dplyr::select(-variable)
 
 # Check it
-dplyr::glimpse(mdl_v2)
+dplyr::glimpse(mdl_info)
 
 ## ---------------------------------------------- ##
               # Initial Wrangling ----
@@ -162,14 +162,17 @@ helpR::diff_chk(old = unique(disc_main$DischargeFileName),
 chem_v2 <- chem_main %>%
   # Calculate the mg/L (from micro moles) for each of these chemicals
   dplyr::mutate(value_mgL = dplyr::case_when(
+    ## Phosphorous
     variable == "SRP" ~ (((value / 10^6) * 30.973762) * 1000),
     variable == "PO4" ~ (((value / 10^6) * 30.973762) * 1000),
+    variable == "TP" ~ (((value / 10^6) * 30.973762) * 1000),
+    ## Silica
     variable == "DSi" ~ (((value / 10^6) * 28.0855) * 1000),
+    ## Nitrogen
     variable == "NOx" ~ (((value / 10^6) * 14.0067) * 1000),
     variable == "NO3" ~ (((value / 10^6) * 14.0067) * 1000),
     variable == "NH4" ~ (((value / 10^6) * 14.0067) * 1000),
-    variable == "TN" ~ (((value / 10^6) * 14.0067) * 1000),
-    variable == "TP" ~ (((value / 10^6) * 30.973762) * 1000))) %>%
+    variable == "TN" ~ (((value / 10^6) * 14.0067) * 1000))) %>%
   # Drop units, site, and value columns because they're outdated now
   dplyr::select(-units, -site, -value) %>%
   # Rename some columns
@@ -195,10 +198,13 @@ chem_v2 <- chem_main %>%
     variable == "NO3" ~ "NOx",
     TRUE ~ variable))  %>%
   # Attach the minimum detection limit information where it is known
-  dplyr::left_join(y = mdl_v2, by = c("Stream_Name", "variable_simp")) %>%
+  dplyr::left_join(y = mdl_info, by = c("Stream_Name", "variable_simp")) %>%
   # Using this, create a "remarks" column that indicates whether a value is below the MDL
-  dplyr::mutate(remarks = ifelse(test = (value_mgL < MDL), yes = "<", no = ""),
-                .after = Date) %>%
+  dplyr::mutate(remarks = dplyr::case_when(
+    value_mgL < MDL ~ "<",
+    value_mgL >= MDL ~ "",
+    is.na(MDL) ~ ""),
+    .after = Date) %>%
   # Now we can safely drop the MDL information because we have what we need
   dplyr::select(-MDL) %>%
   # Now let's make an "actual" variable column and ditch the others
@@ -424,7 +430,9 @@ write.csv(x = information, row.names = F, na = "",
                            "WRTDS-input_information.csv"))
 
 # Export them to Google Drive to in case anyone has other uses for them
+## Name Drive folder
 tidy_dest <- googledrive::as_id("https://drive.google.com/drive/folders/1hOIJRg4XZa3czMU6bskSgAPTlMj25ET-")
+## Export to it
 googledrive::drive_upload(path = tidy_dest, overwrite = T,
                           media = file.path(path, "WRTDS Inputs",
                                             "WRTDS-input_discharge.csv"))
@@ -522,8 +530,8 @@ sab_check <- sab_check_v0[ !complete.cases(sab_check_v0), ] %>%
   # Generate a rough "diagnosis" column from the included data count
   dplyr::mutate(diagnosis = dplyr::case_when(
     incl_data_count == 0 ~ "in reference table but not in either master data file",
-    incl_data_count == 1 & is.na(in_c1) ~ "in master chemistry but not in master discharge",
-    incl_data_count == 1 & is.na(in_d1) ~ "in master discharge but not in master chemistry",
+    incl_data_count == 1 & is.na(in_c1) ~ "in master discharge but not in master chemistry",
+    incl_data_count == 1 & is.na(in_d1) ~ "in master chemistry but not in master discharge",
     incl_data_count == 3 ~ "GUESS: in one dataset but not other so dropped at switch from v3 to v4",
     Stream_Name == "OSTEGLO" ~ "No discharge data (all NAs) so dropped when missing discharge data are filtered out",
     incl_data_count == 4 ~ "Unknown but likely an issue with one master file"
