@@ -44,28 +44,7 @@ duplicate_data <- c(
   "USGS__Wild River_DSi", "USGS__Wild River_NH4",
   # Preemptively placing other data from Wild River here because it is likely to have same issue
   "USGS__Wild River_NOx", "USGS__Wild River_P", "USGS__Wild River_TN",
-  "USGS__Wild River_TP"
-  )
-
-# Separate period of analysis rivers
-pa12_2 <- c(
-  # EGRET::setPA(eList = egret_list[_out], paStart = 12, paLong = 2)
-  "MCM__Andersen Creek at H1_DSi", "MCM__Andersen Creek at H1_NH4",
-  "MCM__Andersen Creek at H1_NOx", "MCM__Andersen Creek at H1_P",
-  "MCM__Canada Stream at F1_DSi", "MCM__Canada Stream at F1_NH4",
-  "MCM__Canada Stream at F1_NOx", "MCM__Canada Stream at F1_P", 
-  "MCM__Green Creek at F9_DSi", "MCM__Green Creek at F9_NH4",
-  "MCM__Green Creek at F9_NOx", "MCM__Green Creek at F9_P",
-  "MCM__Lawson Creek at B3_DSi", "MCM__Lawson Creek at B3_NH4",
-  "MCM__Lawson Creek at B3_NOx", "MCM__Lawson Creek at B3_P",
-  "MCM__Onyx River at Lake Vanda Weir_DSi", "MCM__Onyx River at Lake Vanda Weir_NH4",
-  "MCM__Onyx River at Lake Vanda Weir_NOx", "MCM__Onyx River at Lake Vanda Weir_P",
-  "MCM__Onyx River at Lower Wright Weir_DSi", "MCM__Onyx River at Lower Wright Weir_NH4",
-  "MCM__Onyx River at Lower Wright Weir_NOx", "MCM__Onyx River at Lower Wright Weir_P",
-  "MCM__Priscu Stream at B1_DSi", "MCM__Priscu Stream at B1_NH4", 
-  "MCM__Priscu Stream at B1_NOx", "MCM__Priscu Stream at B1_P", 
-  "MCM__Von Guerard Stream at F6_DSi", "MCM__Von Guerard Stream at F6_NH4",
-  "MCM__Von Guerard Stream at F6_NOx", "MCM__Von Guerard Stream at F6_P")
+  "USGS__Wild River_TP" )
 
 pa5_5 <- c(
   # EGRET::setPA(eList = egret_list[_out], paStart = 5, paLong = 5)
@@ -160,8 +139,10 @@ bad_rivers <- c()
 rivers_to_do <- setdiff(x = unique(good_rivers), y = c(unique(done_rivers$river), bad_rivers))
 
 # Loop across rivers and elements to run WRTDS workflow!
-for(river in rivers_to_do){
-# for(river in "AND__GSMACK_DSi"){
+# for(river in rivers_to_do){
+for(river in "AND__GSMACK_DSi"){
+  
+  # Loop - Set Up Steps ----
   
   # Identify corresponding Stream_ID
   stream_id <- chemistry %>%
@@ -232,25 +213,81 @@ for(river in rivers_to_do){
   # Create a list of the discharge, chemistry, and information files
   egret_list <- EGRET::mergeReport(INFO = egret_info, Daily = egret_disc, Sample = egret_chem, verbose = F)
   
-  # Fit "GFN" model
-  egret_list_out <- EGRET::runSeries(eList = egret_list, windowSide = 11, minNumObs = 50, verbose = F)
+  # Loop - Define Initial Objects ----
   
-  # Loop - Handle Weird Sites ----
+  # Handle "typical" rivers
+  ### Either (A) *not* one of the high lat. / Antarctica rivers
+  if(!stringr::str_sub(string = stream_id, 
+                       start = 1, end = 4) %in% c("GRO_", "NIVA", "Finn", "Kryc", "MCM_") |
+     ### Or (B) Yes high latitude (minus McMurdo) but element is silica
+     (element == "DSi" & 
+      stringr::str_sub(string = stream_id, 
+                       start = 1, end = 4) %in% c("GRO_", "NIVA", "Finn", "Kryc"))){
+    
+    # Run series
+    egret_list_out <- EGRET::runSeries(eList = egret_list, windowSide = 11, minNumObs = 50,
+                                       verbose = F, windowS = 0.50)
+    
+    # Fit original model
+    egret_estimation <- EGRET::modelEstimation(eList = egret_list, windowS = 0.50,
+                                               minNumObs = 50, verbose = F) }
   
-  # Set period of analysis differences for rivers that need it
-  ## Period of analysis 12 - 2
-  if(river %in% unique(pa12_2)){
+  # Handle high latitude sites with patterns of seasonality
+  if(element %in% c("NOx", "P", "NH4", "NO3") & 
+     stringr::str_sub(string = stream_id, 
+                      start = 1, end = 4) %in% c("GRO_", "NIVA", "Finn", "Kryc")){
+    
+    # Run series
+    egret_list_out <- EGRET::runSeries(eList = egret_list, windowSide = 11, minNumObs = 50, 
+                                       verbose = F, windowS = 0.25)
+    
+    # Fit model
+    egret_estimation <- EGRET::modelEstimation(eList = egret_list, windowS = 0.25,
+                                               minNumObs = 50, verbose = F) }
+  
+  # Handle McMurdo (seasonality + period of absence tweak)
+  if(element %in% c("NOx", "P", "NH4", "NO3") & 
+     stringr::str_sub(string = stream_id, start = 1, end = 3) == "MCM"){
+    
+    # Run Series
+    egret_list_out <- EGRET::runSeries(eList = egret_list, windowSide = 11, minNumObs = 50, 
+                                       verbose = F, windowS = 0.25)
+    
+    # Set period of absence
     egret_list <- EGRET::setPA(eList = egret_list, paStart = 12, paLong = 2)
-    egret_list_out <- EGRET::setPA(eList = egret_list_out, paStart = 12, paLong = 2) }
+    egret_list_out <- EGRET::setPA(eList = egret_list_out, paStart = 12, paLong = 2)
+    
+    # Fit model
+    egret_estimation <- EGRET::modelEstimation(eList = egret_list, windowS = 0.25,
+                                               minNumObs = 50, verbose = F) }
+
+  # Handle McMurdo (period of absence tweak WITHOUT seasonality)
+  if(!element %in% c("NOx", "P", "NH4", "NO3") & 
+     stringr::str_sub(string = stream_id, start = 1, end = 3) == "MCM"){
+    
+    # Run Series
+    egret_list_out <- EGRET::runSeries(eList = egret_list, windowSide = 11, minNumObs = 50, 
+                                       verbose = F, windowS = 0.50)
+    
+    # Set period of absence
+    egret_list <- EGRET::setPA(eList = egret_list, paStart = 12, paLong = 2)
+    egret_list_out <- EGRET::setPA(eList = egret_list_out, paStart = 12, paLong = 2)
+    
+    # Fit model
+    egret_estimation <- EGRET::modelEstimation(eList = egret_list, windowS = 0.50,
+                                               minNumObs = 50, verbose = F) }
+  
+  # Loop - Period of Absence Tweaks ----
+  
+  # Some rivers just need the period of absence tweaked
+  ## 5 to 5
   if(river %in% unique(pa5_5)){
     egret_list <- EGRET::setPA(eList = egret_list, paStart = 5, paLong = 5)
     egret_list_out <- EGRET::setPA(eList = egret_list_out, paStart = 5, paLong = 5) }
+  ## 5 to 3
   if(river %in% unique(pa5_3)){
     egret_list <- EGRET::setPA(eList = egret_list, paStart = 5, paLong = 3)
     egret_list_out <- EGRET::setPA(eList = egret_list_out, paStart = 5, paLong = 3) }
-  
-  # Fit original model
-  egret_estimation <- EGRET::modelEstimation(eList = egret_list, minNumObs = 50, verbose = F)
   
   # Identify error statistics
   egret_error <- EGRET::errorStats(eList = egret_estimation)
