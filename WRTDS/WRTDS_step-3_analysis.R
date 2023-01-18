@@ -31,11 +31,6 @@ information <- read.csv(file.path(path, "WRTDS Inputs", "WRTDS-input_information
             # Diagnose Types of Sites ----
 ## ---------------------------------------------- ##
 
-# --- (v) NOTE (v) ---
-## In future, we will build a real diagnostics section here
-## For now, we are hard coding the set of sites that need special treatment
-# --- (^) NOTE (^) ---
-
 # Rivers with warning that there are duplicated dates (should be impossible)
 duplicate_data <- c(
   # Warning about "duplicated Daily dates" and "duplicated Sample dates"
@@ -58,15 +53,7 @@ pa5_3 <- c(
 missing_data <- c(
   # Warning in `EGRET::mergeReport`
   ### "Some Sample dates do not have corresponding flow data. Not all EGRET functions will work correctly."
-  # Warning in ` EGRET::modelEstimation`
-  ### "Problems converging"
-  # Eventual downstream error message:
-  ### "Error in if (lastMonth == 2 & (lastYear%%4 == 0) & ((lastYear%%100 !=  : 
-  ### missing value where TRUE/FALSE needed"
-  #
-  # Same upstream issue but different downstream error:
-  #
-  ### "Error in seq.default(xFirst, xLast) : 'from' must be a finite number"
+  "LUQ__RI_DSi", "LUQ__RI_NH4", "LUQ__RI_NOx", "LUQ__RI_P"
   )
 
 # Other odd errors
@@ -85,7 +72,9 @@ few_data <- c(
   ### "Error in runSurvReg(SampleCrossV$DecYear[i], SampleCrossV$LogQ[i], DecLow,  : 
   ### minNumUncen is greater than total number of samples"
   "AND__GSWS06_NOx", "AND__GSWS07_NOx", 
-  "GRO__Kolyma_P", "GRO__Lena_P", "GRO__Mackenzie_P", "GRO__Yukon_P"
+  "GRO__Kolyma_P", "GRO__Lena_P", "GRO__Mackenzie_P", "GRO__Yukon_P",
+  "HBR__ws1_P", "HBR__ws2_P", "HBR__ws3_P", "HBR__ws4_P", "HBR__ws5_P",
+  "HBR__ws6_P", "HBR__ws7_P", "HBR__ws8_P", "HBR__ws9_P"
   ### "Error in runSurvReg(estPtYear, estPtLogQ, DecLow, DecHigh, localSample,  : 
   ### minNumObs is greater than total number of samples"
 
