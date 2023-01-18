@@ -43,8 +43,7 @@ duplicate_data <- c(
   ###'from' must be of length 1"
   "USGS__Wild River_DSi", "USGS__Wild River_NH4",
   # Preemptively placing other data from Wild River here because it is likely to have same issue
-  "USGS__Wild River_NOx", "USGS__Wild River_P", "USGS__Wild River_TN",
-  "USGS__Wild River_TP" )
+  "USGS__Wild River_NOx", "USGS__Wild River_P")
 
 pa5_5 <- c(
   # EGRET::setPA(eList = egret_list[_out], paStart = 5, paLong = 5)
@@ -70,23 +69,16 @@ missing_data <- c(
   "USGS__YAZOO RIVER_DSi",
   ### "Error in seq.default(xFirst, xLast) : 'from' must be a finite number"
   # Removing other chemicals from same river
-  "USGS__YAZOO RIVER_NH4", "USGS__YAZOO RIVER_NOx", "USGS__YAZOO RIVER_P", 
-  "USGS__YAZOO RIVER_TN", "USGS__YAZOO RIVER_TP"
+  "USGS__YAZOO RIVER_NH4", "USGS__YAZOO RIVER_NOx", "USGS__YAZOO RIVER_P"
   )
 
 # Other odd errors
 odd_ones <- c(
-  # Error in ...
-  ## "Error in if (is.na(yDif)) blankHolder else format(yDif, digits = 2,
-  ## width = widthLength) : argument is of length zero"
-  "USGS__GORE CREEK AT MOUTH_TN", "USGS__PINE CREEK_TP",
-  # Error in ...
-  ## "Error in seq.default(xFirst, xLast) : 'from' must be a finite number"
-  # Looks like this may be caused by "negative flow days"?
-  ## Need to check range of values to see these problem values
+  # "Error in seq.default(xFirst, xLast) : 'from' must be a finite number"
+  ### Looks like this may be caused by "negative flow days"?
+  ### Need to check range of values to see these problem values
   "USGS__Lower Atchafalaya_DSi", "USGS__Lower Atchafalaya_NH4",
   "USGS__Lower Atchafalaya_NOx", "USGS__Lower Atchafalaya_P",
-  "USGS__Lower Atchafalaya_TN", "USGS__Lower Atchafalaya_TP",
   # Crashes R without a specific warning message
   "USGS__McDonalds Branch_P", "USGS__MERCED R_P", "USGS__PINE CREEK_P",
   "USGS__GREEN RIVER_P", "USGS__SOPCHOPPY RIVER_NOx"
@@ -99,24 +91,15 @@ few_data <- c(
   ### minNumUncen is greater than total number of samples"
   "AND__GSWS06_NOx", "AND__GSWS07_NOx", "HBR__ws1_P", "HBR__ws2_P", "HBR__ws3_P",
   "HBR__ws4_P", "HBR__ws5_P", "HBR__ws6_P", "HBR__ws7_P", "HBR__ws8_P", "HBR__ws9_P",
-  "MCM__Canada Stream at F1_P", "MCM__Onyx River at Lake Vanda Weir_NH4",
+  "GRO__Kolyma_P", "MCM__Canada Stream at F1_P", "MCM__Onyx River at Lake Vanda Weir_NH4",
   "MCM__Onyx River at Lake Vanda Weir_P", "MCM__Onyx River at Lower Wright Weir_P",
   "NIVA__AAGEVEG_DSi", "NIVA__FINEPAS_DSi", "NIVA__FINETAN_DSi", "NIVA__HOREVOS_DSi",
   "NIVA__MROEDRI_DSi", "NIVA__OSLEALN_DSi", "NIVA__ROGEBJE_DSi", "NIVA__ROGEVIK_DSi",
-  "Sagehen__Sagehen_NH4", "Sagehen__Sagehen_TP", "USGS__GREEN RIVER_TN",
-  "NIVA__SFJENAU_DSi", "NIVA__STRENID_DSi", "USGS__ANDREWS CREEK_TN",
-  "USGS__Canadian River_TN", "USGS__Dismal River_TN", "USGS__Dismal River_TP",
-  "USGS__EAGLE RIVER GYPSUM_TN", "USGS__HILLABAHATCHEE CREEK_TN", "USGS__ROARING FORK_TN",
+  "Sagehen__Sagehen_NH4", "NIVA__SFJENAU_DSi", "NIVA__STRENID_DSi",
   "USGS__SOUTH PLATTE_NH4", "USGS__SOUTH PLATTE_NOx", "USGS__SOUTH PLATTE_P",
-  "USGS__SOUTH PLATTE_TP", "USGS__YAMPA RIVER BELOW CRAIG_TN",
-  # Error in ...
   ### "Error in runSurvReg(estPtYear, estPtLogQ, DecLow, DecHigh, localSample,  : 
   ### minNumObs is greater than total number of samples"
-  "USGS__ANDREWS CREEK_NH4", "USGS__ANDREWS CREEK_P", "USGS__ANDREWS CREEK_TP",
-  "USGS__HILLABAHATCHEE CREEK_TP", "USGS__LITTLE RIVER_TN", "USGS__LITTLE RIVER_TP",
-  "USGS__PICEANCE CREEK AT WHITE RIVER_TP", "USGS__PICEANCE CREEK RYAN GULCH_TP",
-  "USGS__PINE CREEK_TN", "USGS__POPPLE RIVER_TN", "USGS__GREEN RIVER_TP",
-  "USGS__SOPCHOPPY RIVER_TN", "USGS__SOPCHOPPY RIVER_TP"
+  "USGS__ANDREWS CREEK_NH4", "USGS__ANDREWS CREEK_P"
   )
 
 # Identify all rivers that aren't in the broken data vectors
