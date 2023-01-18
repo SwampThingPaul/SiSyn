@@ -31,7 +31,10 @@ ref_table <- read.csv(file = file.path(path, "WRTDS Source Files",
 dplyr::glimpse(ref_table)
 
 # Define the GoogleDrive URL to upload flat results files
-dest_url <- googledrive::as_id("https://drive.google.com/drive/folders/1842KSgp48k_DwvNeYbmz-_b4PSH-vrxg")
+## Original destination
+# dest_url <- googledrive::as_id("https://drive.google.com/drive/folders/1842KSgp48k_DwvNeYbmz-_b4PSH-vrxg")
+## New destination while checking that seasonality alterations produce desired confidence
+dest_url <- googledrive::as_id("https://drive.google.com/drive/folders/1XRZD2fj5jSQZ365T6oJAHJd4bwC68cR4")
 
 # Check current contents of this folder
 googledrive::drive_ls(path = dest_url)
