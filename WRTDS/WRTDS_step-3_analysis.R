@@ -41,9 +41,10 @@ duplicate_data <- c(
   # Warning about "duplicated Daily dates" and "duplicated Sample dates"
   ### "Error in seq.Date(surfaceStart, by = "1 year", length.out = nSeg) : 
   ###'from' must be of length 1"
-  "USGS__Wild River_DSi", "USGS__Wild River_NH4",
+  # "USGS__Wild River_DSi", "USGS__Wild River_NH4",
   # Preemptively placing other data from Wild River here because it is likely to have same issue
-  "USGS__Wild River_NOx", "USGS__Wild River_P")
+  # "USGS__Wild River_NOx", "USGS__Wild River_P"
+  )
 
 pa5_5 <- c(
   # EGRET::setPA(eList = egret_list[_out], paStart = 5, paLong = 5)
@@ -64,12 +65,12 @@ missing_data <- c(
   # Eventual downstream error message:
   ### "Error in if (lastMonth == 2 & (lastYear%%4 == 0) & ((lastYear%%100 !=  : 
   ### missing value where TRUE/FALSE needed"
-  "LUQ__RI_DSi", "LUQ__RI_NH4", "LUQ__RI_NOx", "LUQ__RI_P",
+  # "LUQ__RI_DSi", "LUQ__RI_NH4", "LUQ__RI_NOx", "LUQ__RI_P",
   # Same upstream issue but different downstream error:
-  "USGS__YAZOO RIVER_DSi",
+  # "USGS__YAZOO RIVER_DSi",
   ### "Error in seq.default(xFirst, xLast) : 'from' must be a finite number"
   # Removing other chemicals from same river
-  "USGS__YAZOO RIVER_NH4", "USGS__YAZOO RIVER_NOx", "USGS__YAZOO RIVER_P"
+  # "USGS__YAZOO RIVER_NH4", "USGS__YAZOO RIVER_NOx", "USGS__YAZOO RIVER_P"
   )
 
 # Other odd errors
@@ -77,11 +78,11 @@ odd_ones <- c(
   # "Error in seq.default(xFirst, xLast) : 'from' must be a finite number"
   ### Looks like this may be caused by "negative flow days"?
   ### Need to check range of values to see these problem values
-  "USGS__Lower Atchafalaya_DSi", "USGS__Lower Atchafalaya_NH4",
-  "USGS__Lower Atchafalaya_NOx", "USGS__Lower Atchafalaya_P",
+  # "USGS__Lower Atchafalaya_DSi", "USGS__Lower Atchafalaya_NH4",
+  # "USGS__Lower Atchafalaya_NOx", "USGS__Lower Atchafalaya_P",
   # Crashes R without a specific warning message
-  "USGS__McDonalds Branch_P", "USGS__MERCED R_P", "USGS__PINE CREEK_P",
-  "USGS__GREEN RIVER_P", "USGS__SOPCHOPPY RIVER_NOx"
+  # "USGS__McDonalds Branch_P", "USGS__MERCED R_P", "USGS__PINE CREEK_P",
+  # "USGS__GREEN RIVER_P", "USGS__SOPCHOPPY RIVER_NOx"
 )
 
 # Rivers without sufficient data
@@ -89,17 +90,18 @@ few_data <- c(
   # Error in `EGRET::modelEstimation`
   ### "Error in runSurvReg(SampleCrossV$DecYear[i], SampleCrossV$LogQ[i], DecLow,  : 
   ### minNumUncen is greater than total number of samples"
-  "AND__GSWS06_NOx", "AND__GSWS07_NOx", "HBR__ws1_P", "HBR__ws2_P", "HBR__ws3_P",
-  "HBR__ws4_P", "HBR__ws5_P", "HBR__ws6_P", "HBR__ws7_P", "HBR__ws8_P", "HBR__ws9_P",
-  "GRO__Kolyma_P", "MCM__Canada Stream at F1_P", "MCM__Onyx River at Lake Vanda Weir_NH4",
-  "MCM__Onyx River at Lake Vanda Weir_P", "MCM__Onyx River at Lower Wright Weir_P",
-  "NIVA__AAGEVEG_DSi", "NIVA__FINEPAS_DSi", "NIVA__FINETAN_DSi", "NIVA__HOREVOS_DSi",
-  "NIVA__MROEDRI_DSi", "NIVA__OSLEALN_DSi", "NIVA__ROGEBJE_DSi", "NIVA__ROGEVIK_DSi",
-  "Sagehen__Sagehen_NH4", "NIVA__SFJENAU_DSi", "NIVA__STRENID_DSi",
-  "USGS__SOUTH PLATTE_NH4", "USGS__SOUTH PLATTE_NOx", "USGS__SOUTH PLATTE_P",
+  # "AND__GSWS06_NOx", "AND__GSWS07_NOx", "HBR__ws1_P", "HBR__ws2_P", "HBR__ws3_P",
+  # "HBR__ws4_P", "HBR__ws5_P", "HBR__ws6_P", "HBR__ws7_P", "HBR__ws8_P", "HBR__ws9_P",
+  "GRO__Kolyma_P", "GRO__Lena_P", "GRO__Mackenzie_P",
+  # "MCM__Canada Stream at F1_P", "MCM__Onyx River at Lake Vanda Weir_NH4",
+  # "MCM__Onyx River at Lake Vanda Weir_P", "MCM__Onyx River at Lower Wright Weir_P",
+  # "NIVA__AAGEVEG_DSi", "NIVA__FINEPAS_DSi", "NIVA__FINETAN_DSi", "NIVA__HOREVOS_DSi",
+  # "NIVA__MROEDRI_DSi", "NIVA__OSLEALN_DSi", "NIVA__ROGEBJE_DSi", "NIVA__ROGEVIK_DSi",
+  # "Sagehen__Sagehen_NH4", "NIVA__SFJENAU_DSi", "NIVA__STRENID_DSi",
+  # "USGS__SOUTH PLATTE_NH4", "USGS__SOUTH PLATTE_NOx", "USGS__SOUTH PLATTE_P",
   ### "Error in runSurvReg(estPtYear, estPtLogQ, DecLow, DecHigh, localSample,  : 
   ### minNumObs is greater than total number of samples"
-  "USGS__ANDREWS CREEK_NH4", "USGS__ANDREWS CREEK_P"
+  # "USGS__ANDREWS CREEK_NH4", "USGS__ANDREWS CREEK_P"
   )
 
 # Identify all rivers that aren't in the broken data vectors
