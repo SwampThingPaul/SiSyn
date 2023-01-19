@@ -69,15 +69,19 @@ odd_ones <- c(
 # Rivers without sufficient data
 few_data <- c(
   # Error in `EGRET::modelEstimation`
-  ### "Error in runSurvReg(SampleCrossV$DecYear[i], SampleCrossV$LogQ[i], DecLow,  : 
-  ### minNumUncen is greater than total number of samples"
-  "AND__GSWS06_NOx", "AND__GSWS07_NOx", 
-  "GRO__Kolyma_P", "GRO__Lena_P", "GRO__Mackenzie_P", "GRO__Yukon_P",
+  ## "Error in runSurvReg(SampleCrossV$DecYear[i], SampleCrossV$LogQ[i], DecLow,  : minNumUncen is greater than total number of samples"
+  ## Note: error timing is 1-3 minutes despite `modelEstimation` being an early function
+  "AND__GSWS06_NOx", "MCM__Priscu Stream at B1_NH4", "MCM__Von Guerard Stream at F6_NH4",
+  "MCM__Von Guerard Stream at F6_NH4",
+  # Error in `???`
+  ## "Error in runSurvReg(estPtYear, estPtLogQ, DecLow, DecHigh, localSample,  : minNumObs is greater than total number of samples"
+  ## Note: error timing is near-instant
+  "AND__GSWS07_NOx", "GRO__Kolyma_P", "GRO__Lena_P", "GRO__Mackenzie_P", "GRO__Yukon_P",
   "HBR__ws1_P", "HBR__ws2_P", "HBR__ws3_P", "HBR__ws4_P", "HBR__ws5_P",
-  "HBR__ws6_P", "HBR__ws7_P", "HBR__ws8_P", "HBR__ws9_P"
-  ### "Error in runSurvReg(estPtYear, estPtLogQ, DecLow, DecHigh, localSample,  : 
-  ### minNumObs is greater than total number of samples"
-
+  "HBR__ws6_P", "HBR__ws7_P", "HBR__ws8_P", "HBR__ws9_P",
+  "MCM__Canada Stream at F1_P", "MCM__Onyx River at Lake Vanda Weir_NH4",
+  "MCM__Onyx River at Lake Vanda Weir_P", "MCM__Onyx River at Lower Wright Weir_P",
+  "NIVA__AAGEVEG_DSi", "NIVA__BUSEDRA_NH4"
   )
 
 # Identify all rivers that aren't in the broken data vectors
