@@ -17,26 +17,21 @@ rm(list = ls())
 # Need to specify correct path for local versus server work
 (path <- scicomptools::wd_loc(local = FALSE, remote_path = file.path('/', "home", "shares", "lter-si", "WRTDS")))
 
-# Create a folder for (1) source files, (2) direct inputs, (3) site-specific files, and (4) outputs
+# Create folders for the raw downloaded files (i.e., sources) & WRTDS inputs (created by this script)
 dir.create(path = file.path(path, "WRTDS Source Files"), showWarnings = F)
 dir.create(path = file.path(path, "WRTDS Inputs"), showWarnings = F)
-dir.create(path = file.path(path, "WRTDS Temporary Files"), showWarnings = F)
-dir.create(path = file.path(path, "WRTDS Outputs"), showWarnings = F)
-dir.create(path = file.path(path, "WRTDS Loop Diagnostic"), showWarnings = F)
 
 # Define the names of the Drive files we need
 names <- c("WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv", # No.1 Ref table
            "UpdatedAll_Q_master_10272022.csv", # No.2 Main discharge
-           "20221026_masterdata_chem.csv", # No.3 Main chemistry
-           "20220909_master_min_det_limit.csv") # No.4 Minimum detection limit info
+           "20221030_masterdata_chem.csv") # No.3 Main chemistry
 
 # Find folders for those files
-ids <- googledrive::drive_ls(as_id("https://drive.google.com/drive/u/1/folders/1HQtpWYoq_YQwj_bDNNbv8D-0swi00o_s")) %>%
-  dplyr::bind_rows(googledrive::drive_ls(as_id("https://drive.google.com/drive/u/1/folders/1BAs0y1hHArW8BANUFJrXOXcoMHIk25Pp")))
+ids <- googledrive::drive_ls(as_id("https://drive.google.com/drive/u/1/folders/1HQtpWYoq_YQwj_bDNNbv8D-0swi00o_s"), pattern = ".csv") %>%
+  dplyr::bind_rows(googledrive::drive_ls(as_id("https://drive.google.com/drive/u/1/folders/1BAs0y1hHArW8BANUFJrXOXcoMHIk25Pp"), pattern = ".csv"))
 
 # Check that no file names have changed!
-if(!names[1] %in% ids$name | !names[2] %in% ids$name |
-   !names[3] %in% ids$name | !names[4] %in% ids$name){
+if(!names[1] %in% ids$name | !names[2] %in% ids$name | !names[3] %in% ids$name){
   message("At least one source file name has changed! Update the 'names' vector before proceeding") } else {
     message("All file names found in Google Drive. Please continue") }
 
@@ -55,11 +50,34 @@ for(k in 1:length(names)){
                                 path = file.path(path, "WRTDS Source Files", names[k]))
 }
 
-# Now read in those files!
-ref_table <- read.csv(file = file.path(path, "WRTDS Source Files", names[1]))
-disc_main <- read.csv(file = file.path(path, "WRTDS Source Files", names[2]))
-chem_main <- read.csv(file = file.path(path, "WRTDS Source Files", names[3]))
-mdl_info <- read.csv(file = file.path(path, "WRTDS Source Files", names[4]))
+# Read in each of these files
+ref_raw <- read.csv(file = file.path(path, "WRTDS Source Files", names[1])) 
+disc_raw <- read.csv(file = file.path(path, "WRTDS Source Files", names[2]))
+chem_raw <- read.csv(file = file.path(path, "WRTDS Source Files", names[3]))
+
+# Wrangle the reference table file
+ref_table <- ref_raw %>%
+  # Drop some wrong sites (don't want to delete from ref table in case they are correct for other related datasets)
+  dplyr::filter(!Discharge_File_Name %in% c("GRO_Kolyma_Q_fill", "GRO_Mackenzie_Q_fill"))
+
+# Wrangle discharge
+disc_main <- disc_raw %>%
+  # Fix any broken names (special characters from Scandinavia)
+  dplyr::mutate(DischargeFileName = gsub(pattern = "ØSTEGLO_Q", replacement = "OSTEGLO_Q",
+                                           x = DischargeFileName))
+
+# Wrangle chemistry as well
+chem_main <- chem_raw %>%
+  # Fix some Finnish site names that get messed up by some stage of this wrangling
+  dplyr::mutate(site = gsub(pattern = "[<]e4[>]", replacement = "a", x = site)) %>%
+  dplyr::mutate(site = gsub(pattern = "[<]f6[>]", replacement = "o", x = site)) %>%
+  # Need to fix in both 'site name' columns
+  dplyr::mutate(Site.Stream.Name = gsub(pattern = "[<]e4[>]", replacement = "a",
+                                        x = Site.Stream.Name)) %>%
+  dplyr::mutate(Site.Stream.Name = gsub(pattern = "[<]f6[>]", replacement = "o",
+                                        x = Site.Stream.Name)) %>%
+  # Drop all chemicals other than the core ones we're interested in
+  dplyr::filter(variable %in% c("SRP", "PO4", "DSi", "NO3", "NOx", "NH4"))
 
 # Clean up the environment before continuing
 rm(list = setdiff(ls(), c("path", "ref_table", "disc_main", "chem_main", "mdl_info")))
@@ -77,29 +95,29 @@ name_lkup <- ref_table %>%
 # Glimpse it
 dplyr::glimpse(name_lkup)
 
-# Wrangle minimum detection limit file too
-mdl_v2 <- mdl_info %>%
+# Wrangle a special minimum detection limit object too
+mdl_info <- ref_table %>%
   # Drop unneeded columns
-  dplyr::select(site, dplyr::ends_with("_MDL"), -NH4_uM_MDL) %>%
-  # Rename the stream column and remaining NH4 column
-  dplyr::rename(Stream_Name = site, NH4_MDL = NH4_mgL_MDL) %>%
+  dplyr::select(Stream_Name, dplyr::starts_with("MDL_")) %>%
   # Pivot longer
-  tidyr::pivot_longer(cols = dplyr::ends_with("MDL"),
+  tidyr::pivot_longer(cols = dplyr::starts_with("MDL_"),
                       names_to = "variable",
                       values_to = "MDL") %>%
   # Drop any NAs that result from the pivoting
   dplyr::filter(!is.na(MDL)) %>%
-  # Simplify the variable column
+  # Clean up variable name
   dplyr::mutate(variable_simp = dplyr::case_when(
-    variable == "P_MDL" ~ "P",
-    variable == "NO3_MDL" ~ "NOx",
-    variable == "NH4_MDL" ~ "NH4",
-    TRUE ~ variable), .after = variable) %>%
-  # And drop the old one
+    variable == "MDL_P_mgL" ~ "P",
+    variable == "MDL_NOx_mgL" ~ "NOx",
+    variable == "MDL_NH4_mgL" ~ "NH4",
+    variable == "MDL_Si_mgL" ~ "DSi"), .after = variable) %>%
+  # Drop duplicate rows
+  unique() %>%
+  # Drop original variable column
   dplyr::select(-variable)
 
 # Check it
-dplyr::glimpse(mdl_v2)
+dplyr::glimpse(mdl_info)
 
 ## ---------------------------------------------- ##
               # Initial Wrangling ----
@@ -139,18 +157,19 @@ helpR::diff_chk(old = unique(disc_main$DischargeFileName),
 
 # Clean up the chemistry data
 chem_v2 <- chem_main %>%
-  # Drop all chemicals other than the core ones we're interested in
-  dplyr::filter(variable %in% c("SRP", "PO4", "DSi", "NO3", "NOx", "NH4", "TN", "TP")) %>%
   # Calculate the mg/L (from micro moles) for each of these chemicals
   dplyr::mutate(value_mgL = dplyr::case_when(
+    ## Phosphorous
     variable == "SRP" ~ (((value / 10^6) * 30.973762) * 1000),
     variable == "PO4" ~ (((value / 10^6) * 30.973762) * 1000),
+    variable == "TP" ~ (((value / 10^6) * 30.973762) * 1000),
+    ## Silica
     variable == "DSi" ~ (((value / 10^6) * 28.0855) * 1000),
+    ## Nitrogen
     variable == "NOx" ~ (((value / 10^6) * 14.0067) * 1000),
     variable == "NO3" ~ (((value / 10^6) * 14.0067) * 1000),
     variable == "NH4" ~ (((value / 10^6) * 14.0067) * 1000),
-    variable == "TN" ~ (((value / 10^6) * 14.0067) * 1000),
-    variable == "TP" ~ (((value / 10^6) * 30.973762) * 1000))) %>%
+    variable == "TN" ~ (((value / 10^6) * 14.0067) * 1000))) %>%
   # Drop units, site, and value columns because they're outdated now
   dplyr::select(-units, -site, -value) %>%
   # Rename some columns
@@ -176,10 +195,13 @@ chem_v2 <- chem_main %>%
     variable == "NO3" ~ "NOx",
     TRUE ~ variable))  %>%
   # Attach the minimum detection limit information where it is known
-  dplyr::left_join(y = mdl_v2, by = c("Stream_Name", "variable_simp")) %>%
+  dplyr::left_join(y = mdl_info, by = c("Stream_Name", "variable_simp")) %>%
   # Using this, create a "remarks" column that indicates whether a value is below the MDL
-  dplyr::mutate(remarks = ifelse(test = (value_mgL < MDL), yes = "<", no = ""),
-                .after = Date) %>%
+  dplyr::mutate(remarks = dplyr::case_when(
+    value_mgL < MDL ~ "<",
+    value_mgL >= MDL ~ "",
+    is.na(MDL) ~ ""),
+    .after = Date) %>%
   # Now we can safely drop the MDL information because we have what we need
   dplyr::select(-MDL) %>%
   # Now let's make an "actual" variable column and ditch the others
@@ -404,6 +426,20 @@ write.csv(x = information, row.names = F, na = "",
           file = file.path(path, "WRTDS Inputs",
                            "WRTDS-input_information.csv"))
 
+# Export them to Google Drive to in case anyone has other uses for them
+## Name Drive folder
+tidy_dest <- googledrive::as_id("https://drive.google.com/drive/folders/1hOIJRg4XZa3czMU6bskSgAPTlMj25ET-")
+## Export to it
+googledrive::drive_upload(path = tidy_dest, overwrite = T,
+                          media = file.path(path, "WRTDS Inputs",
+                                            "WRTDS-input_discharge.csv"))
+googledrive::drive_upload(path = tidy_dest, overwrite = T,
+                          media = file.path(path, "WRTDS Inputs",
+                                            "WRTDS-input_chemistry.csv"))
+googledrive::drive_upload(path = tidy_dest, overwrite = T,
+                          media = file.path(path, "WRTDS Inputs",
+                                            "WRTDS-input_information.csv"))
+
 ## ---------------------------------------------- ##
         # Check - Find Dropped Streams ----
 ## ---------------------------------------------- ##
@@ -439,7 +475,7 @@ d5 <- discharge %>%
 
 # Make one for chemistry as well
 c1 <- chem_main %>%
-  dplyr::select(Stream_Name = site) %>%
+  dplyr::select(Stream_Name = Site.Stream.Name) %>%
   unique() %>%
   dplyr::mutate(in_c1 = 1)
 c2 <- chem_v2 %>%
@@ -487,13 +523,110 @@ sab_check <- sab_check_v0[ !complete.cases(sab_check_v0), ] %>%
   # Get rowSums to figure out how many versions of data include a given stream
   dplyr::mutate(incl_data_count = rowSums(dplyr::across(dplyr::starts_with("in_")), na.rm = T)) %>%
   # Order by that column
-  dplyr::arrange(desc(incl_data_count))
+  dplyr::arrange(desc(incl_data_count)) %>%
+  # Generate a rough "diagnosis" column from the included data count
+  dplyr::mutate(diagnosis = dplyr::case_when(
+    incl_data_count == 0 ~ "in reference table but not in either master data file",
+    incl_data_count == 1 & is.na(in_c1) ~ "in master discharge but not in master chemistry",
+    incl_data_count == 1 & is.na(in_d1) ~ "in master chemistry but not in master discharge",
+    incl_data_count == 3 ~ "GUESS: in one dataset but not other so dropped at switch from v3 to v4",
+    Stream_Name == "OSTEGLO" ~ "No discharge data (all NAs) so dropped when missing discharge data are filtered out",
+    incl_data_count == 4 ~ "Unknown but likely an issue with one master file"
+    ), .before = in_d1)
 
 # Take a look!
 dplyr::glimpse(sab_check)
 
-# Export this!
-write.csv(x = sab_check, na = "", row.names = F,
-          file.path(path, "WRTDS Source Files", "WRTDS_sabotage_check.csv"))
+# If there are any streams in the sabotage object, export a list for later diagnosis!
+if(nrow(sab_check) > 0){
+  
+  # Make a file name
+  (sab_file <- paste0("WRTDS_", Sys.Date(), "_sabotage_check_SITES.csv"))
+  
+  # Export locally
+  write.csv(x = sab_check, na = "", row.names = F,
+            file.path(path, "WRTDS Source Files", sab_file))
+  
+  # Export it to GoogleDrive too
+  googledrive::drive_upload(media = file.path(path, "WRTDS Source Files", sab_file),
+                            name = "WRTDS_Sabotage_Check_SITES.csv",
+                            overwrite = T,
+                            path = googledrive::as_id("https://drive.google.com/drive/u/1/folders/1HQtpWYoq_YQwj_bDNNbv8D-0swi00o_s"))
+}
+
+## ---------------------------------------------- ##
+      # Check - Find Dropped Chemicals ----
+## ---------------------------------------------- ##
+# We also want to be sure that included chemistry sites keep only chemicals
+# Above check would (correctly) give green light even if a given chem site lost all but one chemical's data
+
+# Identify stream-element combinations for each data file (except main)
+c2_var <- chem_v2 %>%
+  # Fix LTER as we do in version 3 of the chem file
+  # Standardize some LTER names to match the lookup table
+  dplyr::mutate(LTER = dplyr::case_when(
+    LTER == "KRR(Julian)" ~ "KRR",
+    LTER == "LMP(Wymore)" ~ "LMP",
+    LTER == "NWQA" ~ "USGS",
+    LTER == "Sagehen(Sullivan)" ~ "Sagehen",
+    LTER == "UMR(Jankowski)" ~ "UMR",
+    TRUE ~ LTER)) %>%
+  dplyr::mutate(Stream_Element_ID = paste0(LTER, "__", Stream_Name, "_", variable)) %>%
+  dplyr::select(Stream_Name, Stream_Element_ID) %>%
+  unique() %>%
+  dplyr::mutate(in_c2 = 1)
+c3_var <- chem_v3 %>%
+  dplyr::mutate(Stream_Element_ID = paste0(LTER, "__", Stream_Name, "_", variable)) %>%
+  dplyr::select(Stream_Element_ID) %>%
+  unique() %>%
+  dplyr::mutate(in_c3 = 1)
+c4_var <- chem_v4 %>%
+  dplyr::mutate(Stream_Element_ID = paste0(LTER, "__", Stream_Name, "_", variable)) %>%
+  dplyr::select(Stream_Element_ID) %>%
+  unique() %>%
+  dplyr::mutate(in_c4 = 1)
+c5_var <- chemistry %>%
+  dplyr::select(Stream_Element_ID) %>%
+  unique() %>%
+  dplyr::mutate(in_c5 = 1)
+
+# Bind these together to assemble the first pass at this check
+var_check_v0 <- c2_var %>%
+  dplyr::full_join(y = c3_var, by = "Stream_Element_ID") %>%
+  dplyr::full_join(y = c4_var, by = "Stream_Element_ID") %>%
+  dplyr::full_join(y = c5_var, by = "Stream_Element_ID")
+
+# Drop any rows that aren't missing in any dataset
+var_check <- var_check_v0[ !complete.cases(var_check_v0), ] %>% 
+  # Drop any streams that are caught by the "sabotage check" above
+  dplyr::filter(!Stream_Name %in% sab_check$Stream_Name) %>%
+  # Count how many datasets these streams are included in
+  dplyr::mutate(incl_data_count = rowSums(dplyr::across(dplyr::starts_with("in_")), na.rm = T)) %>%
+  # Order by that column
+  dplyr::arrange(desc(incl_data_count)) %>%
+  # Generate a rough "diagnosis" column from the included data count
+  dplyr::mutate(diagnosis = dplyr::case_when(
+    incl_data_count == 2 ~ "Dropped at date cropping step. Maybe dates are wrong for these elements?",
+  ), .before = in_c2)
+
+# Take a look!
+dplyr::glimpse(var_check)
+
+# If there are any streams in the sabotage object, export a list for later diagnosis!
+if(nrow(var_check) > 0){
+  
+  # Make a file name
+  (var_file <- paste0("WRTDS_", Sys.Date(), "_sabotage_check_CHEMICALS.csv"))
+  
+  # Export locally
+  write.csv(x = var_check, na = "", row.names = F,
+            file.path(path, "WRTDS Source Files", var_file))
+  
+  # Export it to GoogleDrive too
+  googledrive::drive_upload(media = file.path(path, "WRTDS Source Files", var_file),
+                            name = "WRTDS_Sabotage_Check_CHEMICALS.csv",
+                            overwrite = T,
+                            path = googledrive::as_id("https://drive.google.com/drive/u/1/folders/1HQtpWYoq_YQwj_bDNNbv8D-0swi00o_s"))
+}
 
 # End ----

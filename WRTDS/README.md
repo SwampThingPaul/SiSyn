@@ -10,4 +10,8 @@ The WRTDS workflow includes a substantial amount of code that--while broadly lin
 
     - Step 3 also includes a separate workflow for handling bootstrapping due to how computationally intensive these `EGRET` functions are. Separating this from the rest of the workflow allows for quicker retrieval of "main" results and easier maintenance of both parts
 
-- **WRTDS_step-4_results-report.R**: Reads in outputs of step 3 and creates one flat file for each data type for ease of downstream use. Uploads these to GoogleDrive.
+- **WRTDS_step-4_results-report.R**: Reads in outputs of step 3 and creates one flat file for each data type for ease of downstream use. Uploads these to GoogleDrive
+
+### Exploratory Scripts
+
+- **explore_window.R**: Uses some hand-picked rivers to test various "half windows in seasonal dimension" (see `?EGRET::runSeries` at `windowS` argument). Creates PDF reports with `HERON::egret_report` and uploads to GoogleDrive
