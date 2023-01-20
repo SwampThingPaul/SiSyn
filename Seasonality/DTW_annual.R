@@ -1,5 +1,5 @@
 ##dynamic time warping
-install.packages("dtw")
+#install.packages("dtw")
 require("dtw")
 require(plot.matrix)
 require(factoextra)
@@ -13,6 +13,16 @@ monthly_results<-read.csv("Monthly_Results_PA_Interp.csv")
 monthly_results$chemical<-ifelse(is.na(monthly_results$chemical), "DSi", monthly_results$chemical)
 
 monthly_results<-subset(monthly_results, monthly_results$chemical=="DSi")
+
+monthly_results<-monthly_results[,-1]
+
+remove_site<-c("SADDLE STREAM 007", "MARTINELLI")
+
+monthly_results<-monthly_results[!monthly_results$stream %in% remove_site,]
+
+monthly_results<-monthly_results[!is.na(monthly_results$LTER),]
+
+#names(monthly_results)[c(2,4,5)]<-c("Site", "variable", "WY")
 # 
 # MCM_months<-c(2:11)
 # 
@@ -30,45 +40,48 @@ monthly_results<-subset(monthly_results, monthly_results$chemical=="DSi")
 # monthly_results$Conc<-ifelse(monthly_results$site=="SADDLE STREAM 007"&monthly_results$Month %in% Saddle_months, 
 #                              0, monthly_results$Conc)
 # 
-month_agg<-aggregate(monthly_results, by=list(monthly_results$stream, monthly_results$Month),
-                     FUN=mean, na.rm=TRUE)
+# month_agg<-aggregate(monthly_results, by=list(monthly_results$stream, monthly_results$Month),
+#                      FUN=mean, na.rm=TRUE)
+# 
+# names(month_agg)[c(1,2)]<-c("site", "Month")
+# 
+# month_avg<-month_agg[,c("site", "Month", "Conc")]
+# 
+# month_avg$type<-"average"
+# 
+# month_avg$WY<-NA
 
-names(month_agg)[c(1,2)]<-c("site", "Month")
+monthly_results$WY<-ifelse(monthly_results$Month > 9, monthly_results$Year+1, monthly_results$Year)
 
-month_avg<-month_agg[,c("site", "Month", "Conc")]
+month_conc<-monthly_results[,c("stream", "Month", "WY", "Conc")]
 
-month_avg$type<-"average"
+month_conc$unique<-paste0(month_conc$stream, month_conc$WY, month_conc$Month)
 
-month_avg$WY<-NA
+dups<-which(duplicated(month_conc$unique))
 
-monthly_results$waterYear_calc<-ifelse(is.na(monthly_results$waterYear), 
-                                       "calc", "no")
-
-monthly_results$waterYear_new<-ifelse(monthly_results$waterYear_calc =="calc"&monthly_results$Month > 9, 
-                           monthly_results$Year+1, monthly_results$Year)
-
-monthly_results$WY<-ifelse(is.na(monthly_results$waterYear_new), 
-                           monthly_results$waterYear, monthly_results$waterYear_new)
-
-monthly_results$type<-"annual"
-
-month_conc<-monthly_results[,c("stream", "Month", "WY", "Conc", "type")]
+month_conc<-month_conc[-dups,]
 
 names(month_conc)[1]<-"site"
 
-month_conc<-bind_rows(month_avg, month_conc)
+month_conc<-month_conc[,-5]
+
+month_conc_scale<-month_conc %>%
+  group_by(site) %>%
+  mutate(scale(Conc))
+
+colnames(month_conc_scale)[5]<-"scaled_conc"
 
 #month_conc$uniqueID<-paste0(month_conc$site, month_conc$WY, month_conc$type)
 
 #length(unique(month_conc$uniqueID))
 
-month_cast<-dcast(month_conc, formula = Month~site+WY+type, value.var = "Conc")
+month_cast<-dcast(month_conc_scale, formula = Month~site+WY, value.var = "scaled_conc")
 
 month_norm<-month_cast
 
-month_norm[,c(2:3060)]<-as.data.frame(scale(month_norm[, c(2:3060)]))
+#month_norm[,c(2:ncol(month_norm))]<-as.data.frame(scale(month_norm[, c(2:ncol(month_norm))]))
 
-month_norm_t<-as.data.frame(t(month_norm[,c(2:3060)]))
+month_norm_t<-as.data.frame(t(month_norm[,c(2:ncol(month_norm))]))
 
 month_norm_t<-month_norm_t[complete.cases(month_norm_t),]
 
@@ -76,8 +89,120 @@ month_norm_t<-month_norm_t[complete.cases(month_norm_t),]
 #                      control = tadpole_control(dc = 1.5,
 #                                                window.size = 5L), k=6L)
 
+
+centroids_df<-read.csv("AverageClusterCentroids.csv")
+
+dist_mat<-dtwDist(as.matrix(month_norm_t), as.matrix(centroids_df[,2:13]), 
+                  window.type="sakoechiba", window.size=1L)
+
+dist_mat<-as.data.frame(dist_mat)
+
+dist_mat$clust<-apply(dist_mat, 1, which.min)
+
+dist_mat<-rownames_to_column(dist_mat, var = "siteyear")
+
+dist_mat$Site<-substr(dist_mat$siteyear,1,nchar(dist_mat$siteyear)-5)
+
+Mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+siteyear_clust_mode<-dist_mat %>%
+  group_by(Site) %>%
+  summarise(mode=Mode(clust))
+
+write.csv(siteyear_clust_mode, "SiClustersMode.csv")
+
+avg_clusters<-read.csv("MonthClustersNov2022.csv")
+avg_clusters<-avg_clusters[,c(2,15:17)]
+colnames(avg_clusters)[2]<-"Avg_Clust"
+
+clust_mean_mode<-merge(siteyear_clust_mode, avg_clusters, by="Site")  
+
+clust_mean_mode$same<-ifelse(clust_mean_mode$mode==clust_mean_mode$Avg_Clust, "yes", "no")
+
+# sage<-grep("Sage", dist_mat$siteyear)
+# 
+# dist_mat_sage<-dist_mat[sage,]
+# 
+# norm_sage<-grep("Sage", rownames(month_norm_t))
+# 
+# month_norm_t_sage<-month_norm_t[norm_sage,]
+# 
+# month_norm_t_sage<-rownames_to_column(month_norm_t_sage)
+# 
+# sage_melt<-melt(month_norm_t_sage, id.vars = "rowname")
+# 
+# ggplot(sage_melt, aes(variable, value))+geom_line(aes(col=rowname, group=rowname))
+
+clust<-dist_mat[,c(1,7)]
+
+month_norm_t<-rownames_to_column(month_norm_t, var = "siteyear")
+
+colnames(month_norm_t)[2:13]<-seq(1,12)
+
+siteyear_clust<-merge(month_norm_t, clust, by="siteyear")
+
+siteyear_clust_melt<-melt(siteyear_clust, id.vars = c("siteyear", "clust"))
+
+ggplot(siteyear_clust_melt, aes(variable, value, group=siteyear))+geom_line(alpha=0.3)+theme_bw()+
+  facet_wrap(~clust)+labs(x="Month", y="Normalized Si Concentration")+
+  theme(text = element_text(size = 20))
+
+siteyear_count<-siteyear_clust %>%
+  count(clust)
+
+ggplot(siteyear_count, aes(x=clust, y=n))+geom_bar(stat="identity", col="black", fill="black")+
+  theme_bw()+theme(text = element_text(size = 20))+labs(x="Cluster", y="Count")
+
+avg_clusters<-read.csv("MonthClustersNov2022.csv")
+avg_clusters<-avg_clusters[,c(2,15:17)]
+colnames(avg_clusters)[2]<-"Avg_Clust"
+
+siteyear_clust$Site<-substr(siteyear_clust$siteyear,1,nchar(siteyear_clust$siteyear)-5)
+
+siteyear_clust_avg<-merge(siteyear_clust, clust_mean_mode, by="Site")
+
+siteyear_clust_avg$same<-ifelse(siteyear_clust_avg$clust==siteyear_clust_avg$mode, "yes", "no")
+
+same_clust_count<-siteyear_clust_avg %>%
+  group_by(Site) %>%
+  dplyr::count(same) %>%
+  filter(same=="yes")
+
+num_years<-siteyear_clust_avg %>%
+  dplyr::count(Site)
+
+same_clust_count<-merge(same_clust_count, num_years, by="Site")
+
+names(same_clust_count)<-c("Site","Same_Cluster","Yes","Total")
+
+same_clust_count$diff<-same_clust_count$Total-same_clust_count$Yes
+
+same_clust_count$Prop<-same_clust_count$diff/same_clust_count$Total
+
+same_clust_count<-merge(same_clust_count, biomes, by="Site")
+
+ggplot(same_clust_count,aes(Name, 1-Prop))+geom_boxplot()+theme_classic()+geom_jitter()+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  labs(x="Climate Classification",y="Stability")+
+  theme(text = element_text(size = 20))
+
+write.csv(same_clust_count, "StabilitySiClusters.csv")
+
+
+
+
+
+
+
+
+
+
 clust.dba <- tsclust(month_norm_t, type="partitional", centroid = "dba", distance = "dtw",
-                     window.size=1L, k=7L, seed = 8, trace = TRUE)
+                     window.size=1L, k=7L, seed = 8, trace = TRUE, 
+                     control = partitional_control(iter.max = 300L))
 
 clust_output<-clust.dba@clusinfo
 
@@ -106,25 +231,53 @@ month_clusters$Site<-as.character(map(strsplit(month_clusters$SiteYear, "_"),1))
 month_clusters$WY<-as.numeric(map(strsplit(month_clusters$SiteYear, "_"),2))
 month_clusters$type<-as.character(map(strsplit(month_clusters$SiteYear, "_"),3))
 
+#write.csv(month_clusters, "Annual_Cluster_DF.csv")
+
+month_clusters<-read.csv("Annual_Cluster_DF.csv")
+
+month_clusters_conc<-merge(month_clusters_melt, monthly_results, by=c("Site", "variable", "WY"))
+
+month_clusters_conc<-month_clusters_conc[,c("Site", "SiteYear", "Cluster", "WY", "variable","value",
+                                            "ClimateZ", "Name", "Q", "Conc")]
+
+month_clusters_range<-month_clusters_conc %>%
+  dplyr::group_by(Cluster, SiteYear) %>%
+  dplyr::summarise(mean(Conc))
+
+colnames(month_clusters_range)<-c("Cluster", "SiteYear", "Conc")
+
+ggplot(month_clusters_range, aes(log(Conc), fill=as.character(Cluster)))+geom_density(alpha=0.3)+
+  theme_bw()
+
+colnames(Q_avg)<-c("Cluster", "Month", "Q")
+
+ggplot(Q_avg, aes(Month, Q))+geom_line(group=1)+facet_wrap(~Cluster)
+
+
+month_clusters<-month_clusters[,-1]
 
 biomes<-read.csv("Koeppen_Geiger.csv")
 names(biomes)[2]<-"Site"
 month_clusters<-merge(month_clusters, biomes, by="Site")
 
+KG_name<-read.csv("KG_Clim_Name.csv")
+
+month_clusters<-merge(month_clusters, KG_name, by="ClimateZ")
+
 month_clusters_unique<-ddply(month_clusters, "Site", function(z) tail(z,1))
 
-ggplot(month_clusters_unique, aes(x=ClimateZ))+geom_bar(aes(fill=LTER))+
+ggplot(month_clusters_unique, aes(x=Name))+geom_bar(aes(fill=LTER))+
   scale_fill_viridis_d(option = "magma")+
   theme_classic()+theme(text = element_text(size = 20))+
   labs(x="Köeppen-Geigen Climate Classification", y="Count")
   
 
 #reorder the names of Biome so that they plot in this order on axis and legens
-month_clusters$Biome2<-factor(month_clusters$Biome_new, levels = c("Tropical rainforest","Temperate coniferous forest",
-                                                                     "Temperate grassland","Boreal forest",
-                                                                     "Temperate deciduous forest", 
-                                                                     "Tropical savanna","Alpine tundra", 
-                                                                     "Polar desert", "Arctic tundra"))
+# month_clusters$Biome2<-factor(month_clusters$Biome_new, levels = c("Tropical rainforest","Temperate coniferous forest",
+#                                                                      "Temperate grassland","Boreal forest",
+#                                                                      "Temperate deciduous forest", 
+#                                                                      "Tropical savanna","Alpine tundra", 
+#                                                                      "Polar desert", "Arctic tundra"))
 
 #set color palette
 #color_pal<-c("lawngreen", "goldenrod1", "darkgreen", "darkorange2", "firebrick1", "mediumpurple3", 
@@ -148,10 +301,65 @@ col_values<-c("Boreal forest" = cols_final[1],
               "Polar desert" = cols_final[8],
               "Temperate coniferous forest" = cols_final[9])
 
+month_clusters<-month_clusters[,-c(19,20,21,23,24)]
+
 month_clusters_melt<-melt(month_clusters, id.vars = c("Site", "SiteYear", "Cluster",
-                                                      "LTER", "ClimateZ", "WY",
+                                                      "LTER", "ClimateZ", "Name", "WY",
                                                       "type"))
-month_clusters<-month_clusters[,-c(18,19,20,22,23)]
+
+month_clusters_melt$variable<-gsub("X", "", month_clusters_melt$variable)
+
+#site_list<-unique(month_clusters_melt$Site)
+
+LTER_list<-unique(month_clusters_melt$LTER)
+
+setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/Plots_for_Seasonality_Survey/Annual_Si_Clusters")
+
+for (k in 1:length(LTER_list)) {
+  
+  LTER_sites<-subset(month_clusters_melt, month_clusters_melt$LTER==LTER_list[k])
+  
+  site_list<-unique(LTER_sites$Site)
+  
+  pdf(paste0(LTER_list[k], "_Annual_Si_Concentration_Clusters.pdf"), width=11)
+  
+  for (i in 1:length(site_list)) {
+    
+    cluster_site<-subset(month_clusters_melt, month_clusters_melt$Site==site_list[i])
+    
+    p0<-ggplot(cluster_site, aes(as.numeric(variable), value, col=as.character(WY), group=SiteYear))+
+      geom_line()+theme_bw()+scale_x_continuous(labels = seq(1,12,1), breaks = seq(1,12,1))+
+      ggtitle(site_list[i])+
+      labs(x="Flow Period", y="Normalized Si Concentration", col="Water Year")
+    
+    print(p0)
+    
+    p1<-ggplot(cluster_site, aes(as.numeric(variable), value, col=as.character(WY), group=SiteYear))+
+      geom_line()+facet_wrap(~Cluster)+theme_bw()+
+      scale_color_discrete(na.value="black")+
+      scale_x_continuous(labels = seq(1,12,1), breaks = seq(1,12,1))+
+      ggtitle(site_list[i])+labs(x="Flow Period", y="Normalized Si Concentration", col="Water Year")
+    
+    na_clust<-subset(cluster_site, cluster_site$type=="average")
+    
+    print(p1)
+    
+    p2<-ggplot(cluster_site, aes(WY, Cluster))+geom_line()+geom_point()+theme_bw()+
+      scale_y_continuous(labels = ID, breaks = ID)+geom_hline(yintercept = na_clust$Cluster,
+                                                              col="red")+
+      ggtitle(site_list[i])
+    
+    print(p2)
+    
+    
+  }
+  
+  dev.off()
+  
+}
+
+
+
 
 cluster_avg<-grep("average", month_clusters$SiteYear)
 site_avg_cluster<-month_clusters[cluster_avg,c("Site","Cluster")]
@@ -182,6 +390,8 @@ same_clust_count$Prop<-same_clust_count$diff/same_clust_count$Total
 
 same_clust_count<-merge(same_clust_count, biomes, by="Site")
 
+same_clust_count<-merge(same_clust_count, KG_name, by="ClimateZ")
+
 #reorder the names of Biome so that they plot in this order on axis and legens
 same_clust_count$Biome2<-factor(same_clust_count$Biome_new, levels = c("Tropical rainforest","Temperate coniferous forest",
                                                                    "Temperate grassland","Boreal forest",
@@ -189,17 +399,38 @@ same_clust_count$Biome2<-factor(same_clust_count$Biome_new, levels = c("Tropical
                                                                    "Tropical savanna","Alpine tundra", 
                                                                    "Polar desert", "Arctic tundra"))
 
+same_clust_count$Name<-factor(same_clust_count$Name, levels = c("Humid Monsoon", "Humid Subtropical", "Mediterranean", 
+                                        "Humid Temperate", "Humid Continental", "Subarctic",
+                                        "Tundra", "Ice Cap"))
 
-ggplot(same_clust_count,aes(ClimateZ, Prop))+geom_boxplot()+theme_classic()+geom_jitter()+
+month_clusters_melt$Name<-factor(month_clusters_melt$Name, levels = c("Humid Monsoon", "Humid Subtropical", "Mediterranean", 
+                                                                "Humid Temperate", "Humid Continental", "Subarctic",
+                                                                "Tundra", "Ice Cap"))
+
+
+ggplot(same_clust_count,aes(Name, 1-Prop))+geom_boxplot()+theme_classic()+geom_jitter()+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))+
-  labs(x="Biome",y="Proportion of Years Different from Average")+
+  labs(x="Climate Classification",y="Stability")+
   theme(text = element_text(size = 20))
 
 ggplot(month_clusters_melt, aes(variable, value))+
-  geom_line(aes(col=ClimateZ, group=SiteYear))+
+  geom_line(aes(col=Name, group=SiteYear))+
   theme_bw()+facet_wrap(~Cluster, nrow = 2)+
   scale_color_manual(values = carto_pal(n=12, "Bold"))+
   theme(text = element_text(size = 20))+labs(x="Month", y="Normalized Si Concentration")
+
+avg_annual_cluster<-aggregate(value~Cluster+variable, month_clusters_melt, FUN = mean)
+
+ggplot(avg_annual_cluster, aes(variable, value, group=1))+geom_line()+theme_bw()+
+  facet_wrap(~Cluster, nrow = 2)+labs(x="Flow Period", y="Normalized Si Concentration")+
+  theme(text = element_text(size = 20))
+
+ID<-seq(1,7,1)
+
+ggplot(month_clusters_melt, aes(Cluster, fill=Name))+geom_bar()+theme_bw()+
+  scale_fill_manual(values = carto_pal(n=12, "Bold"))+labs(x="Cluster", y="Count")+
+  scale_x_continuous(labels = as.character(ID), breaks = ID)+
+  theme(text = element_text(size=20))
 
 wanted_sites<-c("MPR", "GSWS08")
 
