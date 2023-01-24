@@ -64,7 +64,7 @@ odd_ones <- c(
   "USGS__Lower Atchafalaya_DSi", "USGS__Lower Atchafalaya_NH4", 
   "USGS__Lower Atchafalaya_NOx", "USGS__Lower Atchafalaya_P",
   # Crashes R without a specific warning message
-  "USGS__GREEN RIVER_P"
+  "USGS__GREEN RIVER_P", "USGS__McDonalds Branch_P", "USGS__MERCED R_P"
 )
 
 # Rivers without sufficient data
