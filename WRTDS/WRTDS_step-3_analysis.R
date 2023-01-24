@@ -61,9 +61,10 @@ odd_ones <- c(
   # "Error in seq.default(xFirst, xLast) : 'from' must be a finite number"
   ### Looks like this may be caused by "negative flow days"?
   ### Need to check range of values to see these problem values
-  
+  "USGS__Lower Atchafalaya_DSi", "USGS__Lower Atchafalaya_NH4", 
+  "USGS__Lower Atchafalaya_NOx", "USGS__Lower Atchafalaya_P",
   # Crashes R without a specific warning message
-  
+  "USGS__GREEN RIVER_P"
 )
 
 # Rivers without sufficient data
@@ -72,7 +73,7 @@ few_data <- c(
   ## "Error in runSurvReg(SampleCrossV$DecYear[i], SampleCrossV$LogQ[i], DecLow,  : minNumUncen is greater than total number of samples"
   ## Note: error timing is 1-3 minutes despite `modelEstimation` being an early function
   "AND__GSWS06_NOx", "MCM__Priscu Stream at B1_NH4", "MCM__Von Guerard Stream at F6_NH4",
-  "MCM__Von Guerard Stream at F6_NH4",
+  "MCM__Von Guerard Stream at F6_NH4", "NIVA__VESENUM_P",
   # Error in `EGRET::runSeries`
   ## "Error in runSurvReg(estPtYear, estPtLogQ, DecLow, DecHigh, localSample,  : minNumObs is greater than total number of samples"
   ## Note: error timing is near-instant
@@ -81,7 +82,15 @@ few_data <- c(
   "HBR__ws6_P", "HBR__ws7_P", "HBR__ws8_P", "HBR__ws9_P",
   "MCM__Canada Stream at F1_P", "MCM__Onyx River at Lake Vanda Weir_NH4",
   "MCM__Onyx River at Lake Vanda Weir_P", "MCM__Onyx River at Lower Wright Weir_P",
-  "NIVA__AAGEVEG_DSi", "NIVA__BUSEDRA_NH4", "NIVA__BUSEDRA_P"
+  "NIVA__AAGEVEG_DSi", "NIVA__BUSEDRA_NH4", "NIVA__BUSEDRA_P", "NIVA__FINEALT_NH4",
+  "NIVA__FINEALT_P", "NIVA__FINEPAS_DSi", "NIVA__FINETAN_DSi", "NIVA__HOREVOS_DSi",
+  "NIVA__MROEDRI_DSi", "NIVA__NOREVEF_NH4", "NIVA__NOREVEF_P", "NIVA__OSLEALN_DSi",
+  "NIVA__ROGEBJE_DSi", "NIVA__ROGEVIK_DSi", "NIVA__SFJENAU_DSi", "NIVA__STRENID_DSi",
+  "NIVA__STREORK_NH4", "NIVA__STREORK_P", "NIVA__TELESKI_NH4", "NIVA__TELESKI_P",
+  "NIVA__VAGEOTR_NH4", "NIVA__VAGEOTR_P", "NIVA__VESENUM_NH4", "NWT__ALBION_NOx",
+  "NWT__ALBION_P", "NWT__MARTINELLI_P", "NWT__SADDLE STREAM 007_NOx",
+  "NWT__SADDLE STREAM 007_P", "Sagehen__Sagehen_NH4", "USGS__ANDREWS CREEK_NH4",
+  "USGS__ANDREWS CREEK_P"
   )
 
 # Identify all rivers that aren't in the broken data vectors
@@ -101,7 +110,8 @@ done_rivers <- data.frame("file" = dir(path = file.path(path, "WRTDS Loop Diagno
 bad_rivers <- c()
 
 # Identify rivers to run
-rivers_to_do <- setdiff(x = unique(good_rivers), y = c(unique(done_rivers$river), bad_rivers))
+rivers_to_do <- setdiff(x = unique(good_rivers), 
+                        y = c(unique(done_rivers$river), bad_rivers))
 
 # Loop across rivers and elements to run WRTDS workflow!
 for(river in rivers_to_do){
