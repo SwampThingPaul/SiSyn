@@ -64,7 +64,8 @@ odd_ones <- c(
   "USGS__Lower Atchafalaya_DSi", "USGS__Lower Atchafalaya_NH4", 
   "USGS__Lower Atchafalaya_NOx", "USGS__Lower Atchafalaya_P",
   # Crashes R without a specific warning message
-  "USGS__GREEN RIVER_P", "USGS__McDonalds Branch_P", "USGS__MERCED R_P"
+  "USGS__GREEN RIVER_P", "USGS__McDonalds Branch_P", "USGS__MERCED R_P",
+  "USGS__PINE CREEK_P", "USGS__SOPCHOPPY RIVER_NOx"
 )
 
 # Rivers without sufficient data
@@ -90,7 +91,8 @@ few_data <- c(
   "NIVA__VAGEOTR_NH4", "NIVA__VAGEOTR_P", "NIVA__VESENUM_NH4", "NWT__ALBION_NOx",
   "NWT__ALBION_P", "NWT__MARTINELLI_P", "NWT__SADDLE STREAM 007_NOx",
   "NWT__SADDLE STREAM 007_P", "Sagehen__Sagehen_NH4", "USGS__ANDREWS CREEK_NH4",
-  "USGS__ANDREWS CREEK_P"
+  "USGS__ANDREWS CREEK_P", "USGS__SOUTH PLATTE_NH4", "USGS__SOUTH PLATTE_NOx",
+  "USGS__SOUTH PLATTE_P"
   )
 
 # Identify all rivers that aren't in the broken data vectors
