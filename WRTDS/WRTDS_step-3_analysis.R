@@ -36,7 +36,8 @@ duplicate_data <- c(
   # Warning about "duplicated Daily dates" and "duplicated Sample dates"
   ### "Error in seq.Date(surfaceStart, by = "1 year", length.out = nSeg) : 
   ###'from' must be of length 1"
-  
+  "USGS__Wild River_DSi", "USGS__Wild River_NH4", "USGS__Wild River_NOx", 
+  "USGS__Wild River_P"
   )
 
 pa5_5 <- c(
@@ -63,6 +64,8 @@ odd_ones <- c(
   ### Need to check range of values to see these problem values
   "USGS__Lower Atchafalaya_DSi", "USGS__Lower Atchafalaya_NH4", 
   "USGS__Lower Atchafalaya_NOx", "USGS__Lower Atchafalaya_P",
+  "USGS__YAZOO RIVER_DSi", "USGS__YAZOO RIVER_NH4",
+  "USGS__YAZOO RIVER_NOx", "USGS__YAZOO RIVER_P",
   # Crashes R without a specific warning message
   "USGS__GREEN RIVER_P", "USGS__McDonalds Branch_P", "USGS__MERCED R_P",
   "USGS__PINE CREEK_P", "USGS__SOPCHOPPY RIVER_NOx"
