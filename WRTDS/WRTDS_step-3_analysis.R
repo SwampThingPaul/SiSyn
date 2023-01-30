@@ -356,6 +356,10 @@ bad_boot_rivers <- c(
   "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_NOx", "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_P", "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_TN", "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_TP"
 )
 
+# NOTE
+## Await feedback on seasonality modification to "core" workflow
+## If approved, implement same change for this workflow as appropriate
+
 # Loop across rivers and elements to run WRTDS workflow!
 for(river in setdiff(x = unique(good_rivers), y = bad_boot_rivers)){
 # for(river in "AND__GSMACK_DSi"){
