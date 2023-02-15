@@ -9,7 +9,7 @@
 ## ---------------------------------------------- ##
 # Load libraries
 # install.packages("librarian")
-librarian::shelf(tidyverse, googledrive, lubridate, EGRET, EGRETci, njlyon0/helpR, NCEAS/scicomptools)
+librarian::shelf(tidyverse, googledrive, lubridate, EGRET, EGRETci, supportR, NCEAS/scicomptools)
 
 # Clear environment
 rm(list = ls())
@@ -152,8 +152,8 @@ disc_v2 <- disc_main %>%
 dplyr::glimpse(disc_v2)
 
 # Check for lost/gained streams
-helpR::diff_chk(old = unique(disc_main$DischargeFileName),
-                new = unique(disc_v2$Discharge_File_Name))
+supportR::diff_check(old = unique(disc_main$DischargeFileName),
+                     new = unique(disc_v2$Discharge_File_Name))
 
 # Clean up the chemistry data
 chem_v2 <- chem_main %>%
@@ -214,8 +214,8 @@ chem_v2 <- chem_main %>%
 dplyr::glimpse(chem_v2)
 
 # Check for lost/gained streams
-helpR::diff_chk(old = unique(chem_main$site),
-                new = unique(chem_v2$Stream_Name))
+supportR::diff_check(old = unique(chem_main$site),
+                     new = unique(chem_v2$Stream_Name))
 
 ## ---------------------------------------------- ##
            # Match Stream "Aliases" ----
@@ -235,8 +235,8 @@ disc_v3 <- disc_v2 %>%
 dplyr::glimpse(disc_v3)
 
 # Check for gained/lost streams
-helpR::diff_chk(old = unique(disc_v2$Discharge_File_Name),
-                new = unique(disc_v3$Discharge_File_Name))
+supportR::diff_check(old = unique(disc_v2$Discharge_File_Name),
+                     new = unique(disc_v3$Discharge_File_Name))
 
 # Wrangle the chemistry data
 chem_v3 <- chem_v2 %>%
@@ -255,8 +255,8 @@ chem_v3 <- chem_v2 %>%
 glimpse(chem_v3)
 
 # Check for gained/lost streams
-helpR::diff_chk(old = unique(chem_v2$Stream_Name),
-                new = unique(chem_v3$Stream_Name))
+supportR::diff_check(old = unique(chem_v2$Stream_Name),
+                     new = unique(chem_v3$Stream_Name))
 
 ## ---------------------------------------------- ##
           # Crop Time Series for WRTDS ----
@@ -318,11 +318,11 @@ disc_v4 <- disc_v3 %>%
 dplyr::glimpse(disc_v4)
 
 # Check for gained/lost streams
-helpR::diff_chk(old = unique(disc_v3$Discharge_File_Name),
-                new = unique(disc_v4$Discharge_File_Name))
+supportR::diff_check(old = unique(disc_v3$Discharge_File_Name),
+                     new = unique(disc_v4$Discharge_File_Name))
 
 # Check for unintentionally lost columns
-helpR::diff_chk(old = names(disc_v3), new = names(disc_v4))
+supportR::diff_check(old = names(disc_v3), new = names(disc_v4))
 ## Change to discharge column name is fine
 ## Added "Stream_ID" column is purposeful
 
@@ -343,12 +343,12 @@ chem_v4 <- chem_v3 %>%
 dplyr::glimpse(chem_v4)
 
 # Check for gained/lost streams
-helpR::diff_chk(old = unique(chem_v3$Stream_Name),
-                new = unique(chem_v4$Stream_Name))
+supportR::diff_check(old = unique(chem_v3$Stream_Name),
+                     new = unique(chem_v4$Stream_Name))
 ## Any streams lost here are lost because somehow *all* chemistry dates are outside of the allowed range defined by the min and max dates found in the discharge data.
 
 # Check for unintentionally lost columns
-helpR::diff_chk(old = names(chem_v3), new = names(chem_v4))
+supportR::diff_check(old = names(chem_v3), new = names(chem_v4))
 
 # Create the scaffold for what will become the "information" file required by WRTDS
 info_v2 <- ref_table %>%
@@ -385,8 +385,8 @@ discharge <- disc_v4 %>%
 dplyr::glimpse(discharge)
 
 # Check for gained/lost streams
-helpR::diff_chk(old = unique(disc_v4$Stream_ID),
-                new = unique(discharge$Stream_ID))
+supportR::diff_check(old = unique(disc_v4$Stream_ID),
+                     new = unique(discharge$Stream_ID))
 
 # Do the same for chemistry
 chemistry <- chem_v4 %>%
@@ -400,8 +400,8 @@ chemistry <- chem_v4 %>%
 dplyr::glimpse(chemistry)
 
 # Check for gained/lost streams
-helpR::diff_chk(old = unique(chem_v4$Stream_ID),
-                new = unique(chemistry$Stream_ID))
+supportR::diff_check(old = unique(chem_v4$Stream_ID),
+                     new = unique(chemistry$Stream_ID))
 
 # And finally for information
 information <- info_v2 %>%
@@ -412,8 +412,8 @@ information <- info_v2 %>%
 dplyr::glimpse(information)
 
 # Check for gained/lost streams
-helpR::diff_chk(old = unique(info_v2$Stream_ID),
-                new = unique(information$Stream_ID))
+supportR::diff_check(old = unique(info_v2$Stream_ID),
+                     new = unique(information$Stream_ID))
 
 # Write these final products out for posterity
 write.csv(x = discharge, row.names = F, na = "",
