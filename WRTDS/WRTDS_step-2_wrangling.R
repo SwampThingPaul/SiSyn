@@ -22,38 +22,41 @@ dir.create(path = file.path(path, "WRTDS Source Files"), showWarnings = F)
 dir.create(path = file.path(path, "WRTDS Inputs"), showWarnings = F)
 
 # Define the names of the Drive files we need
-names <- c("WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv", # No.1 Ref table
+file_names <- c("WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv", # No.1 Ref table
            "UpdatedAll_Q_master_10272022.csv", # No.2 Main discharge
            "20221030_masterdata_chem.csv") # No.3 Main chemistry
 
-# Find folders for those files
-ids <- googledrive::drive_ls(as_id("https://drive.google.com/drive/u/1/folders/1HQtpWYoq_YQwj_bDNNbv8D-0swi00o_s"), pattern = ".csv") %>%
-  dplyr::bind_rows(googledrive::drive_ls(as_id("https://drive.google.com/drive/u/1/folders/1BAs0y1hHArW8BANUFJrXOXcoMHIk25Pp"), pattern = ".csv"))
+# Find those files' IDs
+ids <- googledrive::drive_ls(as_id("https://drive.google.com/drive/u/0/folders/15FEoe2vu3OAqMQHqdQ9XKpFboR4DvS9M"), pattern = "WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv") %>%
+  dplyr::bind_rows(googledrive::drive_ls(as_id("https://drive.google.com/drive/u/0/folders/1hbkUsTdo4WAEUnlPReOUuXdeeXm92mg-"), type = "csv",  pattern = "UpdatedAll_Q_master_")) %>%
+  dplyr::bind_rows(googledrive::drive_ls(as_id("https://drive.google.com/drive/u/0/folders/1dTENIB5W2ClgW0z-8NbjqARiaGO2_A7W"), pattern = "_masterdata_chem.csv")) %>%
+  ## And filter out any extraneous files
+  dplyr::filter(name %in% file_names)
 
 # Check that no file names have changed!
-if(!names[1] %in% ids$name | !names[2] %in% ids$name | !names[3] %in% ids$name){
+if(!file_names[1] %in% ids$name | !file_names[2] %in% ids$name | !file_names[3] %in% ids$name){
   message("At least one source file name has changed! Update the 'names' vector before proceeding") } else {
     message("All file names found in Google Drive. Please continue") }
 
 # Download the files we want
-for(k in 1:length(names)){
+for(k in 1:length(file_names)){
   
   # Processing message
-  message("Downloading file '", names[k], "'")
+  message("Downloading file '", file_names[k], "'")
   
   # Download files
   ids %>%
     # Filter to desired file
-    dplyr::filter(name == names[k]) %>%
+    dplyr::filter(name == file_names[k]) %>%
     # Download that file!
     googledrive::drive_download(file = as_id(.), overwrite = T,
-                                path = file.path(path, "WRTDS Source Files", names[k]))
+                                path = file.path(path, "WRTDS Source Files", file_names[k]))
 }
 
 # Read in each of these files
-ref_raw <- read.csv(file = file.path(path, "WRTDS Source Files", names[1])) 
-disc_raw <- read.csv(file = file.path(path, "WRTDS Source Files", names[2]))
-chem_raw <- read.csv(file = file.path(path, "WRTDS Source Files", names[3]))
+ref_raw <- read.csv(file = file.path(path, "WRTDS Source Files", file_names[1])) 
+disc_raw <- read.csv(file = file.path(path, "WRTDS Source Files", file_names[2]))
+chem_raw <- read.csv(file = file.path(path, "WRTDS Source Files", file_names[3]))
 
 # Wrangle the reference table file
 ref_table <- ref_raw %>%
@@ -80,7 +83,7 @@ chem_main <- chem_raw %>%
   dplyr::filter(variable %in% c("SRP", "PO4", "DSi", "NO3", "NOx", "NH4"))
 
 # Clean up the environment before continuing
-rm(list = setdiff(ls(), c("path", "ref_table", "disc_main", "chem_main", "mdl_info")))
+rm(list = setdiff(ls(), c("path", "ref_table", "disc_main", "chem_main")))
 ## Above line removes anything *other* than objects specified
 
 ## ---------------------------------------------- ##
@@ -428,7 +431,7 @@ write.csv(x = information, row.names = F, na = "",
 
 # Export them to Google Drive to in case anyone has other uses for them
 ## Name Drive folder
-tidy_dest <- googledrive::as_id("https://drive.google.com/drive/folders/1hOIJRg4XZa3czMU6bskSgAPTlMj25ET-")
+tidy_dest <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/1QEofxLdbWWLwkOTzNRhI6aorg7-2S3JE")
 ## Export to it
 googledrive::drive_upload(path = tidy_dest, overwrite = T,
                           media = file.path(path, "WRTDS Inputs",
@@ -551,7 +554,7 @@ if(nrow(sab_check) > 0){
   googledrive::drive_upload(media = file.path(path, "WRTDS Source Files", sab_file),
                             name = "WRTDS_Sabotage_Check_SITES.csv",
                             overwrite = T,
-                            path = googledrive::as_id("https://drive.google.com/drive/u/1/folders/1HQtpWYoq_YQwj_bDNNbv8D-0swi00o_s"))
+                            path = googledrive::as_id("https://drive.google.com/drive/u/0/folders/1aJXFBt61bntXDQec9Ne0F2m5yjvA6TsK"))
 }
 
 ## ---------------------------------------------- ##
@@ -626,7 +629,7 @@ if(nrow(var_check) > 0){
   googledrive::drive_upload(media = file.path(path, "WRTDS Source Files", var_file),
                             name = "WRTDS_Sabotage_Check_CHEMICALS.csv",
                             overwrite = T,
-                            path = googledrive::as_id("https://drive.google.com/drive/u/1/folders/1HQtpWYoq_YQwj_bDNNbv8D-0swi00o_s"))
+                            path = googledrive::as_id("https://drive.google.com/drive/u/0/folders/1aJXFBt61bntXDQec9Ne0F2m5yjvA6TsK"))
 }
 
 # End ----
