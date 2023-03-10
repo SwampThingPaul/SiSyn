@@ -22,6 +22,11 @@ dir.create(path = file.path(path, "WRTDS Results"), showWarnings = F)
 dir.create(path = file.path(path, "WRTDS Bootstrap Results"), showWarnings = F)
 
 # Download the reference table object
+googledrive::drive_ls(googledrive::as_id("https://drive.google.com/drive/u/0/folders/15FEoe2vu3OAqMQHqdQ9XKpFboR4DvS9M"), pattern = "WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv") %>%
+  googledrive::drive_download(file = googledrive::as_id(.), overwrite = T,
+                              path = file.path(path, "WRTDS Source Files", "WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv"))
+
+# Read that file in
 ref_table <- read.csv(file = file.path(path, "WRTDS Source Files", 
                                        "WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv")) %>%
   # Pare down to only needed columns
