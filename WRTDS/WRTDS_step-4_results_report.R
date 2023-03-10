@@ -37,9 +37,9 @@ dplyr::glimpse(ref_table)
 
 # Define the GoogleDrive URL to upload flat results files
 ## Original destination
-# dest_url <- googledrive::as_id("https://drive.google.com/drive/folders/1842KSgp48k_DwvNeYbmz-_b4PSH-vrxg")
+# dest_url <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/1V5EqmOlWA8U9NWfiBcWdqEH9aRAP-zCk")
 ## New destination while checking that seasonality alterations produce desired confidence
-dest_url <- googledrive::as_id("https://drive.google.com/drive/folders/1XRZD2fj5jSQZ365T6oJAHJd4bwC68cR4")
+dest_url <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/1bm2a-rBkvbFXECGXmZ-pLDtoTomtFLYI")
 
 # Check current contents of this folder
 googledrive::drive_ls(path = dest_url)
@@ -426,7 +426,10 @@ pdf_outs <- data.frame("file_name" = wrtds_outs_v0) %>%
 dplyr::glimpse(pdf_outs)
 
 # Identify PDF folder
-pdf_url <- googledrive::as_id("https://drive.google.com/drive/folders/1udMrg4oO9xAXuPvnIcKjV55fX0N8H-XZ")
+## Standard output destination
+# pdf_url <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/14pq2oLvs8KIARxlWZ3pvC3e1Dx-PjVxt")
+## Experimental destination
+pdf_url <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/1RPYELgBlxj6uEO36eQx2BSRwogATPNXB")
 
 # Identify PDFs already in GoogleDrive
 drive_pdfs <- googledrive::drive_ls(path = pdf_url)
@@ -435,9 +438,9 @@ drive_pdfs <- googledrive::drive_ls(path = pdf_url)
 new_pdfs <- setdiff(pdf_outs$file_name, drive_pdfs$name)
 
 # Loop across these PDFs and put them into GoogleDrive
-## (vvv) Upload all PDFs regardless of whether they're in the Drive
 # for(report in unique(pdf_outs$file_name)){
-## (vvv) Upload only new PDFs
+## (^^^) Upload *all* PDFs regardless of whether they're in the Drive
+## (vvv) Upload only *new* PDFs
 for(report in new_pdfs){
 
   # Send that report to a GoogleDrive folder
