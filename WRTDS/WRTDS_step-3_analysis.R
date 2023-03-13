@@ -212,20 +212,6 @@ for(river in rivers_to_do){
   # Create a list of the discharge, chemistry, and information files
   egret_list <- EGRET::mergeReport(INFO = egret_info, Daily = egret_disc, Sample = egret_chem, verbose = F)
   
-  # Handle rivers that have blank time periods
-  if(stream_id == "USGS__Mississippi River at Grafton"){
-    egret_list <- EGRET::blankTime(eList = egret_list, startBlank = "1981-10-01", 
-                                   endBlank = "1982-09-29") }
-  if(stream_id == "USGS__PICEANCE CREEK RYAN GULCH"){
-    egret_list <- EGRET::blankTime(eList = egret_list, startBlank = "1998-10-01",
-                                   endBlank = "1999-09-30") }
-  if(stream_id == "USGS__YAMPA RIVER AT DEERLODGE PARK"){
-    egret_list <- EGRET::blankTime(eList = egret_list, startBlank = "1994-10-01",
-                                   endBlank = "1996-09-30") }
-  if(stream_id == "USGS__YUKON RIVER"){
-    egret_list <- EGRET::blankTime(eList = egret_list, startBlank = "1996-10-01",
-                                   endBlank = "2001-09-29") }
-  
   # Loop - Define Initial Objects ----
   
   # Handle "typical" rivers
@@ -253,6 +239,20 @@ for(river in rivers_to_do){
     # Run series
     egret_list_out <- EGRET::runSeries(eList = egret_list, windowSide = 11, minNumObs = 50, 
                                        verbose = F, windowS = 0.25)
+    
+    # Handle rivers that have blank time periods
+    if(stream_id == "USGS__Mississippi River at Grafton"){
+      egret_list_out <- EGRET::blankTime(eList = egret_list_out, startBlank = "1981-10-01", 
+                                     endBlank = "1982-09-29") }
+    if(stream_id == "USGS__PICEANCE CREEK RYAN GULCH"){
+      egret_list_out <- EGRET::blankTime(eList = egret_list_out, startBlank = "1998-10-01",
+                                     endBlank = "1999-09-30") }
+    if(stream_id == "USGS__YAMPA RIVER AT DEERLODGE PARK"){
+      egret_list_out <- EGRET::blankTime(eList = egret_list_out, startBlank = "1994-10-01",
+                                     endBlank = "1996-09-30") }
+    if(stream_id == "USGS__YUKON RIVER"){
+      egret_list_out <- EGRET::blankTime(eList = egret_list_out, startBlank = "1996-10-01",
+                                     endBlank = "2001-09-29") }
     
     # Fit model
     egret_estimation <- EGRET::modelEstimation(eList = egret_list, windowS = 0.25,
