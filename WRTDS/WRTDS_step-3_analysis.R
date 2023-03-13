@@ -212,6 +212,20 @@ for(river in rivers_to_do){
   # Create a list of the discharge, chemistry, and information files
   egret_list <- EGRET::mergeReport(INFO = egret_info, Daily = egret_disc, Sample = egret_chem, verbose = F)
   
+  # Handle rivers that have blank time periods
+  if(stream_id == "USGS__Mississippi River at Grafton"){
+    egret_list <- EGRET::blankTime(eList = egret_list, startBlank = "1981-10-01", 
+                                   endBlank = "1982-09-29") }
+  if(stream_id == "USGS__PICEANCE CREEK RYAN GULCH"){
+    egret_list <- EGRET::blankTime(eList = egret_list, startBlank = "1998-10-01",
+                                   endBlank = "1999-09-30") }
+  if(stream_id == "USGS__YAMPA RIVER AT DEERLODGE PARK"){
+    egret_list <- EGRET::blankTime(eList = egret_list, startBlank = "1994-10-01",
+                                   endBlank = "1996-09-30") }
+  if(stream_id == "USGS__YUKON RIVER"){
+    egret_list <- EGRET::blankTime(eList = egret_list, startBlank = "1996-10-01",
+                                   endBlank = "2001-09-29") }
+  
   # Loop - Define Initial Objects ----
   
   # Handle "typical" rivers
