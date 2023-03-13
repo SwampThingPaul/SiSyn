@@ -23,8 +23,8 @@ dir.create(path = file.path(path, "WRTDS Inputs"), showWarnings = F)
 
 # Define the names of the Drive files we need
 file_names <- c("WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv", # No.1 Ref table
-           "UpdatedAll_Q_master_10272022.csv", # No.2 Main discharge
-           "20221030_masterdata_chem.csv") # No.3 Main chemistry
+                "UpdatedAll_Q_master_10272022.csv", # No.2 Main discharge
+                "20221030_masterdata_chem.csv") # No.3 Main chemistry
 
 # Find those files' IDs
 ids <- googledrive::drive_ls(as_id("https://drive.google.com/drive/u/0/folders/15FEoe2vu3OAqMQHqdQ9XKpFboR4DvS9M"), pattern = "WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv") %>%
@@ -146,6 +146,11 @@ disc_v2 <- disc_main %>%
   dplyr::ungroup() %>%
   # Drop any NAs in the discharge or date columns
   dplyr::filter(!is.na(Qcms) & !is.na(Date)) %>%
+  # Drop pre-1982 (Oct. 1) discharge data for COLUMBIA_RIVER_AT_PORT_WESTWARD_Q
+  ## Keep all data for all other rivers
+  dplyr::filter(Discharge_File_Name != "COLUMBIA_RIVER_AT_PORT_WESTWARD_Q" |
+                  (Discharge_File_Name == "COLUMBIA_RIVER_AT_PORT_WESTWARD_Q" &
+                     Date >= as.Date("1992-10-01"))) %>%
   # Drop LTER column (it is flawed and not easily salvageable)
   ## Issue is it looks like it is just the first three characters of the stream name
   ## This only works for true LTER sites and GRO sites
