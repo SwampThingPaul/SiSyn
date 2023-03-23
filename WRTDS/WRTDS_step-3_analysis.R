@@ -209,37 +209,15 @@ for(river in rivers_to_do){
   egret_chem <- EGRET::readUserSample(filePath = file.path(path, "WRTDS Temporary Files"), fileName = "chemistry.csv", verbose = F)
   egret_info <- EGRET::readUserInfo(filePath = file.path(path, "WRTDS Temporary Files"), fileName = "information.csv", interactive = F)
   
+  # Loop - Define Initial Objects ----
+  
   # Create a list of the discharge, chemistry, and information files
   egret_list <- EGRET::mergeReport(INFO = egret_info, Daily = egret_disc, Sample = egret_chem, verbose = F)
   
-  # Loop - Define Initial Objects ----
+  # Run series
+  egret_list_out <- EGRET::runSeries(eList = egret_list, windowSide = 11, minNumObs = 50,
+                                     verbose = F, windowS = 0.5)
   
-  # Handle "typical" rivers
-  ### Either (A) *not* one of the high lat. / Antarctica rivers
-  if(!stringr::str_sub(string = stream_id, 
-                       start = 1, end = 4) %in% c("GRO_", "NIVA", "Finn", "Kryc", "MCM_") |
-     ### Or (B) Yes high latitude (minus McMurdo) but element is silica
-     (element == "DSi" & 
-      stringr::str_sub(string = stream_id, 
-                       start = 1, end = 4) %in% c("GRO_", "NIVA", "Finn", "Kryc"))){
-    
-    # Run series
-    egret_list_out <- EGRET::runSeries(eList = egret_list, windowSide = 11, minNumObs = 50,
-                                       verbose = F, windowS = 0.50)
-    
-    # Fit original model
-    egret_estimation <- EGRET::modelEstimation(eList = egret_list, windowS = 0.50,
-                                               minNumObs = 50, verbose = F) }
-  
-  # Handle high latitude sites with patterns of seasonality
-  if(element %in% c("NOx", "P", "NH4", "NO3") & 
-     stringr::str_sub(string = stream_id, 
-                      start = 1, end = 4) %in% c("GRO_", "NIVA", "Finn", "Kryc")){
-    
-    # Run series
-    egret_list_out <- EGRET::runSeries(eList = egret_list, windowSide = 11, minNumObs = 50, 
-                                       verbose = F, windowS = 0.25)
-    
     # Handle rivers that have blank time periods
     if(stream_id == "USGS__Mississippi River at Grafton"){
       egret_list_out <- EGRET::blankTime(eList = egret_list_out, startBlank = "1981-10-01", 
@@ -254,45 +232,13 @@ for(river in rivers_to_do){
       egret_list_out <- EGRET::blankTime(eList = egret_list_out, startBlank = "1996-10-01",
                                      endBlank = "2001-09-29") }
     
-    # Fit model
-    egret_estimation <- EGRET::modelEstimation(eList = egret_list, windowS = 0.25,
-                                               minNumObs = 50, verbose = F) }
-  
-  # Handle McMurdo (seasonality + period of absence tweak)
-  if(element %in% c("NOx", "P", "NH4", "NO3") & 
-     stringr::str_sub(string = stream_id, start = 1, end = 3) == "MCM"){
-    
-    # Run Series
-    egret_list_out <- EGRET::runSeries(eList = egret_list, windowSide = 11, minNumObs = 50, 
-                                       verbose = F, windowS = 0.25)
-    
-    # Set period of absence
-    egret_list <- EGRET::setPA(eList = egret_list, paStart = 12, paLong = 2)
-    egret_list_out <- EGRET::setPA(eList = egret_list_out, paStart = 12, paLong = 2)
-    
-    # Fit model
-    egret_estimation <- EGRET::modelEstimation(eList = egret_list, windowS = 0.25,
-                                               minNumObs = 50, verbose = F) }
-
-  # Handle McMurdo (period of absence tweak WITHOUT seasonality)
-  if(!element %in% c("NOx", "P", "NH4", "NO3") & 
-     stringr::str_sub(string = stream_id, start = 1, end = 3) == "MCM"){
-    
-    # Run Series
-    egret_list_out <- EGRET::runSeries(eList = egret_list, windowSide = 11, minNumObs = 50, 
-                                       verbose = F, windowS = 0.50)
-    
-    # Set period of absence
-    egret_list <- EGRET::setPA(eList = egret_list, paStart = 12, paLong = 2)
-    egret_list_out <- EGRET::setPA(eList = egret_list_out, paStart = 12, paLong = 2)
-    
-    # Fit model
-    egret_estimation <- EGRET::modelEstimation(eList = egret_list, windowS = 0.50,
-                                               minNumObs = 50, verbose = F) }
-  
   # Loop - Period of Absence Tweaks ----
   
   # Some rivers just need the period of absence tweaked
+  ## McMurdo (12 to 2)
+  if(stringr::str_sub(string = stream_id, start = 1, end = 3) == "MCM"){
+    egret_list <- EGRET::setPA(eList = egret_list, paStart = 12, paLong = 2)
+    egret_list_out <- EGRET::setPA(eList = egret_list_out, paStart = 12, paLong = 2) }
   ## 5 to 5
   if(river %in% unique(pa5_5)){
     egret_list <- EGRET::setPA(eList = egret_list, paStart = 5, paLong = 5)
@@ -301,6 +247,10 @@ for(river in rivers_to_do){
   if(river %in% unique(pa5_3)){
     egret_list <- EGRET::setPA(eList = egret_list, paStart = 5, paLong = 3)
     egret_list_out <- EGRET::setPA(eList = egret_list_out, paStart = 5, paLong = 3) }
+  
+  # Fit original model
+  egret_estimation <- EGRET::modelEstimation(eList = egret_list, windowS = 0.5,
+                                             minNumObs = 50, verbose = F)
   
   # Identify error statistics
   egret_error <- EGRET::errorStats(eList = egret_estimation)
