@@ -37,9 +37,9 @@ dplyr::glimpse(ref_table)
 
 # Define the GoogleDrive URL to upload flat results files
 ## Original destination
-# dest_url <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/1V5EqmOlWA8U9NWfiBcWdqEH9aRAP-zCk")
+dest_url <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/1V5EqmOlWA8U9NWfiBcWdqEH9aRAP-zCk")
 ## New destination while checking that seasonality alterations produce desired confidence
-dest_url <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/1bm2a-rBkvbFXECGXmZ-pLDtoTomtFLYI")
+# dest_url <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/1bm2a-rBkvbFXECGXmZ-pLDtoTomtFLYI")
 
 # Check current contents of this folder
 googledrive::drive_ls(path = dest_url)
@@ -427,9 +427,9 @@ dplyr::glimpse(pdf_outs)
 
 # Identify PDF folder
 ## Standard output destination
-# pdf_url <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/14pq2oLvs8KIARxlWZ3pvC3e1Dx-PjVxt")
+pdf_url <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/14pq2oLvs8KIARxlWZ3pvC3e1Dx-PjVxt")
 ## Experimental destination
-pdf_url <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/1RPYELgBlxj6uEO36eQx2BSRwogATPNXB")
+# pdf_url <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/1RPYELgBlxj6uEO36eQx2BSRwogATPNXB")
 
 # Identify PDFs already in GoogleDrive
 drive_pdfs <- googledrive::drive_ls(path = pdf_url)
