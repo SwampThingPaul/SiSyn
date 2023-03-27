@@ -320,33 +320,27 @@ done_boots <- data.frame("file" = dir(path = file.path(path, "WRTDS Bootstrap Di
 
 # Set of problem rivers to drop from the loop
 bad_boot_rivers <- c(
-  # # R crashes running these sites:
+  # R crashes running these sites:
   "ARC__Imnavait Weir_DSi",
-  # ## Pre-emptively moving some other sites here that are likely to cause errors
-  # ## Will double check whether these fail once other streams are done
-  "ARC__Imnavait Weir_NH4", "ARC__Imnavait Weir_NOx", "ARC__Imnavait Weir_P"
-  # # Error in ...
-  # ## "Error in if (z) "Reject Ho" else "Do Not Reject Ho" : 
-  # ## missing value where TRUE/FALSE needed
-  # "Catalina Jemez__Marshall Gulch_DSi", 
+  ## Pre-emptively moving some other sites here that are likely to cause errors
+  ## Will double check whether these fail once other streams are done
+  "ARC__Imnavait Weir_NH4", "ARC__Imnavait Weir_NOx", "ARC__Imnavait Weir_P",
+  # Error in ...
+  ## "Error in if (z) "Reject Ho" else "Do Not Reject Ho" : 
+  ## missing value where TRUE/FALSE needed
+  "Catalina Jemez__Marshall Gulch_DSi"
   # "Catalina Jemez__Oracle Ridge_DSi",
   # "Finnish Environmental Institute__Iijoki Raasakan voimal_NH4", 
   # "Finnish Environmental Institute__Iijoki Raasakan voimal_NOx",
   # "Finnish Environmental Institute__Iijoki Raasakan voimal_P",
-  # "Finnish Environmental Institute__Iijoki Raasakan voimal_TN",
-  # "Finnish Environmental Institute__Iijoki Raasakan voimal_TP",
   # "Finnish Environmental Institute__Kalajoki 11000_NH4",
   # "Finnish Environmental Institute__Kalajoki 11000_NOx",
   # "Finnish Environmental Institute__Kalajoki 11000_P",
-  # "Finnish Environmental Institute__Kalajoki 11000_TN",
-  # "Finnish Environmental Institute__Kalajoki 11000_TP",
   # "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_NH4",
   # "Finnish Environmental Institute__Kiiminkij 13010 4-tien s_NH4",
-  # ## Rivers pre-emptively removed bcz likely to experience this error
+  ## Rivers pre-emptively removed bcz likely to experience this error
   # "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_NOx", 
-  # "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_P", 
-  # "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_TN", 
-  # "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_TP"
+  # "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_P"
 )
 
 # Identify rivers to do
