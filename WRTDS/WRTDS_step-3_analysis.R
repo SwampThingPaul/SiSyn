@@ -328,17 +328,17 @@ bad_boot_rivers <- c(
   # Error in ...
   ## "Error in if (z) "Reject Ho" else "Do Not Reject Ho" : 
   ## missing value where TRUE/FALSE needed
-  "Catalina Jemez__Marshall Gulch_DSi"
-  # "Catalina Jemez__Oracle Ridge_DSi",
-  # "Finnish Environmental Institute__Iijoki Raasakan voimal_NH4", 
-  # "Finnish Environmental Institute__Iijoki Raasakan voimal_NOx",
-  # "Finnish Environmental Institute__Iijoki Raasakan voimal_P",
+  "Catalina Jemez__Marshall Gulch_DSi", "Catalina Jemez__Oracle Ridge_DSi",
+  "Finnish Environmental Institute__Iijoki Raasakan voimal_NH4",
+  ## Rivers preemptively removed because they are likely to experience this error
+  ## I *think* it's a discharge issue which makes all chemicals fail
+  "Finnish Environmental Institute__Iijoki Raasakan voimal_NOx",
+  "Finnish Environmental Institute__Iijoki Raasakan voimal_P"
   # "Finnish Environmental Institute__Kalajoki 11000_NH4",
   # "Finnish Environmental Institute__Kalajoki 11000_NOx",
   # "Finnish Environmental Institute__Kalajoki 11000_P",
   # "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_NH4",
   # "Finnish Environmental Institute__Kiiminkij 13010 4-tien s_NH4",
-  ## Rivers pre-emptively removed bcz likely to experience this error
   # "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_NOx", 
   # "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_P"
 )
