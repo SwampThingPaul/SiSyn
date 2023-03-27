@@ -311,40 +311,49 @@ for(river in rivers_to_do){
 dir.create(path = file.path(path, "WRTDS Bootstrap Diagnostic"), showWarnings = F)
 dir.create(path = file.path(path, "WRTDS Bootstrap Outputs"), showWarnings = F)
 
+# Identify completed bootstrap rivers
+done_boots <- data.frame("file" = dir(path = file.path(path, "WRTDS Bootstrap Diagnostic"))) %>%
+  # Drop the file suffix part of the file name 
+  dplyr::mutate(river = gsub(pattern = "\\_Boot\\_Loop\\_Diagnostic.csv", replacement = "", x = file)) %>%
+  # Pull out just that column
+  dplyr::pull(river)
+
 # Set of problem rivers to drop from the loop
 bad_boot_rivers <- c(
-  # R crashes running these sites:
-  "ARC__Imnavait Weir_DSi", "ARC__Imnavait Weir_NH4", 
-  ## Pre-emptively moving some other sites here that are likely to cause errors
-  ## Will double check whether these fail once other streams are done
-  "ARC__Imnavait Weir_NOx", "ARC__Imnavait Weir_P",
-  "ARC__Imnavait Weir_TN", "ARC__Imnavait Weir_TP", 
-  # Error in ...
-  ## "Error in if (z) "Reject Ho" else "Do Not Reject Ho" : 
-  ## missing value where TRUE/FALSE needed
-  "Catalina Jemez__Marshall Gulch_DSi", "Catalina Jemez__Oracle Ridge_DSi",
-  "Finnish Environmental Institute__Iijoki Raasakan voimal_NH4", 
-  "Finnish Environmental Institute__Iijoki Raasakan voimal_NOx",
-  "Finnish Environmental Institute__Iijoki Raasakan voimal_P",
-  "Finnish Environmental Institute__Iijoki Raasakan voimal_TN",
-  "Finnish Environmental Institute__Iijoki Raasakan voimal_TP",
-  "Finnish Environmental Institute__Kalajoki 11000_NH4",
-  "Finnish Environmental Institute__Kalajoki 11000_NOx",
-  "Finnish Environmental Institute__Kalajoki 11000_P",
-  "Finnish Environmental Institute__Kalajoki 11000_TN",
-  "Finnish Environmental Institute__Kalajoki 11000_TP",
-  "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_NH4",
-  "Finnish Environmental Institute__Kiiminkij 13010 4-tien s_NH4",
-  ## Rivers pre-emptively removed bcz likely to experience this error
-  "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_NOx", "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_P", "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_TN", "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_TP"
+  # # R crashes running these sites:
+  "ARC__Imnavait Weir_DSi",
+  # ## Pre-emptively moving some other sites here that are likely to cause errors
+  # ## Will double check whether these fail once other streams are done
+  "ARC__Imnavait Weir_NH4", "ARC__Imnavait Weir_NOx", "ARC__Imnavait Weir_P"
+  # # Error in ...
+  # ## "Error in if (z) "Reject Ho" else "Do Not Reject Ho" : 
+  # ## missing value where TRUE/FALSE needed
+  # "Catalina Jemez__Marshall Gulch_DSi", 
+  # "Catalina Jemez__Oracle Ridge_DSi",
+  # "Finnish Environmental Institute__Iijoki Raasakan voimal_NH4", 
+  # "Finnish Environmental Institute__Iijoki Raasakan voimal_NOx",
+  # "Finnish Environmental Institute__Iijoki Raasakan voimal_P",
+  # "Finnish Environmental Institute__Iijoki Raasakan voimal_TN",
+  # "Finnish Environmental Institute__Iijoki Raasakan voimal_TP",
+  # "Finnish Environmental Institute__Kalajoki 11000_NH4",
+  # "Finnish Environmental Institute__Kalajoki 11000_NOx",
+  # "Finnish Environmental Institute__Kalajoki 11000_P",
+  # "Finnish Environmental Institute__Kalajoki 11000_TN",
+  # "Finnish Environmental Institute__Kalajoki 11000_TP",
+  # "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_NH4",
+  # "Finnish Environmental Institute__Kiiminkij 13010 4-tien s_NH4",
+  # ## Rivers pre-emptively removed bcz likely to experience this error
+  # "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_NOx", 
+  # "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_P", 
+  # "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_TN", 
+  # "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_TP"
 )
 
-# NOTE
-## Await feedback on seasonality modification to "core" workflow
-## If approved, implement same change for this workflow as appropriate
+# Identify rivers to do
+boot_to_do <- setdiff(x = unique(good_rivers), y = c(done_boots, bad_boot_rivers))
 
 # Loop across rivers and elements to run WRTDS workflow!
-for(river in setdiff(x = unique(good_rivers), y = bad_boot_rivers)){
+for(river in boot_to_do){
 # for(river in "AND__GSMACK_DSi"){
   
   # Identify corresponding Stream_ID
@@ -376,13 +385,8 @@ for(river in setdiff(x = unique(good_rivers), y = bad_boot_rivers)){
   out_prefix <- paste0(stream_id, "_", element, "_") 
   
   # Bootstrap - File Exists Check ----
-  
-  # If the file exists
-  if(file.exists(file.path(path, "WRTDS Bootstrap Diagnostic", paste0(out_prefix, "Boot_Loop_Diagnostic.csv"))) == TRUE) {
-    message("WRTDS bootstrapping already done for ", element, " at stream '", river, "'")
-  } else {
     
-    # Message completion of loop
+    # Message start of loop
     message("Bootstrapping workflow begun for ", element, " at stream '", river, "'")
     
     # Grab start time for processing
@@ -417,21 +421,43 @@ for(river in setdiff(x = unique(good_rivers), y = bad_boot_rivers)){
     egret_chem <- EGRET::readUserSample(filePath = file.path(path, "WRTDS Temporary Files"), fileName = "chemistry.csv", verbose = F)
     egret_info <- EGRET::readUserInfo(filePath = file.path(path, "WRTDS Temporary Files"), fileName = "information.csv", interactive = F)
     
+    # Bootstrap - Begin Actual Workflow ----
+    
     # Create a list of the discharge, chemistry, and information files
     egret_list <- EGRET::mergeReport(INFO = egret_info, Daily = egret_disc, Sample = egret_chem, verbose = F)
     
-    # Fit "GFN" model
-    egret_list_out <- EGRET::runSeries(eList = egret_list, windowSide = 11, minNumObs = 50, verbose = F)
+    # Run series
+    egret_list_out <- EGRET::runSeries(eList = egret_list, windowSide = 11, minNumObs = 50,
+                                       verbose = F, windowS = 0.5)
     
-    # Bootstrap - Handle Weird Sites ----
+    # Handle rivers that have blank time periods
+    if(stream_id == "USGS__Mississippi River at Grafton"){
+      egret_list_out <- EGRET::blankTime(eList = egret_list_out, startBlank = "1981-10-01", 
+                                         endBlank = "1982-09-29") }
+    if(stream_id == "USGS__PICEANCE CREEK RYAN GULCH"){
+      egret_list_out <- EGRET::blankTime(eList = egret_list_out, startBlank = "1998-10-01",
+                                         endBlank = "1999-09-30") }
+    if(stream_id == "USGS__YAMPA RIVER AT DEERLODGE PARK"){
+      egret_list_out <- EGRET::blankTime(eList = egret_list_out, startBlank = "1994-10-01",
+                                         endBlank = "1996-09-30") }
+    if(stream_id == "USGS__YUKON RIVER"){
+      egret_list_out <- EGRET::blankTime(eList = egret_list_out, startBlank = "1996-10-01",
+                                         endBlank = "2001-09-29") }
     
-    # Set period of analysis differences for rivers that need it
-    ## Period of analysis 12 - 2
-    if(river %in% unique(pa12_2)){
+    # Bootstrap - Period of Absence Tweaks ----
+    
+    # Some rivers just need the period of absence tweaked
+    ## McMurdo (12 to 2)
+    if(stringr::str_sub(string = stream_id, start = 1, end = 3) == "MCM"){
+      egret_list <- EGRET::setPA(eList = egret_list, paStart = 12, paLong = 2)
       egret_list_out <- EGRET::setPA(eList = egret_list_out, paStart = 12, paLong = 2) }
+    ## 5 to 5
     if(river %in% unique(pa5_5)){
+      egret_list <- EGRET::setPA(eList = egret_list, paStart = 5, paLong = 5)
       egret_list_out <- EGRET::setPA(eList = egret_list_out, paStart = 5, paLong = 5) }
+    ## 5 to 3
     if(river %in% unique(pa5_3)){
+      egret_list <- EGRET::setPA(eList = egret_list, paStart = 5, paLong = 3)
       egret_list_out <- EGRET::setPA(eList = egret_list_out, paStart = 5, paLong = 3) }
     
     # Run trend estimate for GFN method between start/end years
@@ -495,6 +521,6 @@ for(river in setdiff(x = unique(good_rivers), y = bad_boot_rivers)){
     # Message completion of loop
     message("Bootstrapping workflow complete for ", element, " at stream '", river, "'")
     
-  }  } # End `else` and loop
+  } # End loop
 
 # End ----
