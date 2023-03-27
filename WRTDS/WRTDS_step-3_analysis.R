@@ -335,6 +335,7 @@ bad_boot_rivers <- c(
   "Finnish Environmental Institute__Kiiminkij 13010 4-tien s_NH4",
   "Finnish Environmental Institute__Koskenkylanjoki 6030_NH4",
   "Finnish Environmental Institute__Kymij Huruksela 033 5600_NH4",
+  "Finnish Environmental Institute__Kymijoki Ahvenkoski 001_NH4",
   ## Rivers preemptively removed because they are likely to experience this error
   ## I *think* it's a discharge issue which makes all chemicals for a given river fail
   "Finnish Environmental Institute__Iijoki Raasakan voimal_NOx",
@@ -348,7 +349,9 @@ bad_boot_rivers <- c(
   "Finnish Environmental Institute__Koskenkylanjoki 6030_NOx",
   "Finnish Environmental Institute__Koskenkylanjoki 6030_P",
   "Finnish Environmental Institute__Kymij Huruksela 033 5600_NOx",
-  "Finnish Environmental Institute__Kymij Huruksela 033 5600_P"
+  "Finnish Environmental Institute__Kymij Huruksela 033 5600_P",
+  "Finnish Environmental Institute__Kymijoki Ahvenkoski 001_NOx",
+  "Finnish Environmental Institute__Kymijoki Ahvenkoski 001_P"
 )
 
 # Identify rivers to do
