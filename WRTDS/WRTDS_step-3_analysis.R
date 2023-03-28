@@ -343,6 +343,8 @@ bad_boot_rivers <- c(
   "Finnish Environmental Institute__Mustionjoki 4,9  15500_NH4",
   "Finnish Environmental Institute__Myllykanava vp 9100_NH4",
   "Finnish Environmental Institute__Narpionjoki mts 6761_NH4",
+  "GRO__Kolyma_DSi", "GRO__Kolyma_NH4", "GRO__Kolyma_NOx",
+  "GRO__Lena_DSi",
   ## Rivers preemptively removed because they are likely to experience this error
   ## I *think* it's a discharge issue which makes all chemicals for a given river fail
   "Finnish Environmental Institute__Iijoki Raasakan voimal_NOx",
@@ -373,9 +375,39 @@ bad_boot_rivers <- c(
   "Finnish Environmental Institute__Myllykanava vp 9100_P",
   "Finnish Environmental Institute__Narpionjoki mts 6761_NOx",
   "Finnish Environmental Institute__Narpionjoki mts 6761_P",
-  ## Going to just exclude all other Finnish sites (for now) as so many have been shown to throw this error
-  ## Note that no chemicals at these rivers are tested (as opposed to above where one chemical was tested)
-  "Finnish Environmental Institute__Oulujoki 13000_NH4", "Finnish Environmental Institute__Oulujoki 13000_NOx", "Finnish Environmental Institute__Oulujoki 13000_P", "Finnish Environmental Institute__Perhonjoki 10600_NH4", "Finnish Environmental Institute__Perhonjoki 10600_NOx", "Finnish Environmental Institute__Perhonjoki 10600_P", "Finnish Environmental Institute__Porvoonjoki 11,5  6022_NH4", "Finnish Environmental Institute__Porvoonjoki 11,5  6022_NOx", "Finnish Environmental Institute__Porvoonjoki 11,5  6022_P", "Finnish Environmental Institute__Pyhajoki Hourunk 11400_NH4", "Finnish Environmental Institute__Pyhajoki Hourunk 11400_NOx", "Finnish Environmental Institute__Pyhajoki Hourunk 11400_P", "Finnish Environmental Institute__Siikajoki 8-tien s 11600_NH4", "Finnish Environmental Institute__Siikajoki 8-tien s 11600_NOx", "Finnish Environmental Institute__Siikajoki 8-tien s 11600_P", "Finnish Environmental Institute__SIMOJOKI AS. 13500_NH4", "Finnish Environmental Institute__SIMOJOKI AS. 13500_NOx", "Finnish Environmental Institute__SIMOJOKI AS. 13500_P", "Finnish Environmental Institute__Site 1069_DSi", "Finnish Environmental Institute__Site 11310_DSi", "Finnish Environmental Institute__Site 11523_DSi", "Finnish Environmental Institute__Site 11532_DSi", "Finnish Environmental Institute__Site 11564_DSi", "Finnish Environmental Institute__Site 227_DSi", "Finnish Environmental Institute__Site 26534_DSi", "Finnish Environmental Institute__Site 26740_DSi", "Finnish Environmental Institute__Site 26935_DSi", "Finnish Environmental Institute__Site 27095_DSi", "Finnish Environmental Institute__Site 27697_DSi", "Finnish Environmental Institute__Site 27880_DSi", "Finnish Environmental Institute__Site 28208_DSi", "Finnish Environmental Institute__Site 28414_DSi", "Finnish Environmental Institute__Site 28639_DSi", "Finnish Environmental Institute__Site 36177_DSi", "Finnish Environmental Institute__Site 397_DSi", "Finnish Environmental Institute__Site 39892_DSi", "Finnish Environmental Institute__Site 39974_DSi", "Finnish Environmental Institute__Site 4081_DSi", "Finnish Environmental Institute__Site 4381_DSi", "Finnish Environmental Institute__Site 567_DSi", "Finnish Environmental Institute__Site 605_DSi", "Finnish Environmental Institute__Site 69038_DSi", "Finnish Environmental Institute__Skatila vp 9600_NH4", "Finnish Environmental Institute__Skatila vp 9600_NOx", "Finnish Environmental Institute__Skatila vp 9600_P", "Finnish Environmental Institute__TORNIONJ KUKKOLA 14310_NH4", "Finnish Environmental Institute__TORNIONJ KUKKOLA 14310_NOx", "Finnish Environmental Institute__TORNIONJ KUKKOLA 14310_P", "Finnish Environmental Institute__Vantaa 4,2  6040_NH4", "Finnish Environmental Institute__Vantaa 4,2  6040_NOx", "Finnish Environmental Institute__Vantaa 4,2  6040_P", "Finnish Environmental Institute__Virojoki 006 3020_NH4", "Finnish Environmental Institute__Virojoki 006 3020_NOx", "Finnish Environmental Institute__Virojoki 006 3020_P"
+  "GRO__Lena_NH4", "GRO__Lena_NOx",
+  ## Excluding all other Finnish sites (for now) as many have been shown to throw this error
+  ## Note that NO chemicals at these rivers are tested (vs. above where one chemical was tested)
+  "Finnish Environmental Institute__Oulujoki 13000_NH4", "Finnish Environmental Institute__Oulujoki 13000_NOx", "Finnish Environmental Institute__Oulujoki 13000_P", 
+  "Finnish Environmental Institute__Perhonjoki 10600_NH4", "Finnish Environmental Institute__Perhonjoki 10600_NOx", "Finnish Environmental Institute__Perhonjoki 10600_P", 
+  "Finnish Environmental Institute__Porvoonjoki 11,5  6022_NH4", "Finnish Environmental Institute__Porvoonjoki 11,5  6022_NOx", "Finnish Environmental Institute__Porvoonjoki 11,5  6022_P",
+  "Finnish Environmental Institute__Pyhajoki Hourunk 11400_NH4", "Finnish Environmental Institute__Pyhajoki Hourunk 11400_NOx", "Finnish Environmental Institute__Pyhajoki Hourunk 11400_P",
+  "Finnish Environmental Institute__Siikajoki 8-tien s 11600_NH4", "Finnish Environmental Institute__Siikajoki 8-tien s 11600_NOx", "Finnish Environmental Institute__Siikajoki 8-tien s 11600_P", 
+  "Finnish Environmental Institute__SIMOJOKI AS. 13500_NH4", "Finnish Environmental Institute__SIMOJOKI AS. 13500_NOx", "Finnish Environmental Institute__SIMOJOKI AS. 13500_P", 
+  "Finnish Environmental Institute__Site 1069_DSi", 
+  "Finnish Environmental Institute__Site 11310_DSi", 
+  "Finnish Environmental Institute__Site 11523_DSi", 
+  "Finnish Environmental Institute__Site 11532_DSi", 
+  "Finnish Environmental Institute__Site 11564_DSi", 
+  "Finnish Environmental Institute__Site 227_DSi",
+  "Finnish Environmental Institute__Site 26534_DSi",
+  "Finnish Environmental Institute__Site 26740_DSi", 
+  "Finnish Environmental Institute__Site 26935_DSi", 
+  "Finnish Environmental Institute__Site 27095_DSi",
+  "Finnish Environmental Institute__Site 27697_DSi", 
+  "Finnish Environmental Institute__Site 27880_DSi", 
+  "Finnish Environmental Institute__Site 28208_DSi", 
+  "Finnish Environmental Institute__Site 28414_DSi", 
+  "Finnish Environmental Institute__Site 28639_DSi", "Finnish Environmental Institute__Site 36177_DSi", "Finnish Environmental Institute__Site 397_DSi", 
+  "Finnish Environmental Institute__Site 39892_DSi", 
+  "Finnish Environmental Institute__Site 39974_DSi", "Finnish Environmental Institute__Site 4081_DSi", "Finnish Environmental Institute__Site 4381_DSi", 
+  "Finnish Environmental Institute__Site 567_DSi", 
+  "Finnish Environmental Institute__Site 605_DSi", 
+  "Finnish Environmental Institute__Site 69038_DSi", 
+  "Finnish Environmental Institute__Skatila vp 9600_NH4", "Finnish Environmental Institute__Skatila vp 9600_NOx", "Finnish Environmental Institute__Skatila vp 9600_P", 
+  "Finnish Environmental Institute__TORNIONJ KUKKOLA 14310_NH4", "Finnish Environmental Institute__TORNIONJ KUKKOLA 14310_NOx", "Finnish Environmental Institute__TORNIONJ KUKKOLA 14310_P",
+  "Finnish Environmental Institute__Vantaa 4,2  6040_NH4", "Finnish Environmental Institute__Vantaa 4,2  6040_NOx", "Finnish Environmental Institute__Vantaa 4,2  6040_P", 
+  "Finnish Environmental Institute__Virojoki 006 3020_NH4", "Finnish Environmental Institute__Virojoki 006 3020_NOx", "Finnish Environmental Institute__Virojoki 006 3020_P"
 )
 
 # Identify rivers to do
