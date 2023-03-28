@@ -339,9 +339,7 @@ bad_boot_rivers <- c(
   ## missing value where TRUE/FALSE needed
   "Catalina Jemez__Marshall Gulch_DSi", "Catalina Jemez__Oracle Ridge_DSi",
   "GRO__Kolyma_DSi", "GRO__Kolyma_NH4", "GRO__Kolyma_NOx",
-  "GRO__Lena_DSi",
-  "GRO__Ob_DSi",
-  "GRO__Yenisey_DSi",
+  "GRO__Lena_DSi", "GRO__Ob_DSi", "GRO__Yenisey_DSi",
   ## Rivers preemptively removed because they are likely to experience this error
   ## I *think* it's a discharge issue which makes all chemicals for a given river fail
   "GRO__Lena_NH4", "GRO__Lena_NOx",
