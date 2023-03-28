@@ -311,6 +311,15 @@ for(river in rivers_to_do){
 dir.create(path = file.path(path, "WRTDS Bootstrap Diagnostic"), showWarnings = F)
 dir.create(path = file.path(path, "WRTDS Bootstrap Outputs"), showWarnings = F)
 
+# Identify potential rivers to run through the bootstrap workflow
+potential_boots <- data.frame("x" = unique(good_rivers)) %>%
+  # Identify LTER
+  tidyr::separate(x, sep = "__", into = c("site", "river_name"), remove = F) %>%
+  # Drop any LTERs we aren't interested in
+  dplyr::filter(!site %in% c("Finnish Environmental Institute")) %>%
+  # Pull the full river names back out!
+  dplyr::pull(x)
+
 # Identify completed bootstrap rivers
 done_boots <- data.frame("file" = dir(path = file.path(path, "WRTDS Bootstrap Diagnostic"))) %>%
   # Drop the file suffix part of the file name 
@@ -329,91 +338,19 @@ bad_boot_rivers <- c(
   ## "Error in if (z) "Reject Ho" else "Do Not Reject Ho" : 
   ## missing value where TRUE/FALSE needed
   "Catalina Jemez__Marshall Gulch_DSi", "Catalina Jemez__Oracle Ridge_DSi",
-  "Finnish Environmental Institute__Iijoki Raasakan voimal_NH4",
-  "Finnish Environmental Institute__Kalajoki 11000_NH4",
-  "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_NH4",
-  "Finnish Environmental Institute__Kiiminkij 13010 4-tien s_NH4",
-  "Finnish Environmental Institute__Koskenkylanjoki 6030_NH4",
-  "Finnish Environmental Institute__Kymij Huruksela 033 5600_NH4",
-  "Finnish Environmental Institute__Kymijoki Ahvenkoski 001_NH4",
-  "Finnish Environmental Institute__Kymijoki Kokonkoski 014_NH4",
-  "Finnish Environmental Institute__Lapuanjoki 9900_NH4",
-  "Finnish Environmental Institute__Lestijoki 10800 8-tien s_NH4",
-  "Finnish Environmental Institute__Mustijoki 4,2  6010_NH4",
-  "Finnish Environmental Institute__Mustionjoki 4,9  15500_NH4",
-  "Finnish Environmental Institute__Myllykanava vp 9100_NH4",
-  "Finnish Environmental Institute__Narpionjoki mts 6761_NH4",
   "GRO__Kolyma_DSi", "GRO__Kolyma_NH4", "GRO__Kolyma_NOx",
   "GRO__Lena_DSi",
   "GRO__Ob_DSi",
+  "GRO__Yenisey_DSi",
   ## Rivers preemptively removed because they are likely to experience this error
   ## I *think* it's a discharge issue which makes all chemicals for a given river fail
-  "Finnish Environmental Institute__Iijoki Raasakan voimal_NOx",
-  "Finnish Environmental Institute__Iijoki Raasakan voimal_P",
-  "Finnish Environmental Institute__Kalajoki 11000_NOx",
-  "Finnish Environmental Institute__Kalajoki 11000_P",
-  "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_NOx",
-  "Finnish Environmental Institute__KEMIJOKI ISOHAARA 14000_P",
-  "Finnish Environmental Institute__Kiiminkij 13010 4-tien s_NOx",
-  "Finnish Environmental Institute__Kiiminkij 13010 4-tien s_P",
-  "Finnish Environmental Institute__Koskenkylanjoki 6030_NOx",
-  "Finnish Environmental Institute__Koskenkylanjoki 6030_P",
-  "Finnish Environmental Institute__Kymij Huruksela 033 5600_NOx",
-  "Finnish Environmental Institute__Kymij Huruksela 033 5600_P",
-  "Finnish Environmental Institute__Kymijoki Ahvenkoski 001_NOx",
-  "Finnish Environmental Institute__Kymijoki Ahvenkoski 001_P",
-  "Finnish Environmental Institute__Kymijoki Kokonkoski 014_NOx",
-  "Finnish Environmental Institute__Kymijoki Kokonkoski 014_P",
-  "Finnish Environmental Institute__Lapuanjoki 9900_NOx",
-  "Finnish Environmental Institute__Lapuanjoki 9900_P",
-  "Finnish Environmental Institute__Lestijoki 10800 8-tien s_NOx",
-  "Finnish Environmental Institute__Lestijoki 10800 8-tien s_P",
-  "Finnish Environmental Institute__Mustijoki 4,2  6010_NOx",
-  "Finnish Environmental Institute__Mustijoki 4,2  6010_P",
-  "Finnish Environmental Institute__Mustionjoki 4,9  15500_NOx",
-  "Finnish Environmental Institute__Mustionjoki 4,9  15500_P",
-  "Finnish Environmental Institute__Myllykanava vp 9100_NOx",
-  "Finnish Environmental Institute__Myllykanava vp 9100_P",
-  "Finnish Environmental Institute__Narpionjoki mts 6761_NOx",
-  "Finnish Environmental Institute__Narpionjoki mts 6761_P",
   "GRO__Lena_NH4", "GRO__Lena_NOx",
   "GRO__Ob_NH4", "GRO__Ob_NOx", "GRO__Ob_P",
-  ## Excluding all other Finnish sites (for now) as many have been shown to throw this error
-  ## Note that NO chemicals at these rivers are tested (vs. above where one chemical was tested)
-  "Finnish Environmental Institute__Oulujoki 13000_NH4", "Finnish Environmental Institute__Oulujoki 13000_NOx", "Finnish Environmental Institute__Oulujoki 13000_P", 
-  "Finnish Environmental Institute__Perhonjoki 10600_NH4", "Finnish Environmental Institute__Perhonjoki 10600_NOx", "Finnish Environmental Institute__Perhonjoki 10600_P", 
-  "Finnish Environmental Institute__Porvoonjoki 11,5  6022_NH4", "Finnish Environmental Institute__Porvoonjoki 11,5  6022_NOx", "Finnish Environmental Institute__Porvoonjoki 11,5  6022_P",
-  "Finnish Environmental Institute__Pyhajoki Hourunk 11400_NH4", "Finnish Environmental Institute__Pyhajoki Hourunk 11400_NOx", "Finnish Environmental Institute__Pyhajoki Hourunk 11400_P",
-  "Finnish Environmental Institute__Siikajoki 8-tien s 11600_NH4", "Finnish Environmental Institute__Siikajoki 8-tien s 11600_NOx", "Finnish Environmental Institute__Siikajoki 8-tien s 11600_P", 
-  "Finnish Environmental Institute__SIMOJOKI AS. 13500_NH4", "Finnish Environmental Institute__SIMOJOKI AS. 13500_NOx", "Finnish Environmental Institute__SIMOJOKI AS. 13500_P", 
-  "Finnish Environmental Institute__Site 1069_DSi", 
-  "Finnish Environmental Institute__Site 11310_DSi", 
-  "Finnish Environmental Institute__Site 11523_DSi", 
-  "Finnish Environmental Institute__Site 11532_DSi", 
-  "Finnish Environmental Institute__Site 11564_DSi", 
-  "Finnish Environmental Institute__Site 227_DSi",
-  "Finnish Environmental Institute__Site 26534_DSi",
-  "Finnish Environmental Institute__Site 26740_DSi", 
-  "Finnish Environmental Institute__Site 26935_DSi", 
-  "Finnish Environmental Institute__Site 27095_DSi",
-  "Finnish Environmental Institute__Site 27697_DSi", 
-  "Finnish Environmental Institute__Site 27880_DSi", 
-  "Finnish Environmental Institute__Site 28208_DSi", 
-  "Finnish Environmental Institute__Site 28414_DSi", 
-  "Finnish Environmental Institute__Site 28639_DSi", "Finnish Environmental Institute__Site 36177_DSi", "Finnish Environmental Institute__Site 397_DSi", 
-  "Finnish Environmental Institute__Site 39892_DSi", 
-  "Finnish Environmental Institute__Site 39974_DSi", "Finnish Environmental Institute__Site 4081_DSi", "Finnish Environmental Institute__Site 4381_DSi", 
-  "Finnish Environmental Institute__Site 567_DSi", 
-  "Finnish Environmental Institute__Site 605_DSi", 
-  "Finnish Environmental Institute__Site 69038_DSi", 
-  "Finnish Environmental Institute__Skatila vp 9600_NH4", "Finnish Environmental Institute__Skatila vp 9600_NOx", "Finnish Environmental Institute__Skatila vp 9600_P", 
-  "Finnish Environmental Institute__TORNIONJ KUKKOLA 14310_NH4", "Finnish Environmental Institute__TORNIONJ KUKKOLA 14310_NOx", "Finnish Environmental Institute__TORNIONJ KUKKOLA 14310_P",
-  "Finnish Environmental Institute__Vantaa 4,2  6040_NH4", "Finnish Environmental Institute__Vantaa 4,2  6040_NOx", "Finnish Environmental Institute__Vantaa 4,2  6040_P", 
-  "Finnish Environmental Institute__Virojoki 006 3020_NH4", "Finnish Environmental Institute__Virojoki 006 3020_NOx", "Finnish Environmental Institute__Virojoki 006 3020_P"
+  "GRO__Yenisey_NH4", "GRO__Yenisey_NOx", "GRO__Yenisey_P"
 )
 
 # Identify rivers to do
-boot_to_do <- setdiff(x = unique(good_rivers), y = c(done_boots, bad_boot_rivers))
+boot_to_do <- setdiff(x = potential_boots, y = c(done_boots, bad_boot_rivers))
 
 # Loop across rivers and elements to run WRTDS workflow!
 for(river in boot_to_do){
