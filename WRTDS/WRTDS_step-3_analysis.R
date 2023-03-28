@@ -325,7 +325,7 @@ bad_boot_rivers <- c(
   ## Pre-emptively moving some other sites here that are likely to cause errors
   ## Will double check whether these fail once other streams are done
   "ARC__Imnavait Weir_NH4", "ARC__Imnavait Weir_NOx", "ARC__Imnavait Weir_P",
-  # Error in ...
+  # Error in ... << haven't (tried to) identify which function is the one that errors out >>
   ## "Error in if (z) "Reject Ho" else "Do Not Reject Ho" : 
   ## missing value where TRUE/FALSE needed
   "Catalina Jemez__Marshall Gulch_DSi", "Catalina Jemez__Oracle Ridge_DSi",
@@ -345,6 +345,7 @@ bad_boot_rivers <- c(
   "Finnish Environmental Institute__Narpionjoki mts 6761_NH4",
   "GRO__Kolyma_DSi", "GRO__Kolyma_NH4", "GRO__Kolyma_NOx",
   "GRO__Lena_DSi",
+  "GRO__Ob_DSi",
   ## Rivers preemptively removed because they are likely to experience this error
   ## I *think* it's a discharge issue which makes all chemicals for a given river fail
   "Finnish Environmental Institute__Iijoki Raasakan voimal_NOx",
@@ -376,6 +377,7 @@ bad_boot_rivers <- c(
   "Finnish Environmental Institute__Narpionjoki mts 6761_NOx",
   "Finnish Environmental Institute__Narpionjoki mts 6761_P",
   "GRO__Lena_NH4", "GRO__Lena_NOx",
+  "GRO__Ob_NH4", "GRO__Ob_NOx", "GRO__Ob_P",
   ## Excluding all other Finnish sites (for now) as many have been shown to throw this error
   ## Note that NO chemicals at these rivers are tested (vs. above where one chemical was tested)
   "Finnish Environmental Institute__Oulujoki 13000_NH4", "Finnish Environmental Institute__Oulujoki 13000_NOx", "Finnish Environmental Institute__Oulujoki 13000_P", 
