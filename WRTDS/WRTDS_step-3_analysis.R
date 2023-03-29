@@ -316,7 +316,9 @@ potential_boots <- data.frame("x" = unique(good_rivers)) %>%
   # Identify LTER
   tidyr::separate(x, sep = "__", into = c("site", "river_name"), remove = F) %>%
   # Drop any LTERs we aren't interested in
-  dplyr::filter(!site %in% c("Finnish Environmental Institute")) %>%
+  ## Virtually all Finnish sites threw an error when attempted
+  ## KRR sites crashed R without a specific warning message
+  dplyr::filter(!site %in% c("Finnish Environmental Institute", "KRR")) %>%
   # Pull the full river names back out!
   dplyr::pull(x)
 
@@ -340,11 +342,13 @@ bad_boot_rivers <- c(
   "Catalina Jemez__Marshall Gulch_DSi", "Catalina Jemez__Oracle Ridge_DSi",
   "GRO__Kolyma_DSi", "GRO__Kolyma_NH4", "GRO__Kolyma_NOx",
   "GRO__Lena_DSi", "GRO__Ob_DSi", "GRO__Yenisey_DSi",
+  "HBR__ws9_DSi",
   ## Rivers preemptively removed because they are likely to experience this error
   ## I *think* it's a discharge issue which makes all chemicals for a given river fail
   "GRO__Lena_NH4", "GRO__Lena_NOx",
   "GRO__Ob_NH4", "GRO__Ob_NOx", "GRO__Ob_P",
-  "GRO__Yenisey_NH4", "GRO__Yenisey_NOx", "GRO__Yenisey_P"
+  "GRO__Yenisey_NH4", "GRO__Yenisey_NOx", "GRO__Yenisey_P",
+  "HBR__ws9_NOx"
 )
 
 # Identify rivers to do
