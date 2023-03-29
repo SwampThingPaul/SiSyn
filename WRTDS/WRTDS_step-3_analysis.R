@@ -334,9 +334,11 @@ bad_boot_rivers <- c(
   # R crashes running these sites:
   "ARC__Imnavait Weir_DSi", "Krycklan__Site 10_DSi", "Krycklan__Site 13_DSi",
   "Krycklan__Site 2_DSi", "Krycklan__Site 9_DSi",
-  ## Pre-emptively moving some other sites here that are likely to cause errors
+  ## Pre-emptively moving some other sites here that are likely to crash R
   ## Will double check whether these fail once other streams are done
   "ARC__Imnavait Weir_NH4", "ARC__Imnavait Weir_NOx", "ARC__Imnavait Weir_P",
+  # This site crashed R BUT it seemed to be working prior to the crash
+  "LMP__LMP73_P",
   # Error in ... << haven't (tried to) identify which function is the one that errors out >>
   ## "Error in if (z) "Reject Ho" else "Do Not Reject Ho" : 
   ## missing value where TRUE/FALSE needed
