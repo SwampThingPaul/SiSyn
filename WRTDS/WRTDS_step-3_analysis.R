@@ -332,7 +332,8 @@ done_boots <- data.frame("file" = dir(path = file.path(path, "WRTDS Bootstrap Di
 # Set of problem rivers to drop from the loop
 bad_boot_rivers <- c(
   # R crashes running these sites:
-  "ARC__Imnavait Weir_DSi",
+  "ARC__Imnavait Weir_DSi", "Krycklan__Site 10_DSi", "Krycklan__Site 13_DSi",
+  "Krycklan__Site 2_DSi", "Krycklan__Site 9_DSi",
   ## Pre-emptively moving some other sites here that are likely to cause errors
   ## Will double check whether these fail once other streams are done
   "ARC__Imnavait Weir_NH4", "ARC__Imnavait Weir_NOx", "ARC__Imnavait Weir_P",
@@ -342,13 +343,15 @@ bad_boot_rivers <- c(
   "Catalina Jemez__Marshall Gulch_DSi", "Catalina Jemez__Oracle Ridge_DSi",
   "GRO__Kolyma_DSi", "GRO__Kolyma_NH4", "GRO__Kolyma_NOx",
   "GRO__Lena_DSi", "GRO__Ob_DSi", "GRO__Yenisey_DSi",
-  "HBR__ws9_DSi",
+  "HBR__ws9_DSi", "Krycklan__Site 1_DSi", "Krycklan__Site 14_DSi", "Krycklan__Site 16_DSi",
+  "Krycklan__Site 4_DSi", "Krycklan__Site 5_DSi", "Krycklan__Site 6_DSi", 
+  "Krycklan__Site 7_DSi",
   ## Rivers preemptively removed because they are likely to experience this error
   ## I *think* it's a discharge issue which makes all chemicals for a given river fail
   "GRO__Lena_NH4", "GRO__Lena_NOx",
   "GRO__Ob_NH4", "GRO__Ob_NOx", "GRO__Ob_P",
   "GRO__Yenisey_NH4", "GRO__Yenisey_NOx", "GRO__Yenisey_P",
-  "HBR__ws9_NOx"
+  "HBR__ws9_NOx", "Krycklan__Site 7_NH4", "Krycklan__Site 7_NO3", "Krycklan__Site 7_P"
 )
 
 # Identify rivers to do
