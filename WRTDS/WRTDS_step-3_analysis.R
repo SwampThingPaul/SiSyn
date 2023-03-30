@@ -333,12 +333,15 @@ done_boots <- data.frame("file" = dir(path = file.path(path, "WRTDS Bootstrap Di
 bad_boot_rivers <- c(
   # R crashes running these sites:
   "ARC__Imnavait Weir_DSi", "Krycklan__Site 10_DSi", "Krycklan__Site 13_DSi",
-  "Krycklan__Site 2_DSi", "Krycklan__Site 9_DSi",
+  "Krycklan__Site 2_DSi", "Krycklan__Site 9_DSi", "LMP__LMP73_P", "LUQ__Q2_DSi",
+  "LUQ__Q3_DSi", "LUQ__QS_DSi", "MCM__Green Creek at F9_DSi",
   ## Pre-emptively moving some other sites here that are likely to crash R
   ## Will double check whether these fail once other streams are done
   "ARC__Imnavait Weir_NH4", "ARC__Imnavait Weir_NOx", "ARC__Imnavait Weir_P",
-  # This site crashed R BUT it seemed to be working prior to the crash
-  "LMP__LMP73_P",
+  "LUQ__Q2_NH4", "LUQ__Q2_NOx", "LUQ__Q2_P",
+  "LUQ__Q3_NH4", "LUQ__Q3_NOx", "LUQ__Q3_P",
+  "LUQ__QS_NH4", "LUQ__QS_NOx", "LUQ__QS_P",
+  "MCM__Green Creek at F9_NH4", "MCM__Green Creek at F9_NOx", "MCM__Green Creek at F9_P",
   # Error in ... << haven't (tried to) identify which function is the one that errors out >>
   ## "Error in if (z) "Reject Ho" else "Do Not Reject Ho" : 
   ## missing value where TRUE/FALSE needed
@@ -347,13 +350,17 @@ bad_boot_rivers <- c(
   "GRO__Lena_DSi", "GRO__Ob_DSi", "GRO__Yenisey_DSi",
   "HBR__ws9_DSi", "Krycklan__Site 1_DSi", "Krycklan__Site 14_DSi", "Krycklan__Site 16_DSi",
   "Krycklan__Site 4_DSi", "Krycklan__Site 5_DSi", "Krycklan__Site 6_DSi", 
-  "Krycklan__Site 7_DSi",
+  "Krycklan__Site 7_DSi", "LUQ__Q1_DSi", "NIVA__BUSEDRA_DSi",
+  "NIVA__FINEALT_DSi", "NIVA__NOREVEF_DSi", "NIVA__ROGEORR_DSi", "NIVA__STREORK_DSi",
+  "NIVA__TELESKI_DSi", "NIVA__VAGEOTR_DSi", "NIVA__VESENUM_DSi",
   ## Rivers preemptively removed because they are likely to experience this error
   ## I *think* it's a discharge issue which makes all chemicals for a given river fail
-  "GRO__Lena_NH4", "GRO__Lena_NOx",
-  "GRO__Ob_NH4", "GRO__Ob_NOx", "GRO__Ob_P",
+  "GRO__Lena_NH4", "GRO__Lena_NOx", "GRO__Ob_NH4", "GRO__Ob_NOx", "GRO__Ob_P",
   "GRO__Yenisey_NH4", "GRO__Yenisey_NOx", "GRO__Yenisey_P",
-  "HBR__ws9_NOx", "Krycklan__Site 7_NH4", "Krycklan__Site 7_NO3", "Krycklan__Site 7_P"
+  "HBR__ws9_NOx", "Krycklan__Site 7_NH4", "Krycklan__Site 7_NO3", "Krycklan__Site 7_P",
+  "LUQ__Q1_NH4", "LUQ__Q1_NOx", "LUQ__Q1_P", "NIVA__BUSEDRA_NO3", "NIVA__FINEALT_NO3",
+  "NIVA__NOREVEF_NO3", "NIVA__ROGEORR_NH4", "NIVA__ROGEORR_NO3", "NIVA__ROGEORR_P",
+  "NIVA__STREORK_NO3", "NIVA__TELESKI_NO3", "NIVA__VAGEOTR_NO3", "NIVA__VESENUM_NO3"
 )
 
 # Identify rivers to do
