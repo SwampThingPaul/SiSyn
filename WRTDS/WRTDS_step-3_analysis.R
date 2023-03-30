@@ -353,7 +353,9 @@ bad_boot_rivers <- c(
   "Krycklan__Site 7_DSi", "LUQ__Q1_DSi", "NIVA__BUSEDRA_DSi",
   "NIVA__FINEALT_DSi", "NIVA__NOREVEF_DSi", "NIVA__ROGEORR_DSi", "NIVA__STREORK_DSi",
   "NIVA__TELESKI_DSi", "NIVA__VAGEOTR_DSi", "NIVA__VESENUM_DSi",
-  "NWT__Como Creek_DSi", "Sagehen__Sagehen_DSi",
+  "NWT__Como Creek_DSi", "Sagehen__Sagehen_DSi", "UMR__BK01.0M_DSi", "UMR__CH00.1M_DSi",
+  "UMR__CN00.1M_DSi", "UMR__CU11.6M_DSi", "UMR__I080.2M_DSi", "UMR__LM00.5M_DSi",
+  "UMR__M078.0B_DSi", "UMR__M241.4K_DSi", "UMR__M556.4A_DSi", "UMR__M701.1B_DSi",
   ## Rivers preemptively removed because they are likely to experience this error
   ## I *think* it's a discharge issue which makes all chemicals for a given river fail
   "GRO__Lena_NH4", "GRO__Lena_NOx", "GRO__Ob_NH4", "GRO__Ob_NOx", "GRO__Ob_P",
@@ -362,7 +364,14 @@ bad_boot_rivers <- c(
   "LUQ__Q1_NH4", "LUQ__Q1_NOx", "LUQ__Q1_P", "NIVA__BUSEDRA_NO3", "NIVA__FINEALT_NO3",
   "NIVA__NOREVEF_NO3", "NIVA__ROGEORR_NH4", "NIVA__ROGEORR_NO3", "NIVA__ROGEORR_P",
   "NIVA__STREORK_NO3", "NIVA__TELESKI_NO3", "NIVA__VAGEOTR_NO3", "NIVA__VESENUM_NO3",
-  "Sagehen__Sagehen_NOx", "Sagehen__Sagehen_P"
+  "Sagehen__Sagehen_NOx", "Sagehen__Sagehen_P", "UMR__BK01.0M_NH4", "UMR__BK01.0M_NOx",
+  "UMR__BK01.0M_P", "UMR__CH00.1M_NH4", "UMR__CH00.1M_NOx", "UMR__CH00.1M_P",
+  "UMR__CN00.1M_NH4", "UMR__CN00.1M_NOx", "UMR__CN00.1M_P", "UMR__CU11.6M_NH4", 
+  "UMR__CU11.6M_NOx", "UMR__CU11.6M_P", "UMR__I080.2M_NH4", "UMR__I080.2M_NOx", 
+  "UMR__I080.2M_P", "UMR__LM00.5M_NH4", "UMR__LM00.5M_NOx", "UMR__LM00.5M_P",
+  "UMR__M078.0B_NH4", "UMR__M078.0B_NOx", "UMR__M078.0B_P", "UMR__M241.4K_NH4",
+  "UMR__M241.4K_NOx", "UMR__M241.4K_P", "UMR__M556.4A_NH4", "UMR__M556.4A_NOx",
+  "UMR__M556.4A_P", "UMR__M701.1B_NH4", "UMR__M701.1B_NOx", "UMR__M701.1B_P"
 )
 
 # Identify rivers to do
