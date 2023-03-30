@@ -353,6 +353,7 @@ bad_boot_rivers <- c(
   "Krycklan__Site 7_DSi", "LUQ__Q1_DSi", "NIVA__BUSEDRA_DSi",
   "NIVA__FINEALT_DSi", "NIVA__NOREVEF_DSi", "NIVA__ROGEORR_DSi", "NIVA__STREORK_DSi",
   "NIVA__TELESKI_DSi", "NIVA__VAGEOTR_DSi", "NIVA__VESENUM_DSi",
+  "NWT__Como Creek_DSi", "Sagehen__Sagehen_DSi",
   ## Rivers preemptively removed because they are likely to experience this error
   ## I *think* it's a discharge issue which makes all chemicals for a given river fail
   "GRO__Lena_NH4", "GRO__Lena_NOx", "GRO__Ob_NH4", "GRO__Ob_NOx", "GRO__Ob_P",
@@ -360,7 +361,8 @@ bad_boot_rivers <- c(
   "HBR__ws9_NOx", "Krycklan__Site 7_NH4", "Krycklan__Site 7_NO3", "Krycklan__Site 7_P",
   "LUQ__Q1_NH4", "LUQ__Q1_NOx", "LUQ__Q1_P", "NIVA__BUSEDRA_NO3", "NIVA__FINEALT_NO3",
   "NIVA__NOREVEF_NO3", "NIVA__ROGEORR_NH4", "NIVA__ROGEORR_NO3", "NIVA__ROGEORR_P",
-  "NIVA__STREORK_NO3", "NIVA__TELESKI_NO3", "NIVA__VAGEOTR_NO3", "NIVA__VESENUM_NO3"
+  "NIVA__STREORK_NO3", "NIVA__TELESKI_NO3", "NIVA__VAGEOTR_NO3", "NIVA__VESENUM_NO3",
+  "Sagehen__Sagehen_NOx", "Sagehen__Sagehen_P"
 )
 
 # Identify rivers to do
