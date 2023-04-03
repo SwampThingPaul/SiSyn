@@ -356,6 +356,7 @@ bad_boot_rivers <- c(
   "NWT__Como Creek_DSi", "Sagehen__Sagehen_DSi", "UMR__BK01.0M_DSi", "UMR__CH00.1M_DSi",
   "UMR__CN00.1M_DSi", "UMR__CU11.6M_DSi", "UMR__I080.2M_DSi", "UMR__LM00.5M_DSi",
   "UMR__M078.0B_DSi", "UMR__M241.4K_DSi", "UMR__M556.4A_DSi", "UMR__M701.1B_DSi",
+  "UMR__M764.3A_DSi", "UMR__M786.2C_DSi", "UMR__MQ02.1M_DSi", "UMR__SG16.2C_DSi", "UMR__WP02.6M_DSi",
   ## Rivers preemptively removed because they are likely to experience this error
   ## I *think* it's a discharge issue which makes all chemicals for a given river fail
   "GRO__Lena_NH4", "GRO__Lena_NOx", "GRO__Ob_NH4", "GRO__Ob_NOx", "GRO__Ob_P",
@@ -371,7 +372,11 @@ bad_boot_rivers <- c(
   "UMR__I080.2M_P", "UMR__LM00.5M_NH4", "UMR__LM00.5M_NOx", "UMR__LM00.5M_P",
   "UMR__M078.0B_NH4", "UMR__M078.0B_NOx", "UMR__M078.0B_P", "UMR__M241.4K_NH4",
   "UMR__M241.4K_NOx", "UMR__M241.4K_P", "UMR__M556.4A_NH4", "UMR__M556.4A_NOx",
-  "UMR__M556.4A_P", "UMR__M701.1B_NH4", "UMR__M701.1B_NOx", "UMR__M701.1B_P"
+  "UMR__M556.4A_P", "UMR__M701.1B_NH4", "UMR__M701.1B_NOx", "UMR__M701.1B_P",
+  "UMR__M764.3A_NH4", "UMR__M764.3A_NOx", "UMR__M764.3A_P", "UMR__M786.2C_NH4",
+  "UMR__M786.2C_NOx", "UMR__M786.2C_P", "UMR__MQ02.1M_NH4", "UMR__MQ02.1M_NOx",
+  "UMR__MQ02.1M_P", "UMR__SG16.2C_NH4", "UMR__SG16.2C_NOx", "UMR__SG16.2C_P",
+  "UMR__WP02.6M_NH4", "UMR__WP02.6M_NOx", "UMR__WP02.6M_P"
 )
 
 # Identify rivers to do
