@@ -18,7 +18,12 @@ The WRTDS workflow includes a substantial amount of code that--while broadly lin
 
  - When to Use: You just needed to re-run step 1 or step 2 OR you've tweaked the actual WRTDS workflow and need to update the results. Otherwise, skip this script and move to the next!
  - Explanation: Runs WRTDS and exports outputs for later use. Includes separate workflows for different "types" of sites (i.e., those that require modifications away from default `EGRET` function settings).
-- Step 3 also includes a separate workflow for handling bootstrapping due to how computationally intensive these `EGRET` functions are. Separating this from the rest of the workflow allows for quicker retrieval of "main" results and easier maintenance of both parts.
+
+### **WRTDS_step-3B_bootstrap.R**
+
+ - When to Use: You just needed to re-run step 1 or step 2 OR you've tweaked the bootstrapping workflow and need to update the results. Otherwise, skip this script and move to the next!
+ - Explanation: Runs WRTDS *bootstrap* workflow and exports outputs for later use.
+ - Warrants a separate script (versus including in the other "step 3" script due to how computationally intensive these `EGRET` functions are. Separating this from the rest of the workflow allows for quicker retrieval of "main" results and easier maintenance of both parts.
 
 ### **WRTDS_step-4_results-report.R**
 
