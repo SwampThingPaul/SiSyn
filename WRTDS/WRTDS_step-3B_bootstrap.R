@@ -57,6 +57,17 @@ good_rivers <- data.frame("file" = dir(path = file.path(path, "WRTDS Loop Diagno
               # Bootstrap Workflow ----
 ## ---------------------------------------------- ##
 
+# Re-identify rivers that have special period of analysis requirements
+pa5_5 <- c(
+  # EGRET::setPA(eList = egret_list[_out], paStart = 5, paLong = 5)
+  "NWT__MARTINELLI_DSi", "NWT__MARTINELLI_NH4", 
+  "NWT__MARTINELLI_NOx", "NWT__MARTINELLI_P")
+
+pa5_3 <- c(
+  # EGRET::setPA(eList = egret_list[_out], paStart = 5, paLong = 3)
+  "NWT__SADDLE STREAM 007_DSi", "NWT__SADDLE STREAM 007_NH4", 
+  "NWT__SADDLE STREAM 007_NOx", "NWT__SADDLE STREAM 007_P")
+
 # Identify potential rivers to run through the bootstrap workflow
 potential_boots <- data.frame("x" = unique(good_rivers)) %>%
   # Identify LTER
