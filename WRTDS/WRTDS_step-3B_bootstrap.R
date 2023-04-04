@@ -93,6 +93,7 @@ bad_boot_rivers <- c(
   "Krycklan__Site 2_DSi", "Krycklan__Site 9_DSi", "LMP__LMP73_P", "LUQ__Q2_DSi",
   "LUQ__Q3_DSi", "LUQ__QS_DSi", "MCM__Green Creek at F9_DSi", 
   "USGS__Brazos River near Rosharon_NH4",
+  "USGS__CANAJOHARIE CREEK_P", # R crashes here too but seems to work for first 10 bootstraps...
   ## Pre-emptively moving some other sites here that are likely to crash R
   ## Will double check whether these fail once other streams are done
   "ARC__Imnavait Weir_NH4", "ARC__Imnavait Weir_NOx", "ARC__Imnavait Weir_P",
