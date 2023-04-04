@@ -334,7 +334,8 @@ bad_boot_rivers <- c(
   # R crashes running these sites:
   "ARC__Imnavait Weir_DSi", "Krycklan__Site 10_DSi", "Krycklan__Site 13_DSi",
   "Krycklan__Site 2_DSi", "Krycklan__Site 9_DSi", "LMP__LMP73_P", "LUQ__Q2_DSi",
-  "LUQ__Q3_DSi", "LUQ__QS_DSi", "MCM__Green Creek at F9_DSi",
+  "LUQ__Q3_DSi", "LUQ__QS_DSi", "MCM__Green Creek at F9_DSi", 
+  "USGS__Brazos River near Rosharon_NH4",
   ## Pre-emptively moving some other sites here that are likely to crash R
   ## Will double check whether these fail once other streams are done
   "ARC__Imnavait Weir_NH4", "ARC__Imnavait Weir_NOx", "ARC__Imnavait Weir_P",
@@ -342,6 +343,7 @@ bad_boot_rivers <- c(
   "LUQ__Q3_NH4", "LUQ__Q3_NOx", "LUQ__Q3_P",
   "LUQ__QS_NH4", "LUQ__QS_NOx", "LUQ__QS_P",
   "MCM__Green Creek at F9_NH4", "MCM__Green Creek at F9_NOx", "MCM__Green Creek at F9_P",
+  "USGS__Brazos River near Rosharon_NOx", "USGS__Brazos River near Rosharon_P", 
   # Error in ... << haven't (tried to) identify which function is the one that errors out >>
   ## "Error in if (z) "Reject Ho" else "Do Not Reject Ho" : 
   ## missing value where TRUE/FALSE needed
