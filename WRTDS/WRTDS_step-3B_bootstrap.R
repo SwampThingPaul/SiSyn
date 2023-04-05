@@ -95,7 +95,7 @@ bad_boot_rivers <- c(
   "USGS__Brazos River near Rosharon_NH4",
   "USGS__CANAJOHARIE CREEK_P", # R crashes here too but seems to work for first 10 bootstraps...
   "USGS__Dismal River_NH4", # Same deal (crashes) but gets through 49 bootstraps...
-  "USGS__EAGLE RIVER AT AVON_NH4",
+  "USGS__EAGLE RIVER AT AVON_NH4", "USGS__EAGLE RIVER AT RED CLIFF_NH4",
   ## Pre-emptively moving some other sites here that are likely to crash R
   ## Will double check whether these fail once other streams are done
   "ARC__Imnavait Weir_NH4", "ARC__Imnavait Weir_NOx", "ARC__Imnavait Weir_P",
@@ -105,10 +105,10 @@ bad_boot_rivers <- c(
   "MCM__Green Creek at F9_NH4", "MCM__Green Creek at F9_NOx", "MCM__Green Creek at F9_P",
   "USGS__Brazos River near Rosharon_NOx", "USGS__Brazos River near Rosharon_P", 
   "USGS__Dismal River_NOx", "USGS__Dismal River_P", "USGS__EAGLE RIVER AT AVON_NOx",
-  "USGS__EAGLE RIVER AT AVON_P",
+  "USGS__EAGLE RIVER AT AVON_P", "USGS__EAGLE RIVER AT RED CLIFF_NOx", 
+  "USGS__EAGLE RIVER AT RED CLIFF_P",
   # Error in ... << haven't (tried to) identify which function is the one that errors out >>
-  ## "Error in if (z) "Reject Ho" else "Do Not Reject Ho" : 
-  ## missing value where TRUE/FALSE needed
+  ## "Error in if (z) "Reject Ho" else "Do Not Reject Ho" : missing value where TRUE/FALSE needed
   "Catalina Jemez__Marshall Gulch_DSi", "Catalina Jemez__Oracle Ridge_DSi",
   "GRO__Kolyma_DSi", "GRO__Kolyma_NH4", "GRO__Kolyma_NOx",
   "GRO__Lena_DSi", "GRO__Ob_DSi", "GRO__Yenisey_DSi",
