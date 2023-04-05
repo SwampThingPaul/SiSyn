@@ -94,6 +94,7 @@ bad_boot_rivers <- c(
   "LUQ__Q3_DSi", "LUQ__QS_DSi", "MCM__Green Creek at F9_DSi", 
   "USGS__Brazos River near Rosharon_NH4",
   "USGS__CANAJOHARIE CREEK_P", # R crashes here too but seems to work for first 10 bootstraps...
+  "USGS__Dismal River_NH4", # Same deal (crashes) but gets through 49 bootstraps...
   ## Pre-emptively moving some other sites here that are likely to crash R
   ## Will double check whether these fail once other streams are done
   "ARC__Imnavait Weir_NH4", "ARC__Imnavait Weir_NOx", "ARC__Imnavait Weir_P",
@@ -102,6 +103,7 @@ bad_boot_rivers <- c(
   "LUQ__QS_NH4", "LUQ__QS_NOx", "LUQ__QS_P",
   "MCM__Green Creek at F9_NH4", "MCM__Green Creek at F9_NOx", "MCM__Green Creek at F9_P",
   "USGS__Brazos River near Rosharon_NOx", "USGS__Brazos River near Rosharon_P", 
+  "USGS__Dismal River_NOx", "USGS__Dismal River_P",
   # Error in ... << haven't (tried to) identify which function is the one that errors out >>
   ## "Error in if (z) "Reject Ho" else "Do Not Reject Ho" : 
   ## missing value where TRUE/FALSE needed
@@ -117,6 +119,7 @@ bad_boot_rivers <- c(
   "UMR__CN00.1M_DSi", "UMR__CU11.6M_DSi", "UMR__I080.2M_DSi", "UMR__LM00.5M_DSi",
   "UMR__M078.0B_DSi", "UMR__M241.4K_DSi", "UMR__M556.4A_DSi", "UMR__M701.1B_DSi",
   "UMR__M764.3A_DSi", "UMR__M786.2C_DSi", "UMR__MQ02.1M_DSi", "UMR__SG16.2C_DSi", "UMR__WP02.6M_DSi",
+  "USGS__Cane Creek_DSi",
   ## Rivers preemptively removed because they are likely to experience this error
   ## I *think* it's a discharge issue which makes all chemicals for a given river fail
   "GRO__Lena_NH4", "GRO__Lena_NOx", "GRO__Ob_NH4", "GRO__Ob_NOx", "GRO__Ob_P",
