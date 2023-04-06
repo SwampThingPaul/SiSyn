@@ -96,6 +96,9 @@ bad_boot_rivers <- c(
   "USGS__CANAJOHARIE CREEK_P", # R crashes here too but seems to work for first 10 bootstraps...
   "USGS__Dismal River_NH4", # Same deal (crashes) but gets through 49 bootstraps...
   "USGS__EAGLE RIVER AT AVON_NH4", "USGS__EAGLE RIVER AT RED CLIFF_NH4",
+  "USGS__EAGLE RIVER NEAR MINTURN_NH4", "USGS__GORE CREEK AT MOUTH_NH4",
+  "USGS__GORE CREEK UPPER STATION_NH4", "USGS__GREEN RIVER_NH4",
+  "USGS__LITTLE RIVER_NH4",
   ## Pre-emptively moving some other sites here that are likely to crash R
   ## Will double check whether these fail once other streams are done
   "ARC__Imnavait Weir_NH4", "ARC__Imnavait Weir_NOx", "ARC__Imnavait Weir_P",
@@ -106,7 +109,11 @@ bad_boot_rivers <- c(
   "USGS__Brazos River near Rosharon_NOx", "USGS__Brazos River near Rosharon_P", 
   "USGS__Dismal River_NOx", "USGS__Dismal River_P", "USGS__EAGLE RIVER AT AVON_NOx",
   "USGS__EAGLE RIVER AT AVON_P", "USGS__EAGLE RIVER AT RED CLIFF_NOx", 
-  "USGS__EAGLE RIVER AT RED CLIFF_P",
+  "USGS__EAGLE RIVER AT RED CLIFF_P", "USGS__EAGLE RIVER NEAR MINTURN_NOx",
+  "USGS__EAGLE RIVER NEAR MINTURN_P", "USGS__GORE CREEK AT MOUTH_NOx",
+  "USGS__GORE CREEK AT MOUTH_P", "USGS__GORE CREEK UPPER STATION_NOx",
+  "USGS__GORE CREEK UPPER STATION_P", "USGS__GREEN RIVER_NOx",
+  "USGS__LITTLE RIVER_NOx", "USGS__LITTLE RIVER_P",
   # Error in ... << haven't (tried to) identify which function is the one that errors out >>
   ## "Error in if (z) "Reject Ho" else "Do Not Reject Ho" : missing value where TRUE/FALSE needed
   "Catalina Jemez__Marshall Gulch_DSi", "Catalina Jemez__Oracle Ridge_DSi",
@@ -146,6 +153,7 @@ bad_boot_rivers <- c(
 
 # Identify rivers to do
 boot_to_do <- setdiff(x = potential_boots, y = c(done_boots, bad_boot_rivers))
+## For quick ID of next few rivers: boot_to_do[1:5]
 
 # Loop across rivers and elements to run WRTDS workflow!
 for(river in boot_to_do){
