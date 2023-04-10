@@ -44,6 +44,18 @@ dest_url <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/1V5Eq
 # Check current contents of this folder
 googledrive::drive_ls(path = dest_url)
 
+# Identify complete rivers for typical workflow
+done_rivers <- data.frame("file" = dir(path = file.path(path, "WRTDS Loop Diagnostic"))) %>%
+  # Drop the file suffix part of the file name 
+  dplyr::mutate(river = gsub(pattern = "\\_Loop\\_Diagnostic.csv", replacement = "", x = file)) %>%
+  # Pull out just that column
+  dplyr::pull(river)
+
+# Do the same for the bootstrap results
+done_boots <- data.frame("file" = dir(path = file.path(path, "WRTDS Bootstrap Diagnostic"))) %>%
+  dplyr::mutate(river = gsub(pattern = "\\_Boot\\_Loop\\_Diagnostic.csv", replacement = "", x = file)) %>%
+  dplyr::pull(river)
+
 ## ---------------------------------------------- ##
             # Identify WRTDS Outputs ----
 ## ---------------------------------------------- ##
@@ -64,7 +76,9 @@ wrtds_outs <- data.frame("file_name" = wrtds_outs_v0) %>%
   # Remove the PDFs of exploratory graphs
   dplyr::filter(data_type != "WRTDS_GFN_output.pdf") %>%
   # Remove unwanted chemicals that we have data for
-  dplyr::filter(!chemical %in% c("TN", "TP"))
+  dplyr::filter(!chemical %in% c("TN", "TP")) %>%
+  # Keep only rivers that finish the whole workflow!
+  dplyr::filter(Stream_Element_ID %in% done_rivers)
 
 # Glimpse it
 dplyr::glimpse(wrtds_outs)
@@ -420,7 +434,9 @@ pdf_outs <- data.frame("file_name" = wrtds_outs_v0) %>%
   # Remove the PDFs of exploratory graphs
   dplyr::filter(data_type == "WRTDS_GFN_output.pdf") %>%
   # Remove unwanted chemicals that we have data for
-  dplyr::filter(!chemical %in% c("TN", "TP"))
+  dplyr::filter(!chemical %in% c("TN", "TP")) %>%
+  # Keep only rivers that finish the whole workflow!
+  dplyr::filter(Stream_Element_ID %in% done_rivers)
 
 # Glimpse it
 dplyr::glimpse(pdf_outs)
@@ -466,7 +482,9 @@ boot_outs <- data.frame("file_name" = boot_outs_v0) %>%
   tidyr::separate(col = other_content, into = c("stream", "chemical", "data_type"),
                   sep = "_", remove = TRUE, fill = "right", extra = "merge") %>%
   # Recreate the "Stream_Element_ID" column
-  dplyr::mutate(Stream_Element_ID = paste0(LTER, "__", stream, "_", chemical))
+  dplyr::mutate(Stream_Element_ID = paste0(LTER, "__", stream, "_", chemical)) %>%
+  # Keep only rivers that finish the whole workflow!
+  dplyr::filter(Stream_Element_ID %in% done_boots)
 
 # Glimpse it
 dplyr::glimpse(boot_outs)
@@ -556,6 +574,10 @@ boots_pairs <- boot_out_list[["ListPairs_GFN_WRTDS.csv"]]
 
 # Glimpse it
 dplyr::glimpse(boots_pairs)
+
+## ---------------------------------------------- ##
+        # Export Bootstrap Outputs ----
+## ---------------------------------------------- ##
 
 # Combine processed files into a list
 boot_export_list <- list("EGRETCi_GFN_bootstraps.csv" = boots_gfn,
