@@ -175,7 +175,7 @@ names(out_list)
 
 # Clear environment of everything but the filepath, destination URL, out_list, & ref_table
 rm(list = setdiff(ls(), c("path", "dest_url", "out_list", "ref_table",
-                          "wrtds_outs", "wrtds_outs_v0")))
+                          "wrtds_outs", "wrtds_outs_v0", "done_rivers", "done_boots")))
 
 ## ---------------------------------------------- ##
        # Process WRTDS Outputs - Trends ----
@@ -464,7 +464,7 @@ for(report in new_pdfs){
                             overwrite = T, path = pdf_url) }
 
 # Clear environment of everything but the filepath, destination URL, and ref_table
-rm(list = setdiff(ls(), c("path", "dest_url", "ref_table")))
+rm(list = setdiff(ls(), c("path", "dest_url", "ref_table", "done_rivers", "done_boots")))
 
 ## ---------------------------------------------- ##
          # Identify Bootstrap Outputs ----
@@ -551,7 +551,8 @@ str(boot_out_list)
 names(boot_out_list)
 
 # Clear environment of everything but the filepath, destination URL, boot_out_list, & ref_table
-rm(list = setdiff(ls(), c("path", "dest_url", "boot_out_list", "ref_table")))
+rm(list = setdiff(ls(), c("path", "dest_url", "boot_out_list", "ref_table",
+                          "done_rivers", "done_boots")))
 
 ## ---------------------------------------------- ##
           # Process Bootstrap Outputs ----
