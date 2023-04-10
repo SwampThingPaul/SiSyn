@@ -98,7 +98,7 @@ bad_boot_rivers <- c(
   "USGS__EAGLE RIVER AT AVON_NH4", "USGS__EAGLE RIVER AT RED CLIFF_NH4",
   "USGS__EAGLE RIVER NEAR MINTURN_NH4", "USGS__GORE CREEK AT MOUTH_NH4",
   "USGS__GORE CREEK UPPER STATION_NH4", "USGS__GREEN RIVER_NH4",
-  "USGS__LITTLE RIVER_NH4", "USGS__MERCED R_NH4",
+  "USGS__LITTLE RIVER_NH4", "USGS__MERCED R_NH4","USGS__YAMPA RIVER AT DEERLODGE PARK_NH4",
   ## Pre-emptively moving some other sites here that are likely to crash R
   ## Will double check whether these fail once other streams are done
   "ARC__Imnavait Weir_NH4", "ARC__Imnavait Weir_NOx", "ARC__Imnavait Weir_P",
@@ -114,6 +114,7 @@ bad_boot_rivers <- c(
   "USGS__GORE CREEK AT MOUTH_P", "USGS__GORE CREEK UPPER STATION_NOx",
   "USGS__GORE CREEK UPPER STATION_P", "USGS__GREEN RIVER_NOx",
   "USGS__LITTLE RIVER_NOx", "USGS__LITTLE RIVER_P", "USGS__MERCED R_NOx",
+  "USGS__YAMPA RIVER AT DEERLODGE PARK_NOx", "USGS__YAMPA RIVER AT DEERLODGE PARK_P",
   # Error in ... << haven't (tried to) identify which function is the one that errors out >>
   ## "Error in if (z) "Reject Ho" else "Do Not Reject Ho" : missing value where TRUE/FALSE needed
   "Catalina Jemez__Marshall Gulch_DSi", "Catalina Jemez__Oracle Ridge_DSi",
@@ -128,7 +129,7 @@ bad_boot_rivers <- c(
   "UMR__CN00.1M_DSi", "UMR__CU11.6M_DSi", "UMR__I080.2M_DSi", "UMR__LM00.5M_DSi",
   "UMR__M078.0B_DSi", "UMR__M241.4K_DSi", "UMR__M556.4A_DSi", "UMR__M701.1B_DSi",
   "UMR__M764.3A_DSi", "UMR__M786.2C_DSi", "UMR__MQ02.1M_DSi", "UMR__SG16.2C_DSi", "UMR__WP02.6M_DSi",
-  "USGS__Cane Creek_DSi", "USGS__OHIO RIVER AT OLMSTED_DSi",
+  "USGS__Cane Creek_DSi", "USGS__OHIO RIVER AT OLMSTED_DSi", "USGS__ROARING FORK_DSi",
   ## Rivers preemptively removed because they are likely to experience this error
   ## I *think* it's a discharge issue which makes all chemicals for a given river fail
   "GRO__Lena_NH4", "GRO__Lena_NOx", "GRO__Ob_NH4", "GRO__Ob_NOx", "GRO__Ob_P",
@@ -149,7 +150,8 @@ bad_boot_rivers <- c(
   "UMR__M786.2C_NOx", "UMR__M786.2C_P", "UMR__MQ02.1M_NH4", "UMR__MQ02.1M_NOx",
   "UMR__MQ02.1M_P", "UMR__SG16.2C_NH4", "UMR__SG16.2C_NOx", "UMR__SG16.2C_P",
   "UMR__WP02.6M_NH4", "UMR__WP02.6M_NOx", "UMR__WP02.6M_P", "USGS__OHIO RIVER AT OLMSTED_NH4",
-  "USGS__OHIO RIVER AT OLMSTED_NOx", "USGS__OHIO RIVER AT OLMSTED_P"
+  "USGS__OHIO RIVER AT OLMSTED_NOx", "USGS__OHIO RIVER AT OLMSTED_P", "USGS__ROARING FORK_NH4",
+  "USGS__ROARING FORK_NOx", "USGS__ROARING FORK_P"
 )
 
 # Identify rivers to do
