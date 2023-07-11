@@ -73,10 +73,24 @@ NAD83=CRS("+init=epsg:4269")
 
 # -------------------------------------------------------------------------
 
-world <- ne_countries(scale = 50, returnclass = "sp")
-
+world <- map("world")# ne_countries(scale = 50, returnclass = "sp")
+library(maptools)
+worldmap <- map("world", fill=TRUE, plot=FALSE)
+worldmapPolys <- map2SpatialPolygons(worldmap, 
+                                     IDs=sapply(strsplit(worldmap$names, ":"), "[", 1L), 
+                                     proj4string=CRS("+proj=longlat +datum=WGS84"))
+world=worldmapPolys
 ## SITE LTER lat/long
 sites2=read.csv(paste0(data.path,"LongTermWatersheds_LatLong.csv"))
+sites2=subset(sites2,LTER!="GRO")
+sites2=rbind(sites2,
+             data.frame(LTER="GRO",
+                        Stream.Site=c("Yenisey","Lena","Ob","Mackenzie","Yukon","Kolyma"),
+                        Latitude=c(69.3967,66.7767,66.5219,67.4333,61.9333,68.73),
+                        Longitude=c(86.15,123.3667,66.6,-133.75,-162.8667,158.72)))
+
+
+
 sites2$Longitude=with(sites2,ifelse(LTER=="Sagehen",Longitude*-1,Longitude))
 unique(sites2$LTER)
 
@@ -181,7 +195,7 @@ par(mar=c(3,3.5,0.5,0.1),xpd=F)
 ylim.val=c(0,400);by.y=100;ymaj=seq(ylim.val[1],ylim.val[2],by.y);ymin=seq(ylim.val[1],ylim.val[2],by.y/2)
 xlim.val=c(-20,30);by.x=10;xmaj=seq(xlim.val[1],xlim.val[2],by.x);xmin=seq(xlim.val[1],xlim.val[2],by.x/2)
 txt.cex=0.75
-plot(precp_cm~temp_c,Whittaker_biomes,type="n",ylim=ylim.val,xlim=xlim.val,ann=F,axes=F)
+plot(ylim.val~xlim.val,type="n",ylim=ylim.val,xlim=xlim.val,ann=F,axes=F)
 abline(h=ymaj,v=xmaj,lty=3,col="grey",lwd=0.5)
 # abline(h=ymaj,v=xmaj,lty=3,col=adjustcolor("grey",0.5),lwd=0.5)
 # abline(h=ymin,v=xmin,lty=2,col=adjustcolor("grey",0.5),lwd=0.5)
