@@ -22,6 +22,11 @@ dir.create(path = file.path(path, "WRTDS Results"), showWarnings = F)
 dir.create(path = file.path(path, "WRTDS Bootstrap Results"), showWarnings = F)
 
 # Download the reference table object
+googledrive::drive_ls(googledrive::as_id("https://drive.google.com/drive/u/0/folders/15FEoe2vu3OAqMQHqdQ9XKpFboR4DvS9M"), pattern = "WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv") %>%
+  googledrive::drive_download(file = googledrive::as_id(.), overwrite = T,
+                              path = file.path(path, "WRTDS Source Files", "WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv"))
+
+# Read that file in
 ref_table <- read.csv(file = file.path(path, "WRTDS Source Files", 
                                        "WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv")) %>%
   # Pare down to only needed columns
@@ -31,10 +36,25 @@ ref_table <- read.csv(file = file.path(path, "WRTDS Source Files",
 dplyr::glimpse(ref_table)
 
 # Define the GoogleDrive URL to upload flat results files
-dest_url <- googledrive::as_id("https://drive.google.com/drive/folders/1842KSgp48k_DwvNeYbmz-_b4PSH-vrxg")
+## Original destination
+dest_url <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/1V5EqmOlWA8U9NWfiBcWdqEH9aRAP-zCk")
+## New destination while checking that seasonality alterations produce desired confidence
+# dest_url <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/1bm2a-rBkvbFXECGXmZ-pLDtoTomtFLYI")
 
 # Check current contents of this folder
 googledrive::drive_ls(path = dest_url)
+
+# Identify complete rivers for typical workflow
+done_rivers <- data.frame("file" = dir(path = file.path(path, "WRTDS Loop Diagnostic"))) %>%
+  # Drop the file suffix part of the file name 
+  dplyr::mutate(river = gsub(pattern = "\\_Loop\\_Diagnostic.csv", replacement = "", x = file)) %>%
+  # Pull out just that column
+  dplyr::pull(river)
+
+# Do the same for the bootstrap results
+done_boots <- data.frame("file" = dir(path = file.path(path, "WRTDS Bootstrap Diagnostic"))) %>%
+  dplyr::mutate(river = gsub(pattern = "\\_Boot\\_Loop\\_Diagnostic.csv", replacement = "", x = file)) %>%
+  dplyr::pull(river)
 
 ## ---------------------------------------------- ##
             # Identify WRTDS Outputs ----
@@ -54,7 +74,11 @@ wrtds_outs <- data.frame("file_name" = wrtds_outs_v0) %>%
   # Recreate the "Stream_Element_ID" column
   dplyr::mutate(Stream_Element_ID = paste0(LTER, "__", stream, "_", chemical)) %>%
   # Remove the PDFs of exploratory graphs
-  dplyr::filter(data_type != "WRTDS_GFN_output.pdf")
+  dplyr::filter(data_type != "WRTDS_GFN_output.pdf") %>%
+  # Remove unwanted chemicals that we have data for
+  dplyr::filter(!chemical %in% c("TN", "TP")) %>%
+  # Keep only rivers that finish the whole workflow!
+  dplyr::filter(Stream_Element_ID %in% done_rivers)
 
 # Glimpse it
 dplyr::glimpse(wrtds_outs)
@@ -107,14 +131,43 @@ for(type in out_types){
     dplyr::select(-data_type) %>%
     # Relocate other joined columns to front
     dplyr::relocate(Stream_Element_ID, LTER, stream, chemical,
-                    .after = file_name)
+                    .after = file_name) %>%
+    # Drop file_name and stream_element_ID
+    dplyr::select(-file_name, -Stream_Element_ID) %>%
+    # Condense Finnish site synonym names
+    ## A given site has one name for silica and a diff name for all other chemicals
+    dplyr::mutate(stream = dplyr::case_when(
+      stream == "Site 1069" ~ "Mustionjoki 4,9  15500",
+      stream == "Site 11310" ~ "Virojoki 006 3020",
+      stream == "Site 11523" ~ "Kymijoki Ahvenkoski 001",
+      stream == "Site 11532" ~ "Kymijoki Kokonkoski 014",
+      stream == "Site 11564" ~ "Kymij Huruksela 033 5600",
+      stream == "Site 227" ~ "Koskenkylanjoki 6030",
+      stream == "Site 26534" ~ "Lapuanjoki 9900",
+      stream == "Site 26740" ~ "Perhonjoki 10600",
+      stream == "Site 26935" ~ "Lestijoki 10800 8-tien s",
+      stream == "Site 27095" ~ "Kalajoki 11000",
+      stream == "Site 27697" ~ "Pyhajoki Hourunk 11400",
+      stream == "Site 27880" ~ "Siikajoki 8-tien s 11600",
+      stream == "Site 28208" ~ "Oulujoki 13000",
+      stream == "Site 28414" ~ "Kiiminkij 13010 4-tien s",
+      stream == "Site 28639" ~ "Iijoki Raasakan voimal",
+      stream == "Site 36177" ~ "SIMOJOKI AS. 13500",
+      stream == "Site 397" ~ "Porvoonjoki 11,5  6022",
+      stream == "Site 39892" ~ "KEMIJOKI ISOHAARA 14000",
+      stream == "Site 39974" ~ "TORNIONJ KUKKOLA 14310",
+      stream == "Site 4081" ~ "Myllykanava vp 9100",
+      stream == "Site 4381" ~ "Skatila vp 9600",
+      stream == "Site 567" ~ "Mustijoki 4,2  6010",
+      stream == "Site 605" ~ "Vantaa 4,2  6040",
+      stream == "Site 69038" ~ "Narpionjoki mts 6761",
+      TRUE ~ stream))
   
   # Add this dataframe to the output list
   out_list[[type]] <- type_df
   
   # Completion message
-  message("Completed processing ", type, " outputs")
-}
+  message("Completed processing ", type, " outputs") }
 
 # Check the structure of the whole output list
 str(out_list)
@@ -122,28 +175,21 @@ names(out_list)
 
 # Clear environment of everything but the filepath, destination URL, out_list, & ref_table
 rm(list = setdiff(ls(), c("path", "dest_url", "out_list", "ref_table",
-                          "wrtds_outs", "wrtds_outs_v0")))
+                          "wrtds_outs", "wrtds_outs_v0", "done_rivers", "done_boots")))
 
 ## ---------------------------------------------- ##
-             # Process WRTDS Outputs ----
+       # Process WRTDS Outputs - Trends ----
 ## ---------------------------------------------- ##
 
 # Handle trends table
-trends_table <- out_list[["TrendsTable_GFN_WRTDS.csv"]] %>%
-  # Handle different trend table formatting
-  dplyr::mutate(
-    change_mg_L = dplyr::coalesce(change_mg_L, change.mg.L.),
-    slope_mg_L_yr = dplyr::coalesce(slope_mg_L_yr, slope.mg.L.yr.),
-    change_percent = dplyr::coalesce(change_percent, change.percent.),
-    slope_percent_yr = dplyr::coalesce(change_percent, slope..percent.yr.),
-    change_10_3kg_yr = dplyr::coalesce(change_10_3kg_yr, change..10.3kg.yr.),
-    slope_10_3kg_yr_yr = dplyr::coalesce(slope_10_3kg_yr_yr, slope..10.3kg.yr.yr.)) %>%
-  # Drop unneeded columns
-  dplyr::select(-change.mg.L., -slope.mg.L.yr., -change.percent.,
-                -slope..percent.yr., -change..10.3kg.yr., -slope..10.3kg.yr.yr.)
-
+trends_table <- out_list[["TrendsTable_GFN_WRTDS.csv"]]
+  
 # Glimpse this
 dplyr::glimpse(trends_table)
+
+## ---------------------------------------------- ##
+        # Process WRTDS Outputs - GFN ----
+## ---------------------------------------------- ##
 
 # GFN output
 gfn <- out_list[["GFN_WRTDS.csv"]] %>%
@@ -156,22 +202,110 @@ gfn <- out_list[["GFN_WRTDS.csv"]] %>%
 # Glimpse
 dplyr::glimpse(gfn)
 
+## ---------------------------------------------- ##
+    # Process WRTDS Outputs - Error Stats ----
+## ---------------------------------------------- ##
+
 # Error statistics
 error_stats <- out_list[["ErrorStats_WRTDS.csv"]]
 
 # Glimpse it
 dplyr::glimpse(error_stats)
 
+## ---------------------------------------------- ##
+   # Process WRTDS Outputs - Monthly Results ----
+## ---------------------------------------------- ##
+
 # Monthly information
 monthly <- out_list[["Monthly_GFN_WRTDS.csv"]] %>%
   # Attach basin area
   dplyr::left_join(y = ref_table, by = c("LTER", "stream")) %>%
-  # Calculate some additional columns
-  dplyr::mutate(Yield = Flux / drainSqKm,
-                FNYield = FNFlux / drainSqKm)
+  # Compute season of each month
+  dplyr::mutate(season = dplyr::case_when(
+    !LTER %in% c("LUQ", "MCM") & Month %in% 1:3 ~ "winter",
+    !LTER %in% c("LUQ", "MCM") & Month %in% 4:6 ~ "snowmelt",
+    !LTER %in% c("LUQ", "MCM") & Month %in% 7:9 ~ "growing season",
+    !LTER %in% c("LUQ", "MCM") & Month %in% 10:12 ~ "fall",
+    TRUE ~ ""), .after = Month) %>%
+  # Rename columns to be more explicit about starting units
+  dplyr::rename(Discharge_cms = Q,
+                Conc_mgL = Conc,
+                FNConc_mgL = FNConc,
+                Flux_10_6kg_yr = Flux,
+                FNFlux_10_6kg_yr = FNFlux) %>%
+  # Do some unit conversions
+  dplyr::mutate(
+    Conc_uM = dplyr::case_when(
+      chemical %in% c("DSi") ~ (Conc_mgL / 28) * 1000,
+      chemical %in% c("NOx", "NH4", "NO3", "TN") ~ (Conc_mgL / 14) * 1000,
+      chemical %in% c("P", "TP") ~ (Conc_mgL / 30.9) * 1000),
+    FNConc_uM = dplyr::case_when(
+      chemical %in% c("DSi") ~ (FNConc_mgL / 28) * 1000,
+      chemical %in% c("NOx", "NH4", "NO3", "TN") ~ (FNConc_mgL / 14) * 1000,
+      chemical %in% c("P", "TP") ~ (FNConc_mgL / 30.9) * 1000),
+    Flux_10_6kmol_yr = dplyr::case_when(
+      chemical %in% c("DSi") ~ (Flux_10_6kg_yr / 28),
+      chemical %in% c("NOx", "NH4", "NO3", "TN") ~ (Flux_10_6kg_yr / 14),
+      chemical %in% c("P", "TP") ~ (Flux_10_6kg_yr / 30.9)),
+    FNFlux_10_6kmol_yr = dplyr::case_when(
+      chemical %in% c("DSi") ~ (FNFlux_10_6kg_yr / 28),
+      chemical %in% c("NOx", "NH4", "NO3", "TN") ~ (FNFlux_10_6kg_yr / 14),
+      chemical %in% c("P", "TP") ~ (FNFlux_10_6kg_yr / 30.9)) ) %>%
+  # Move area to the left
+  dplyr::relocate(drainSqKm, .after = stream) %>%
+  # Calculate ratios of different chemicals
+  ## Pivot longer to get various responses into a column
+  tidyr::pivot_longer(cols = Discharge_cms:FNFlux_10_6kmol_yr,
+                      names_to = "response_types",
+                      values_to = "response_values") %>%
+  # Handle "duplicate" values for sites that break across a year so have two values for one year
+  ## Only relevant to the McMurdo sites where we altered period of analysis
+  dplyr::group_by(LTER, stream, drainSqKm, chemical, Month, season,
+                  Year, nDays, DecYear, response_types) %>%
+  dplyr::summarize(response_values = mean(response_values, na.rm = TRUE)) %>%
+  dplyr::ungroup() %>%
+  ## Pivot back wider but with chemicals as columns
+  tidyr::pivot_wider(names_from = chemical,
+                     values_from = response_values) %>%
+  ## Calculate DIN (DIN = NOx <or> NO3 + NH4)
+  dplyr::mutate(DIN = dplyr::case_when(
+    ### NOx is preferred for calculating DIN because it is NO3 + NOx
+    !is.na(NOx) & !is.na(NH4) ~ (NOx + NH4),
+    !is.na(NO3) & !is.na(NH4) ~ (NO3 + NH4))) %>%
+  ## Calculate ratios
+  dplyr::mutate(Si_to_DIN = ifelse(test = (!is.na(DSi) & !is.na(DIN)),
+                                   yes = (DSi / DIN), no = NA),
+                Si_to_P = ifelse(test = (!is.na(DSi) & !is.na(P)),
+                                   yes = (DSi / P), no = NA)) %>%
+  ## Pivot back long
+  tidyr::pivot_longer(cols = DSi:Si_to_P,
+                      names_to = "chemical",
+                      values_to = "response_values") %>%
+  ## Drop NAs this pivot introduces
+  dplyr::filter(!is.na(response_values)) %>%
+  ## Pivot back wide *again* using the original column names
+  tidyr::pivot_wider(names_from = response_types,
+                     values_from = response_values) %>%
+  ## Fix the ratio specification now that they're not column names
+  dplyr::mutate(
+   chemical = gsub(pattern = "_to_", replacement = ":", x = chemical),
+   .before = dplyr::everything()) %>%
+  # Reorder column names
+  dplyr::select(LTER:chemical, Discharge_cms,
+                dplyr::ends_with("Conc_mgL"), dplyr::ends_with("Conc_uM"),
+                dplyr::ends_with("Flux_10_6kg_yr"), dplyr::ends_with("Flux_10_6kmol_yr")) %>%
+  # Calculate yield for both units
+  dplyr::mutate(Yield = Flux_10_6kg_yr / drainSqKm,
+                FNYield = FNFlux_10_6kg_yr / drainSqKm,
+                Yield_10_6kmol_yr_km2 = Flux_10_6kmol_yr / drainSqKm,
+                FNYield_10_6kmol_yr_km2 = FNFlux_10_6kmol_yr / drainSqKm)
 
 # Check it out
 dplyr::glimpse(monthly)
+
+## ---------------------------------------------- ##
+   # Process WRTDS Outputs - Annual Results ----
+## ---------------------------------------------- ##
 
 # Results table
 results_table <- out_list[["ResultsTable_GFN_WRTDS.csv"]] %>%
@@ -183,12 +317,78 @@ results_table <- out_list[["ResultsTable_GFN_WRTDS.csv"]] %>%
                 FNFlux_10_6kg_yr = FN.Flux..10.6kg.yr.) %>%
   # Attach basin area
   dplyr::left_join(y = ref_table, by = c("LTER", "stream")) %>%
-  # Calculate some additional columns
+  # Do some unit conversions
+  dplyr::mutate(
+    Conc_uM = dplyr::case_when(
+      chemical %in% c("DSi") ~ (Conc_mgL / 28) * 1000,
+      chemical %in% c("NOx", "NH4", "NO3", "TN") ~ (Conc_mgL / 14) * 1000,
+      chemical %in% c("P", "TP") ~ (Conc_mgL / 30.9) * 1000),
+    FNConc_uM = dplyr::case_when(
+      chemical %in% c("DSi") ~ (FNConc_mgL / 28) * 1000,
+      chemical %in% c("NOx", "NH4", "NO3", "TN") ~ (FNConc_mgL / 14) * 1000,
+      chemical %in% c("P", "TP") ~ (FNConc_mgL / 30.9) * 1000),
+    Flux_10_6kmol_yr = dplyr::case_when(
+      chemical %in% c("DSi") ~ (Flux_10_6kg_yr / 28),
+      chemical %in% c("NOx", "NH4", "NO3", "TN") ~ (Flux_10_6kg_yr / 14),
+      chemical %in% c("P", "TP") ~ (Flux_10_6kg_yr / 30.9)),
+    FNFlux_10_6kmol_yr = dplyr::case_when(
+      chemical %in% c("DSi") ~ (FNFlux_10_6kg_yr / 28),
+      chemical %in% c("NOx", "NH4", "NO3", "TN") ~ (FNFlux_10_6kg_yr / 14),
+      chemical %in% c("P", "TP") ~ (FNFlux_10_6kg_yr / 30.9)) ) %>%
+  # Calculate ratios of different chemicals
+  ## Move area to the left
+  dplyr::relocate(drainSqKm, .after = stream) %>%
+  ## Pivot longer to get various responses into a column
+  tidyr::pivot_longer(cols = Discharge_cms:FNFlux_10_6kmol_yr,
+                      names_to = "response_types",
+                      values_to = "response_values") %>%
+  # Handle "duplicate" values for sites that break across a year so have two values for one year
+  ## Only relevant to the McMurdo sites where we altered period of analysis
+  dplyr::group_by(LTER, stream, drainSqKm, chemical, Year, response_types) %>%
+  dplyr::summarize(response_values = mean(response_values, na.rm = TRUE)) %>%
+  dplyr::ungroup() %>%
+  ## Pivot back wider but with chemicals as columns
+  tidyr::pivot_wider(names_from = chemical,
+                     values_from = response_values) %>%
+  ## Calculate DIN (DIN = NOx <or> NO3 + NH4)
+  dplyr::mutate(DIN = dplyr::case_when(
+    ### NOx is preferred for calculating DIN because it is NO3 + NOx
+    !is.na(NOx) & !is.na(NH4) ~ (NOx + NH4),
+    !is.na(NO3) & !is.na(NH4) ~ (NO3 + NH4))) %>%
+  ## Calculate ratios
+  dplyr::mutate(Si_to_DIN = ifelse(test = (!is.na(DSi) & !is.na(DIN)),
+                                   yes = (DSi / DIN), no = NA),
+                Si_to_P = ifelse(test = (!is.na(DSi) & !is.na(P)),
+                                   yes = (DSi / P), no = NA)) %>%
+  ## Pivot back long
+  tidyr::pivot_longer(cols = DSi:Si_to_P,
+                      names_to = "chemical",
+                      values_to = "response_values") %>%
+  ## Drop NAs this pivot introduces
+  dplyr::filter(!is.na(response_values)) %>%
+  ## Pivot back wide *again* using the original column names
+  tidyr::pivot_wider(names_from = response_types,
+                     values_from = response_values) %>%
+  ## Fix the ratio specification now that they're not column names
+  dplyr::mutate(
+   chemical = gsub(pattern = "_to_", replacement = ":", x = chemical),
+   .before = dplyr::everything()) %>%
+  # Reorder column names
+  dplyr::select(LTER:chemical, Discharge_cms,
+                dplyr::ends_with("Conc_mgL"), dplyr::ends_with("Conc_uM"),
+                dplyr::ends_with("Flux_10_6kg_yr"), dplyr::ends_with("Flux_10_6kmol_yr")) %>%
+  # Calculate yield for both units
   dplyr::mutate(Yield = Flux_10_6kg_yr / drainSqKm,
-                FNYield = FNFlux_10_6kg_yr / drainSqKm)
-
+                FNYield = FNFlux_10_6kg_yr / drainSqKm,
+                Yield_10_6kmol_yr_km2 = Flux_10_6kmol_yr / drainSqKm,
+                FNYield_10_6kmol_yr_km2 = FNFlux_10_6kmol_yr / drainSqKm)
+  
 # Glimpse this as well
 dplyr::glimpse(results_table)
+
+## ---------------------------------------------- ##
+            # Export WRTDS Outputs ----
+## ---------------------------------------------- ##
 
 # Combine processed files into a list
 export_list <- list("TrendsTable_GFN_WRTDS.csv" = trends_table,
@@ -232,23 +432,39 @@ pdf_outs <- data.frame("file_name" = wrtds_outs_v0) %>%
   # Recreate the "Stream_Element_ID" column
   dplyr::mutate(Stream_Element_ID = paste0(LTER, "__", stream, "_", chemical)) %>%
   # Remove the PDFs of exploratory graphs
-  dplyr::filter(data_type == "WRTDS_GFN_output.pdf")
+  dplyr::filter(data_type == "WRTDS_GFN_output.pdf") %>%
+  # Remove unwanted chemicals that we have data for
+  dplyr::filter(!chemical %in% c("TN", "TP")) %>%
+  # Keep only rivers that finish the whole workflow!
+  dplyr::filter(Stream_Element_ID %in% done_rivers)
 
 # Glimpse it
 dplyr::glimpse(pdf_outs)
 
+# Identify PDF folder
+## Standard output destination
+pdf_url <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/14pq2oLvs8KIARxlWZ3pvC3e1Dx-PjVxt")
+## Experimental destination
+# pdf_url <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/1RPYELgBlxj6uEO36eQx2BSRwogATPNXB")
+
+# Identify PDFs already in GoogleDrive
+drive_pdfs <- googledrive::drive_ls(path = pdf_url)
+
+# Use that to identify new PDFs!
+new_pdfs <- setdiff(pdf_outs$file_name, drive_pdfs$name)
+
 # Loop across these PDFs and put them into GoogleDrive
-for(report in unique(pdf_outs$file_name)){
-# for(report in "Walker Branch__west fork_DSi_WRTDS_GFN_output.pdf"){
-  
+# for(report in unique(pdf_outs$file_name)){
+## (^^^) Upload *all* PDFs regardless of whether they're in the Drive
+## (vvv) Upload only *new* PDFs
+for(report in new_pdfs){
+
   # Send that report to a GoogleDrive folder
-  googledrive::drive_upload(media = file.path(path, "WRTDS Outputs", report), overwrite = T,
-                            path = googledrive::as_id("https://drive.google.com/drive/folders/1ZG5DnW_fu65bmCgh0GnCYK89QaT9n3Ea"))
-  
-}
+  googledrive::drive_upload(media = file.path(path, "WRTDS Outputs", report),
+                            overwrite = T, path = pdf_url) }
 
 # Clear environment of everything but the filepath, destination URL, and ref_table
-rm(list = setdiff(ls(), c("path", "dest_url", "ref_table")))
+rm(list = setdiff(ls(), c("path", "dest_url", "ref_table", "done_rivers", "done_boots")))
 
 ## ---------------------------------------------- ##
          # Identify Bootstrap Outputs ----
@@ -266,7 +482,9 @@ boot_outs <- data.frame("file_name" = boot_outs_v0) %>%
   tidyr::separate(col = other_content, into = c("stream", "chemical", "data_type"),
                   sep = "_", remove = TRUE, fill = "right", extra = "merge") %>%
   # Recreate the "Stream_Element_ID" column
-  dplyr::mutate(Stream_Element_ID = paste0(LTER, "__", stream, "_", chemical))
+  dplyr::mutate(Stream_Element_ID = paste0(LTER, "__", stream, "_", chemical)) %>%
+  # Keep only rivers that finish the whole workflow!
+  dplyr::filter(Stream_Element_ID %in% done_boots)
 
 # Glimpse it
 dplyr::glimpse(boot_outs)
@@ -333,7 +551,8 @@ str(boot_out_list)
 names(boot_out_list)
 
 # Clear environment of everything but the filepath, destination URL, boot_out_list, & ref_table
-rm(list = setdiff(ls(), c("path", "dest_url", "boot_out_list", "ref_table")))
+rm(list = setdiff(ls(), c("path", "dest_url", "boot_out_list", "ref_table",
+                          "done_rivers", "done_boots")))
 
 ## ---------------------------------------------- ##
           # Process Bootstrap Outputs ----
@@ -356,6 +575,10 @@ boots_pairs <- boot_out_list[["ListPairs_GFN_WRTDS.csv"]]
 
 # Glimpse it
 dplyr::glimpse(boots_pairs)
+
+## ---------------------------------------------- ##
+        # Export Bootstrap Outputs ----
+## ---------------------------------------------- ##
 
 # Combine processed files into a list
 boot_export_list <- list("EGRETCi_GFN_bootstraps.csv" = boots_gfn,

@@ -71,7 +71,7 @@ ggplot()+geom_dumbbell(data=rframe, aes(y=varName, x=vmin, xend=vmax))+
 #keep only columns to run in PCA
 final_mat<-final_center[c(14,18:20,24,25, 37:47)]
 
-colnames(final_mat)[c(1,9,15)]<-c("drainage area", "carbonate & evaporite", "snow & ice")
+colnames(final_mat)[c(1,9,13,15)]<-c("drainage area", "carbonate & evaporite", "impacted", "snow & ice")
 
 #transpose and rename columns
 final_mat_t<-data.frame(t(final_mat))
@@ -153,17 +153,23 @@ col_values<-c("Boreal forest" = cols_final[1],
 col_pal<-list(scale_color_manual(values = col_values),scale_fill_manual(values = col_values))
 
 #plot final PCA figure with siginifcance eigenvctors
-pdf("FinalPCA_052522.pdf", width = 10, height = 7)
+pdf("FinalPCA_121922.pdf", width = 10, height = 7, family = "Times")
 
-ggplot()+geom_segment(loadings, mapping=aes(x=0, y=0, xend=PC1*10, yend=PC2*10, lty=sig),size=0.6)+
+pca_plot<-ggplot()+geom_segment(loadings, mapping=aes(x=0, y=0, xend=PC1*10, yend=PC2*10, lty=sig),size=0.6)+
   geom_segment(loadings, mapping=aes(x=0, y=0, xend=PC1*10, yend=PC2*10), 
                arrow = arrow(angle=22.5,length = unit(0.35,"cm"),
                              type = "closed"), lty="blank", size=0.6)+
   geom_point(pc_loadings, mapping = aes(PC1, PC2, col=Biome), size=4)+theme_classic()+
-  geom_text_repel(data = loadings,aes(PC1*10,PC2*10,label=rowname))+
+  geom_text_repel(data = loadings,aes(PC1*10,PC2*10,label=rowname, family="Times New Roman"), size=6.5)+
   geom_mark_ellipse(pc_loadings, mapping = aes(PC1, PC2, fill=Biome, col=Biome))+
   labs(x= "PC1, 30% variation", y="PC2, 19% variation", col="Biome", lty="PC Significance")+
-  scale_linetype_manual(values=c("dotted", "dashed", "solid"))+col_pal+xlim(-5,5)
+  scale_linetype_manual(values=c("dotted", "dashed", "solid"))+col_pal+xlim(-5,5)+
+  theme(text = element_text(size=20, family="Times New Roman"))
 
 
 dev.off()
+
+
+ggsave("PCATiff.tiff", pca_plot, width = 10, height = 7)
+
+
