@@ -47,9 +47,8 @@ See below for a “tree” of this repository’s content:
 
 ``` r
 supportR::github_tree(repo = "https://github.com/SwampThingPaul/SiSyn",
-                      exclude = c("DataInventory", "Data", "Si-Q long term change",
-                                  "Loadflex", "Merge Site Discharge", "ConcentrationDischarge",
-                                  "Archive"))
+                      exclude = c("DataInventory", "Data", "Si-Q long term change", "Archive",
+                                  "Loadflex", "Merge Site Discharge", "ConcentrationDischarge"))
 ```
 
     ##                                            levelName
@@ -94,54 +93,55 @@ supportR::github_tree(repo = "https://github.com/SwampThingPaul/SiSyn",
     ## 39  ¦   ¦--RandomForestRegression.R                 
     ## 40  ¦   ¦--SiSynRDA.R                               
     ## 41  ¦   °--SiSyn_PCA.R                              
-    ## 42  ¦--README.md                                    
-    ## 43  ¦--Seasonality                                  
-    ## 44  ¦   ¦--DTW.R                                    
-    ## 45  ¦   ¦--DTW_annual.R                             
-    ## 46  ¦   ¦--IntermitentFlowInterpolation.R           
-    ## 47  ¦   °--PORComparison_Q_Si.R                     
-    ## 48  ¦--Sept2022SitesClean                           
-    ## 49  ¦   ¦--CAMELSChem_SiQCheck.R                    
-    ## 50  ¦   ¦--CreateMacroShedsInfo.R                   
-    ## 51  ¦   ¦--DownloadNewKyrcklanDischarge.R           
-    ## 52  ¦   ¦--MacroSheds_Download_Si.R                 
-    ## 53  ¦   °--ParseComoNEON.R                          
-    ## 54  ¦--SiSyn.Rproj                                  
-    ## 55  ¦--Si_monthly_graphs.R                          
-    ## 56  ¦--Si_monthly_synthesis.R                       
-    ## 57  ¦--Site_Information                             
-    ## 58  ¦   ¦--KoeppenGeigerClassification.R            
-    ## 59  ¦   °--WRTDS_Reference_Table.xlsx               
-    ## 60  ¦--StandardizeSiFiles.R                         
-    ## 61  ¦--WRTDS                                        
-    ## 62  ¦   ¦--Archive                                  
-    ## 63  ¦   ¦   °--24 excluded items                    
-    ## 64  ¦   ¦--README.md                                
-    ## 65  ¦   ¦--WRTDS_step-1_find-areas.R                
-    ## 66  ¦   ¦--WRTDS_step-2_wrangling.R                 
-    ## 67  ¦   ¦--WRTDS_step-3B_bootstrap.R                
-    ## 68  ¦   ¦--WRTDS_step-3_analysis.R                  
-    ## 69  ¦   ¦--WRTDS_step-4_results_report.R            
-    ## 70  ¦   °--explore_window.R                         
-    ## 71  °--patrick                                      
-    ## 72      ¦--Analytes by site.Rmd                     
-    ## 73      ¦--Analytes-by-site.html                    
-    ## 74      ¦--DSi and Si_N_P stoich over time.Rmd      
-    ## 75      ¦--DSi-and-Si_N_P-stoich-over-time.html     
-    ## 76      ¦--DSi_WRTDS_effect_sizes.Rmd               
-    ## 77      ¦--DSi_WRTDS_effect_sizes.html              
-    ## 78      ¦--SiSyn data exploration nov 11 data.Rmd   
-    ## 79      ¦--SiSyn-data-exploration-nov-11-data.html  
-    ## 80      ¦--SiSyn_forestplots_Nov2021.Rmd            
-    ## 81      ¦--SiSyn_forestplots_Nov2021.html           
-    ## 82      ¦--Si_N_P-stoich-over-time.html             
-    ## 83      ¦--Summary analysis for Jan 2021 meeting.Rmd
-    ## 84      ¦--index.Rmd                                
-    ## 85      ¦--index.html                               
-    ## 86      ¦--readme                                   
-    ## 87      ¦--seasonality stuff.Rmd                    
-    ## 88      ¦--seasonality-stuff.html                   
-    ## 89      °--sisync data exploration.Rmd
+    ## 42  ¦--README.Rmd                                   
+    ## 43  ¦--README.md                                    
+    ## 44  ¦--Seasonality                                  
+    ## 45  ¦   ¦--DTW.R                                    
+    ## 46  ¦   ¦--DTW_annual.R                             
+    ## 47  ¦   ¦--IntermitentFlowInterpolation.R           
+    ## 48  ¦   °--PORComparison_Q_Si.R                     
+    ## 49  ¦--Sept2022SitesClean                           
+    ## 50  ¦   ¦--CAMELSChem_SiQCheck.R                    
+    ## 51  ¦   ¦--CreateMacroShedsInfo.R                   
+    ## 52  ¦   ¦--DownloadNewKyrcklanDischarge.R           
+    ## 53  ¦   ¦--MacroSheds_Download_Si.R                 
+    ## 54  ¦   °--ParseComoNEON.R                          
+    ## 55  ¦--SiSyn.Rproj                                  
+    ## 56  ¦--Si_monthly_graphs.R                          
+    ## 57  ¦--Si_monthly_synthesis.R                       
+    ## 58  ¦--Site_Information                             
+    ## 59  ¦   ¦--KoeppenGeigerClassification.R            
+    ## 60  ¦   °--WRTDS_Reference_Table.xlsx               
+    ## 61  ¦--StandardizeSiFiles.R                         
+    ## 62  ¦--WRTDS                                        
+    ## 63  ¦   ¦--Archive                                  
+    ## 64  ¦   ¦   °--24 excluded items                    
+    ## 65  ¦   ¦--README.md                                
+    ## 66  ¦   ¦--WRTDS_step-1_find-areas.R                
+    ## 67  ¦   ¦--WRTDS_step-2_wrangling.R                 
+    ## 68  ¦   ¦--WRTDS_step-3B_bootstrap.R                
+    ## 69  ¦   ¦--WRTDS_step-3_analysis.R                  
+    ## 70  ¦   ¦--WRTDS_step-4_results_report.R            
+    ## 71  ¦   °--explore_window.R                         
+    ## 72  °--patrick                                      
+    ## 73      ¦--Analytes by site.Rmd                     
+    ## 74      ¦--Analytes-by-site.html                    
+    ## 75      ¦--DSi and Si_N_P stoich over time.Rmd      
+    ## 76      ¦--DSi-and-Si_N_P-stoich-over-time.html     
+    ## 77      ¦--DSi_WRTDS_effect_sizes.Rmd               
+    ## 78      ¦--DSi_WRTDS_effect_sizes.html              
+    ## 79      ¦--SiSyn data exploration nov 11 data.Rmd   
+    ## 80      ¦--SiSyn-data-exploration-nov-11-data.html  
+    ## 81      ¦--SiSyn_forestplots_Nov2021.Rmd            
+    ## 82      ¦--SiSyn_forestplots_Nov2021.html           
+    ## 83      ¦--Si_N_P-stoich-over-time.html             
+    ## 84      ¦--Summary analysis for Jan 2021 meeting.Rmd
+    ## 85      ¦--index.Rmd                                
+    ## 86      ¦--index.html                               
+    ## 87      ¦--readme                                   
+    ## 88      ¦--seasonality stuff.Rmd                    
+    ## 89      ¦--seasonality-stuff.html                   
+    ## 90      °--sisync data exploration.Rmd
 
 ## Related Repositories
 

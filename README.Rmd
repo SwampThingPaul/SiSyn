@@ -55,9 +55,8 @@ library(supportR)
 
 ```{r github-tree, message = F, warning = F}
 supportR::github_tree(repo = "https://github.com/SwampThingPaul/SiSyn",
-                      exclude = c("DataInventory", "Data", "Si-Q long term change",
-                                  "Loadflex", "Merge Site Discharge", "ConcentrationDischarge",
-                                  "Archive"))
+                      exclude = c("DataInventory", "Data", "Si-Q long term change", "Archive",
+                                  "Loadflex", "Merge Site Discharge", "ConcentrationDischarge"))
 ```
 
 ## Related Repositories
