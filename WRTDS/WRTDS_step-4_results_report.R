@@ -9,7 +9,7 @@
 ## ---------------------------------------------- ##
 # Load libraries
 # install.packages("librarian")
-librarian::shelf(tidyverse, googledrive, NCEAS/scicomptools)
+librarian::shelf(tidyverse, googledrive, scicomptools)
 
 # Clear environment
 rm(list = ls())
@@ -186,6 +186,16 @@ trends_table <- out_list[["TrendsTable_GFN_WRTDS.csv"]]
   
 # Glimpse this
 dplyr::glimpse(trends_table)
+
+## ---------------------------------------------- ##
+  # Process WRTDS Outputs - Flux Bias Stats ----
+## ---------------------------------------------- ##
+
+# Handle trends table
+flux_stats <- out_list[["FluxBias_WRTDS.csv"]]
+
+# Glimpse this
+dplyr::glimpse(flux_stats)
 
 ## ---------------------------------------------- ##
         # Process WRTDS Outputs - GFN ----
@@ -393,6 +403,7 @@ dplyr::glimpse(results_table)
 # Combine processed files into a list
 export_list <- list("TrendsTable_GFN_WRTDS.csv" = trends_table,
                     "GFN_WRTDS.csv" = gfn,
+                    "FluxBias_WRTDS.csv" = flux_stats,
                     "Monthly_GFN_WRTDS.csv" = monthly,
                     "ResultsTable_GFN_WRTDS.csv" = results_table,
                     "ErrorStats_WRTDS.csv" = error_stats)
