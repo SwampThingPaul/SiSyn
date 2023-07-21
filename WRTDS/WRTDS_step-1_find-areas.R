@@ -12,7 +12,7 @@
 ## ---------------------------------------------- ##
 # Read needed libraries
 # install.packages("librarian")
-librarian::shelf(tidyverse, googledrive, sf, terra, nngeo, NCEAS/scicomptools)
+librarian::shelf(tidyverse, googledrive, sf, terra, nngeo, scicomptools)
 
 # Clear environment
 rm(list = ls())
@@ -34,15 +34,15 @@ rm(list = ls())
 
 # Identify reference table Google ID
 ref_id <- googledrive::drive_ls(as_id("https://drive.google.com/drive/u/0/folders/0AIPkWhVuXjqFUk9PVA")) %>%
-  dplyr::filter(name == "WRTDS_Reference_Table")
+  dplyr::filter(name == "Site_Reference_Table")
 
 # Download ref table (overwriting previous downloads)
 googledrive::drive_download(file = as_id(ref_id),
-                            path = file.path(path, "WRTDS_Reference_Table.xlsx"),
+                            path = file.path(path, "Site_Reference_Table.xlsx"),
                             overwrite = T)
 
 # Read in reference table of all sites
-sites_v0 <- readxl::read_excel(path = file.path(path, "WRTDS_Reference_Table.xlsx"))
+sites_v0 <- readxl::read_excel(path = file.path(path, "Site_Reference_Table.xlsx"))
 
 # Do some pre-processing to pare down to only desired information
 sites <- sites_v0 %>%
@@ -52,7 +52,10 @@ sites <- sites_v0 %>%
   dplyr::select(-Use_WRTDS) %>%
   # Make a uniqueID column
   dplyr::mutate(uniqueID = paste0(LTER, "_", Stream_Name), 
-                .before = dplyr::everything())
+                .before = dplyr::everything()) %>%
+  # Make lat/long truly numeric
+  dplyr::mutate(Latitude = as.numeric(Latitude),
+                Longitude = as.numeric(Longitude))
 
 # Glimpse that
 dplyr::glimpse(sites)
