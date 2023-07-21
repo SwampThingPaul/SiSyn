@@ -248,6 +248,12 @@ for(river in rivers_to_do){
     egret_list <- EGRET::setPA(eList = egret_list, paStart = 5, paLong = 3)
     egret_list_out <- EGRET::setPA(eList = egret_list_out, paStart = 5, paLong = 3) }
   
+  # Calculate flux bias statistic
+  flux_bias <- EGRET::fluxBiasStat(localSample = egret_list[["Sample"]])
+  
+  # Export that
+  write.csv(x = flux_bias, file = file.path(path, "WRTDS Outputs", paste0(out_prefix, "FluxBias_WRTDS.csv")), row.names = F, na = "")
+  
   # Fit original model
   egret_estimation <- EGRET::modelEstimation(eList = egret_list, windowS = 0.5,
                                              minNumObs = 50, verbose = F)
