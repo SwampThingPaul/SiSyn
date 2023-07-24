@@ -249,12 +249,6 @@ for(river in rivers_to_do){ # actual loop
     egret_list <- EGRET::setPA(eList = egret_list, paStart = 5, paLong = 3)
     egret_list_out <- EGRET::setPA(eList = egret_list_out, paStart = 5, paLong = 3) }
   
-  # Calculate flux bias statistic
-  flux_bias <- EGRET::fluxBiasStat(localSample = egret_list[["Sample"]])
-  
-  # Export that
-  write.csv(x = flux_bias, file = file.path(path, "WRTDS Outputs", paste0(out_prefix, "FluxBias_WRTDS.csv")), row.names = F, na = "")
-  
   # Fit original model
   egret_estimation <- EGRET::modelEstimation(eList = egret_list, windowS = 0.5,
                                              minNumObs = 50, verbose = F)
@@ -264,6 +258,12 @@ for(river in rivers_to_do){ # actual loop
   
   # Save the error stats out
   write.csv(x = egret_error, file = file.path(path, "WRTDS Outputs", paste0(out_prefix, "ErrorStats_WRTDS.csv")), row.names = F, na = "")
+  
+  # Calculate flux bias statistic
+  flux_bias <- EGRET::fluxBiasStat(localSample = EGRET::getSample(x = egret_estimation))
+  
+  # Export that
+  write.csv(x = flux_bias, file = file.path(path, "WRTDS Outputs", paste0(out_prefix, "FluxBias_WRTDS.csv")), row.names = F, na = "")
   
   # Create PDF report of preliminary graphs
   HERON::egret_report(eList_estim = egret_estimation, eList_series = egret_list_out,
