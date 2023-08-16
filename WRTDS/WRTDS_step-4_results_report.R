@@ -236,6 +236,10 @@ monthly <- out_list[["Monthly_GFN_WRTDS.csv"]] %>%
     !LTER %in% c("LUQ", "MCM") & Month %in% 4:6 ~ "snowmelt",
     !LTER %in% c("LUQ", "MCM") & Month %in% 7:9 ~ "growing season",
     !LTER %in% c("LUQ", "MCM") & Month %in% 10:12 ~ "fall",
+    LTER == "MCM" & Month %in% 12 ~ "snowmelt",
+    LTER == "MCM" & Month %in% 1 ~ "growing season",
+    LTER == "MCM" & Month %in% 2 ~ "fall",
+    LTER == "MCM" & Month %in% 3:11 ~ "winter",
     TRUE ~ ""), .after = Month) %>%
   # Rename columns to be more explicit about starting units
   dplyr::rename(Discharge_cms = Q,
