@@ -405,12 +405,12 @@ dplyr::glimpse(results_table)
 ## ---------------------------------------------- ##
 
 # Combine processed files into a list
-export_list <- list("TrendsTable_GFN_WRTDS.csv" = trends_table,
-                    "GFN_WRTDS.csv" = gfn,
-                    "FluxBias_WRTDS.csv" = flux_stats,
-                    "Monthly_GFN_WRTDS.csv" = monthly,
-                    "ResultsTable_GFN_WRTDS.csv" = results_table,
-                    "ErrorStats_WRTDS.csv" = error_stats)
+export_list <- list("WRTDS_trends.csv" = trends_table,
+                    "WRTDS_daily.csv" = gfn,
+                    "WRTDS_monthly.csv" = monthly,
+                    "WRTDS_annual.csv" = results_table,
+                    "WRTDS_flux_bias.csv" = flux_stats,
+                    "WRTDS_error_stats.csv" = error_stats)
 
 # Loop across the list to export locally and to GoogleDrive
 ## Note that the "GFN_WRTDS.csv" file is *huge* so it takes a few seconds to upload
@@ -596,9 +596,9 @@ dplyr::glimpse(boots_pairs)
 ## ---------------------------------------------- ##
 
 # Combine processed files into a list
-boot_export_list <- list("EGRETCi_GFN_bootstraps.csv" = boots_gfn,
-                         "EGRETCi_GFN_Trend.csv" = boots_trends,
-                         "ListPairs_GFN_WRTDS.csv" = boots_pairs)
+boot_export_list <- list("WRTDS_EGRETCi_bootstraps.csv" = boots_gfn,
+                         "WRTDS_EGRETCi_trends.csv" = boots_trends,
+                         "WRTDS_GFN.csv" = boots_pairs)
 
 # Loop across the list to export locally and to GoogleDrive
 ## Note that the "GFN_WRTDS.csv" file is *huge* so it takes a few seconds to upload
