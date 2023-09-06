@@ -233,10 +233,10 @@ monthly <- out_list[["Monthly_GFN_WRTDS.csv"]] %>%
   # Compute season of each month
   dplyr::mutate(season = dplyr::case_when(
     !LTER %in% c("LUQ", "MCM") & Month %in% 1:3 ~ "winter",
-    !LTER %in% c("LUQ", "MCM") & Month %in% 4:6 ~ "snowmelt",
+    !LTER %in% c("LUQ", "MCM") & Month %in% 4:6 ~ "freshet",
     !LTER %in% c("LUQ", "MCM") & Month %in% 7:9 ~ "growing season",
     !LTER %in% c("LUQ", "MCM") & Month %in% 10:12 ~ "fall",
-    LTER == "MCM" & Month %in% 12 ~ "snowmelt",
+    LTER == "MCM" & Month %in% 12 ~ "freshet",
     LTER == "MCM" & Month %in% 1 ~ "growing season",
     LTER == "MCM" & Month %in% 2 ~ "fall",
     LTER == "MCM" & Month %in% 3:11 ~ "winter",
