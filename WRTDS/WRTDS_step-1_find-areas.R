@@ -31,7 +31,6 @@ rm(list = ls())
 ## 4) Copy the "authorization code"
 ## 5) Paste it into the field in the Console
 
-
 # Identify reference table Google ID
 ref_id <- googledrive::drive_ls(as_id("https://drive.google.com/drive/u/0/folders/0AIPkWhVuXjqFUk9PVA")) %>%
   dplyr::filter(name == "Site_Reference_Table")
@@ -45,7 +44,7 @@ googledrive::drive_download(file = as_id(ref_id),
 sites_v0 <- readxl::read_excel(path = file.path(path, "Site_Reference_Table.xlsx"))
 
 # Do some pre-processing to pare down to only desired information
-sites <- sites_v0 %>%
+sites_v1 <- sites_v0 %>%
   # Filter out sites not used in WRTDS
   dplyr::filter(Use_WRTDS != "No") %>%
   # Drop the WRTDS column now that we've subsetted by it
@@ -58,13 +57,15 @@ sites <- sites_v0 %>%
                 Longitude = as.numeric(Longitude))
 
 # Glimpse that
-dplyr::glimpse(sites)
+dplyr::glimpse(sites_v1)
 
-# Check for missing coordinates
-sites %>%
-  dplyr::filter(is.na(Latitude) | is.na(Longitude)) %>%
-  unique()
-## 0 rows means all is good!
+# Check for any sites that lack both drainage areas and coordinates (need one or other)
+sites <- sites_v1 %>%
+  dplyr::filter((!is.na(Latitude) & !is.na(Longitude)) | !is.na(drainSqKm))
+
+# What do we lose?
+setdiff(sites_v1$uniqueID, sites$uniqueID)
+## Any names here need to have coordinates (or area) added to the site reference table
 
 # Check for invalid coordinates
 ## Bad longitudes
