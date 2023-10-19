@@ -478,7 +478,7 @@ d5 <- discharge %>%
 
 # Make one for chemistry as well
 c1 <- chem_main %>%
-  dplyr::select(Stream_Name = Site.Stream.Name) %>%
+  dplyr::select(Stream_Name) %>%
   unique() %>%
   dplyr::mutate(in_c1 = 1)
 c2 <- chem_v2 %>%
