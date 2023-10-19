@@ -141,7 +141,7 @@ disc_v2 <- disc_main %>%
   # Convert date to true date format
   dplyr::mutate(Date = as.Date(Date, "%Y-%m-%d")) %>%
   # Average through duplicate LTER-stream-date combinations to get rid of them
-  dplyr::group_by(LTER, Discharge_File_Name, Date) %>%
+  dplyr::group_by(Discharge_File_Name, Date) %>%
   dplyr::summarize(Qcms = mean(Qcms, na.rm = T)) %>%
   dplyr::ungroup() %>%
   # Drop any NAs in the discharge or date columns
@@ -150,11 +150,7 @@ disc_v2 <- disc_main %>%
   ## Keep all data for all other rivers
   dplyr::filter(Discharge_File_Name != "COLUMBIA_RIVER_AT_PORT_WESTWARD_Q" |
                   (Discharge_File_Name == "COLUMBIA_RIVER_AT_PORT_WESTWARD_Q" &
-                     Date >= as.Date("1992-10-01"))) %>%
-  # Drop LTER column (it is flawed and not easily salvageable)
-  ## Issue is it looks like it is just the first three characters of the stream name
-  ## This only works for true LTER sites and GRO sites
-  dplyr::select(-LTER)
+                     Date >= as.Date("1992-10-01")))
 
 # Take a look
 dplyr::glimpse(disc_v2)
@@ -179,10 +175,9 @@ chem_v2 <- chem_main %>%
     variable == "NH4" ~ (((value / 10^6) * 14.0067) * 1000),
     variable == "TN" ~ (((value / 10^6) * 14.0067) * 1000))) %>%
   # Drop units, site, and value columns because they're outdated now
-  dplyr::select(-units, -site, -value) %>%
+  dplyr::select(-units, -value) %>%
   # Rename some columns
-  dplyr::rename(Stream_Name = Site.Stream.Name,
-                Date = Sampling.Date) %>%
+  dplyr::rename(Date = date) %>%
   # Filter out streams not found in the name look-up 
   ## The lookup table is an exhaustive set of all sites to include
   dplyr::filter(Stream_Name %in% name_lkup$Stream_Name) %>%
@@ -222,7 +217,7 @@ chem_v2 <- chem_main %>%
 dplyr::glimpse(chem_v2)
 
 # Check for lost/gained streams
-supportR::diff_check(old = unique(chem_main$site),
+supportR::diff_check(old = unique(chem_main$Stream_Name),
                      new = unique(chem_v2$Stream_Name))
 
 ## ---------------------------------------------- ##
