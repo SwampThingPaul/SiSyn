@@ -96,7 +96,8 @@ few_data <- c(
   ## "Error in runSurvReg(SampleCrossV$DecYear[i], SampleCrossV$LogQ[i], DecLow,  : minNumUncen is greater than total number of samples"
   ## Note: error timing is 1-3 minutes despite `modelEstimation` being an early function
   "AND__GSWS06_NOx", "MCM__Priscu Stream at B1_NH4", "MCM__Von Guerard Stream at F6_NH4",
-  "MCM__Von Guerard Stream at F6_NH4", "NIVA__VESENUM_P",
+  "MCM__Von Guerard Stream at F6_NH4", "NIVA__VESENUM_P", "NIVA__OSTEGLO_NH4",
+  
   # Error in `EGRET::runSeries`
   ## "Error in runSurvReg(estPtYear, estPtLogQ, DecLow, DecHigh, localSample,  : minNumObs is greater than total number of samples"
   ## Note: error timing is near-instant
