@@ -129,6 +129,11 @@ basin_simp <- all_basins %>%
 # Re-check structure
 str(basin_simp)
 
+# Drop the individual regional/continental objects
+# Clean up environment to have less data stored as we move forward
+rm(list = c("arctic", "asia", "oceania", "greenland", "north_am", 
+            "south_am", "siberia", "africa", "europe"))
+
 ## ---------------------------------------------- ##
            # Identify Focal Polygon ----
 ## ---------------------------------------------- ##
@@ -177,9 +182,6 @@ sites_actual$SUB_AREA <- basin_needs$SUB_AREA[match(sites_actual$HYBAS_ID, basin
 dplyr::glimpse(sites_actual)
 ## This object has polygons defined at the finest possible level
 ## We may want to visualize aggregated basins so let's go that direction now
-
-# Clean up environment to have less data stored as we move forward
-rm(list = setdiff(ls(), c('path', 'sites', 'sites_actual', 'basin_needs')))
 
 ## ---------------------------------------------- ##
       # Load Modified HydroSHEDS Functions ----
@@ -245,14 +247,11 @@ find_all_up <- function(HYBAS, HYBAS.ID, ignore.endorheic = F, split = F){
 # rather than stream name to save on computation time
 
 # Let's not waste time on sites where we already know the drainage basin area
-known_area <- dplyr::filter(sites_actual, !is.na(drainSqKm))
+known_area <- dplyr::filter(sites_v1, !is.na(drainSqKm))
 
 # Split off only sites where we don't know area
 unk_area <- sites_actual %>%
   dplyr::filter(is.na(drainSqKm))
-
-# Check that we didn't somehow lose rows here
-nrow(known_area) + nrow(unk_area) == nrow(sites_actual)
 
 # Create an empty list
 id_list <- list()
@@ -287,7 +286,7 @@ for(focal_poly in unique(unk_area$HYBAS_ID)){
   fxn_out <- find_all_up(HYBAS = basin_needs, HYBAS.ID = focal_poly)
   
   # Make a dataframe of this
-  hydro_df <- data.frame(focal_poly = rep(focal_poly, (length(fxn_out) + 1)),
+  hydro_df <- data.frame(focal_poly = as.character(rep(focal_poly, (length(fxn_out) + 1))),
                          hybas_id = c(focal_poly, fxn_out))
   
   # Save this out
@@ -304,7 +303,8 @@ for(focal_poly in unique(unk_area$HYBAS_ID)){
 
 # Unlist the list
 hydro_out <- id_list %>%
-  purrr::map_dfr(dplyr::select, dplyr::everything())
+  purrr::list_rbind(x = .) %>%
+  dplyr::filter(!is.na(focal_poly))
 
 # Check the structure
 dplyr::glimpse(hydro_out)
@@ -333,7 +333,8 @@ hydro_poly_df <- hydro_out %>%
   # Then drop geometry
   sf::st_drop_geometry() %>%
   # Get a character version of the HYBAS ID and drop the old one
-  dplyr::mutate(HYBAS_ID = as.character(focal_poly), .before = dplyr::everything()) %>%
+  dplyr::mutate(HYBAS_ID = as.character(focal_poly), 
+                .before = dplyr::everything()) %>%
   dplyr::select(-focal_poly)
 
 # Check structure
@@ -358,7 +359,7 @@ ref_table_actual <- known_area %>%
   # Drop geometry
   sf::st_drop_geometry() %>%
   # Remove some unneeded columns
-  dplyr::select(-uniqueID, -ixn, -HYBAS_ID, -SUB_AREA)
+  dplyr::select(-uniqueID, -ixn, -HYBAS_ID)
 
 # Glimpse it
 dplyr::glimpse(ref_table_actual)
@@ -369,11 +370,16 @@ nrow(filter(ref_table_actual, is.na(drainSqKm)))
 nrow(filter(ref_table_actual, nchar(drainSqKm) == 0))
 ## Both above should return "0"
 
+# Drop any that occur
+ref_table_final <- ref_table_actual %>%
+  dplyr::filter(!is.na(drainSqKm)) %>%
+  dplyr::filter(drainSqKm != 0)
+
 # Define name/path of this file
 out_name <- file.path(path, "WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv")
 
 # Save this locally
-write.csv(x = ref_table_actual, na = "", row.names = F, file = out_name)
+write.csv(x = ref_table_final, na = "", row.names = F, file = out_name)
 
 # Now upload this as well to the GoogleDrive
 googledrive::drive_upload(media = out_name, overwrite = T,
