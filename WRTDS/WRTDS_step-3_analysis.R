@@ -146,8 +146,8 @@ rivers_to_do <- setdiff(x = unique(good_rivers),
 
 # Loop across rivers and elements to run WRTDS workflow!
 for(river in rivers_to_do){ # actual loop
-# for(river in rivers_to_do[1:3]){ # test of several rivers
-# for(river in "AND__GSMACK_DSi"){ # test a particular river
+  # for(river in rivers_to_do[1:3]){ # test of several rivers
+  # for(river in "AND__GSMACK_DSi"){ # test a particular river
   
   # Loop - Set Up Steps ----
   
@@ -226,20 +226,20 @@ for(river in rivers_to_do){ # actual loop
   egret_list_out <- EGRET::runSeries(eList = egret_list, windowSide = 11, minNumObs = 50,
                                      verbose = F, windowS = 0.5)
   
-    # Handle rivers that have blank time periods
-    if(stream_id == "USGS__Mississippi River at Grafton"){
-      egret_list_out <- EGRET::blankTime(eList = egret_list_out, startBlank = "1981-10-01", 
-                                     endBlank = "1982-09-29") }
-    if(stream_id == "USGS__PICEANCE CREEK RYAN GULCH"){
-      egret_list_out <- EGRET::blankTime(eList = egret_list_out, startBlank = "1998-10-01",
-                                     endBlank = "1999-09-30") }
-    if(stream_id == "USGS__YAMPA RIVER AT DEERLODGE PARK"){
-      egret_list_out <- EGRET::blankTime(eList = egret_list_out, startBlank = "1994-10-01",
-                                     endBlank = "1996-09-30") }
-    if(stream_id == "USGS__YUKON RIVER"){
-      egret_list_out <- EGRET::blankTime(eList = egret_list_out, startBlank = "1996-10-01",
-                                     endBlank = "2001-09-29") }
-    
+  # Handle rivers that have blank time periods
+  if(stream_id == "USGS__Mississippi River at Grafton"){
+    egret_list_out <- EGRET::blankTime(eList = egret_list_out, startBlank = "1981-10-01", 
+                                       endBlank = "1982-09-29") }
+  if(stream_id == "USGS__PICEANCE CREEK RYAN GULCH"){
+    egret_list_out <- EGRET::blankTime(eList = egret_list_out, startBlank = "1998-10-01",
+                                       endBlank = "1999-09-30") }
+  if(stream_id == "USGS__YAMPA RIVER AT DEERLODGE PARK"){
+    egret_list_out <- EGRET::blankTime(eList = egret_list_out, startBlank = "1994-10-01",
+                                       endBlank = "1996-09-30") }
+  if(stream_id == "USGS__YUKON RIVER"){
+    egret_list_out <- EGRET::blankTime(eList = egret_list_out, startBlank = "1996-10-01",
+                                       endBlank = "2001-09-29") }
+  
   # Loop - Period of Absence Tweaks ----
   
   # Some rivers just need the period of absence tweaked
@@ -260,17 +260,14 @@ for(river in rivers_to_do){ # actual loop
   egret_estimation <- EGRET::modelEstimation(eList = egret_list, windowS = 0.5,
                                              minNumObs = 50, verbose = F)
   
-  # Fit WRTDS Kalman 
-  egret_kalman <- EGRET::WRTDSKalman(eList = egret_list, niter = 200)
-  
   # Identify error statistics
-  egret_error <- EGRET::errorStats(eList = egret_kalman)
+  egret_error <- EGRET::errorStats(eList = egret_estimation)
   
   # Save the error stats out
   write.csv(x = egret_error, file = file.path(path, "WRTDS Outputs", paste0(out_prefix, "ErrorStats_WRTDS.csv")), row.names = F, na = "")
   
   # Calculate flux bias statistic
-  flux_bias <- EGRET::fluxBiasStat(localSample = EGRET::getSample(x = egret_kalman))
+  flux_bias <- EGRET::fluxBiasStat(localSample = EGRET::getSample(x = egret_estimation))
   
   # Export that
   write.csv(x = flux_bias, file = file.path(path, "WRTDS Outputs", paste0(out_prefix, "FluxBias_WRTDS.csv")), row.names = F, na = "")
@@ -281,34 +278,28 @@ for(river in rivers_to_do){ # actual loop
   
   # Create annual averages
   egret_annual <- EGRET::tableResults(eList = egret_list_out)
-  # egreg_annual_kalman <- setupYears(eList_K$Daily)
   ## Can't silence this function... >:(
   
   # Export that as a CSV also
-  write.csv(x = egret_annual, file.path(path, "WRTDS Outputs", paste0(out_prefix, "AnnualResults_GFN_WRTDS.csv")), row.names = F, na = "")
-  # write.csv(x = egret_annual_kalman, file.path(path, "WRTDS Outputs", paste0(out_prefix, "AnnualResults_Kalman_WRTDS.csv")), row.names = F, na = "")
+  write.csv(x = egret_annual, file.path(path, "WRTDS Outputs", paste0(out_prefix, "ResultsTable_GFN_WRTDS.csv")), row.names = F, na = "")
   
   # Identify monthly results
   egret_monthly <- EGRET::calculateMonthlyResults(eList = egret_list_out)
-  # egret_monthly_kalman <- EGRET::calculateMonthlyResults(eList = egret_kalman)
   
   # Export that
   write.csv(x = egret_monthly, file.path(path, "WRTDS Outputs", paste0(out_prefix, "Monthly_GFN_WRTDS.csv")), row.names = F, na = "")
-  # write.csv(x = egret_monthly_kalman, file.path(path, "WRTDS Outputs", paste0(out_prefix, "Monthly_Kalman_WRTDS.csv")), row.names = F, na = "")
   
   # Extract daily chemical value from run
   egret_concentration <- egret_list_out$Daily
-  # egret_concentration_kalman <- egret_kalman$Daily
   
   # Export that as well
-  write.csv(x = egret_concentration, file.path(path, "WRTDS Outputs", paste0(out_prefix, "Daily_GFN_WRTDS.csv")), row.names = F, na = "")
-  # write.csv(x = egret_concentration_kalman, file.path(path, "WRTDS Outputs", paste0(out_prefix, "Daily_Kalman_WRTDS.csv")), row.names = F, na = "")
+  write.csv(x = egret_concentration, file.path(path, "WRTDS Outputs", paste0(out_prefix, "GFN_WRTDS.csv")), row.names = F, na = "")
   
   # Get flow normalized trends (flux and concentration)
-  egret_trends <- HERON::egret_trends(eList_series = egret_list_out, flux_unit = 8)
+  egret_flownorm <- HERON::egret_trends(eList_series = egret_list_out, flux_unit = 8)
   
   # Export it!
-  write.csv(x = egret_trends, file.path(path, "WRTDS Outputs", paste0(out_prefix, "TrendsTable_GFN_WRTDS.csv")), row.names = F, na = "")
+  write.csv(x = egret_flownorm, file.path(path, "WRTDS Outputs", paste0(out_prefix, "TrendsTable_GFN_WRTDS.csv")), row.names = F, na = "")
   
   # Grab the end processing time
   end <- Sys.time()
