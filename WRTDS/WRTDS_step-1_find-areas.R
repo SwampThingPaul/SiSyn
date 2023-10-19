@@ -20,11 +20,13 @@ rm(list = ls())
 # Identify path to location of shared data
 (path <- scicomptools::wd_loc(local = F, remote_path = file.path('/', "home", "shares", "lter-si", "si-watershed-extract")))
 
-# Site coordinate retrieval and preparation --------------------
+## ---------------------------------------------- ##
+        # Site Coordinate Preparation ----
+## ---------------------------------------------- ##
 
 # If you've never used the `googledrive` R package, you'll need to "authorize" it
 ## 1) Run the below line with your Google email that has access to the needed folders
-# googledrive::drive_auth(email = "lyon.nceas.ucsb.edu")
+# googledrive::drive_auth(email = "...@gmail.com")
 ## 1B) Choose which Google account to proceed with
 ## 2) Check the "see, edit, create, and ..." box
 ## 3) Click "Continue" at the bottom
@@ -59,23 +61,35 @@ sites_v1 <- sites_v0 %>%
 # Glimpse that
 dplyr::glimpse(sites_v1)
 
-# Check for any sites that lack both drainage areas and coordinates (need one or other)
-sites_v2 <- sites_v1 %>%
-  dplyr::filter((!is.na(Latitude) & !is.na(Longitude)) | !is.na(drainSqKm))
+# Split off sites where drainage basin area is known
+known_area <- sites_v1 %>%
+  dplyr::filter(is.na(drainSqKm) == F)
 
-# What do we lose?
-setdiff(sites_v1$uniqueID, sites_v2$uniqueID)
-## Any names here need to have coordinates (or area) added to the site reference table
+# Split off where area is NOT known
+unk_area <- sites_v1 %>%
+  dplyr::filter(is.na(drainSqKm) == T)
 
-# Drop invalid coordinates
-sites <- sites_v2 %>%
-  dplyr::filter(abs(Longitude) <= 180 & abs(Latitude) <= 90)
+# Should be all of the data in either one or the other
+nrow(known_area) + nrow(unk_area)
+nrow(sites_v1)
+
+# If we don't know area, we need coordinates in lat / long!
+unk_area %>% 
+  dplyr::filter(is.na(Latitude) | is.na(Longitude) |
+                  abs(Latitude) > 90 | abs(Longitude) > 180) %>%
+  dplyr::pull(uniqueID)
+## Anything here needs to have areas OR coordinates added _in the reference table_
+## If MCM, needs area *directly*
+
+# Drop malformed coordinates
+unk_v2 <- unk_area %>%
+  dplyr::filter(abs(Latitude) <= 90 & abs(Longitude) <= 180)
 
 # What sites had bad coordinates?
-setdiff(sites_v2$uniqueID, sites$uniqueID)
+setdiff(unk_area$uniqueID, unk_v2$uniqueID)
 
 # Get an explicitly spatial version
-sites_spatial <- sf::st_as_sf(sites, coords = c("Longitude", "Latitude"), crs = 4326)
+sites_spatial <- sf::st_as_sf(unk_v2, coords = c("Longitude", "Latitude"), crs = 4326)
 
 # Check it out
 str(sites_spatial)
