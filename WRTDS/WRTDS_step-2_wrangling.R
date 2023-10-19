@@ -23,12 +23,12 @@ dir.create(path = file.path(path, "WRTDS Inputs"), showWarnings = F)
 
 # Define the names of the Drive files we need
 file_names <- c("WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv", # No.1 Ref table
-                "UpdatedAll_Q_master_10272022.csv", # No.2 Main discharge
-                "20221030_masterdata_chem.csv") # No.3 Main chemistry
+                "Discharge_master_10132023.csv", # No.2 Main discharge
+                "20231018_masterdata_chem.csv") # No.3 Main chemistry
 
 # Find those files' IDs
 ids <- googledrive::drive_ls(as_id("https://drive.google.com/drive/u/0/folders/15FEoe2vu3OAqMQHqdQ9XKpFboR4DvS9M"), pattern = "WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv") %>%
-  dplyr::bind_rows(googledrive::drive_ls(as_id("https://drive.google.com/drive/u/0/folders/1hbkUsTdo4WAEUnlPReOUuXdeeXm92mg-"), type = "csv",  pattern = "UpdatedAll_Q_master_")) %>%
+  dplyr::bind_rows(googledrive::drive_ls(as_id("https://drive.google.com/drive/u/0/folders/1hbkUsTdo4WAEUnlPReOUuXdeeXm92mg-"), type = "csv",  pattern = "Discharge_master_")) %>%
   dplyr::bind_rows(googledrive::drive_ls(as_id("https://drive.google.com/drive/u/0/folders/1dTENIB5W2ClgW0z-8NbjqARiaGO2_A7W"), pattern = "_masterdata_chem.csv")) %>%
   ## And filter out any extraneous files
   dplyr::filter(name %in% file_names)
