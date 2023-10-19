@@ -131,11 +131,18 @@ done_rivers <- data.frame("file" = dir(path = file.path(path, "WRTDS Loop Diagno
   dplyr::mutate(river = gsub(pattern = "\\_Loop\\_Diagnostic.csv", replacement = "", x = file))
 
 # Set of problem rivers to drop from the loop
-bad_rivers <- c()
+bad_rivers <- c( )
 
 # Identify rivers to run
 rivers_to_do <- setdiff(x = unique(good_rivers), 
                         y = c(unique(done_rivers$river), bad_rivers))
+
+# Kalman step throws the following error:
+## Pseudo only supported after running modelEstimation
+## Please double check that the Sample dataframe is correctly defined.
+## Missing columns:ConcLowConcHighConcAve
+## Error in `[.data.frame`(localSample, , c("Julian", "ConcAve")) : 
+##  undefined columns selected
 
 # Loop across rivers and elements to run WRTDS workflow!
 for(river in rivers_to_do){ # actual loop
@@ -252,8 +259,9 @@ for(river in rivers_to_do){ # actual loop
   # Fit original model
   egret_estimation <- EGRET::modelEstimation(eList = egret_list, windowS = 0.5,
                                              minNumObs = 50, verbose = F)
+  
   # Fit WRTDS Kalman 
-  egret_kalman <- WRTDSKalman(eList = egret_list, niter = 200)
+  egret_kalman <- EGRET::WRTDSKalman(eList = egret_list, niter = 200)
   
   # Identify error statistics
   egret_error <- EGRET::errorStats(eList = egret_kalman)
@@ -273,28 +281,28 @@ for(river in rivers_to_do){ # actual loop
   
   # Create annual averages
   egret_annual <- EGRET::tableResults(eList = egret_list_out)
-  egreg_annual_kalman <- setupYears(eList_K$Daily)
+  # egreg_annual_kalman <- setupYears(eList_K$Daily)
   ## Can't silence this function... >:(
   
   # Export that as a CSV also
   write.csv(x = egret_annual, file.path(path, "WRTDS Outputs", paste0(out_prefix, "AnnualResults_GFN_WRTDS.csv")), row.names = F, na = "")
-  write.csv(x = egret_annual_kalman, file.path(path, "WRTDS Outputs", paste0(out_prefix, "AnnualResults_Kalman_WRTDS.csv")), row.names = F, na = "")
+  # write.csv(x = egret_annual_kalman, file.path(path, "WRTDS Outputs", paste0(out_prefix, "AnnualResults_Kalman_WRTDS.csv")), row.names = F, na = "")
   
   # Identify monthly results
   egret_monthly <- EGRET::calculateMonthlyResults(eList = egret_list_out)
-  egret_monthly_kalman <- EGRET::calculateMonthlyResults(eList = egret_kalman)
+  # egret_monthly_kalman <- EGRET::calculateMonthlyResults(eList = egret_kalman)
   
   # Export that
   write.csv(x = egret_monthly, file.path(path, "WRTDS Outputs", paste0(out_prefix, "Monthly_GFN_WRTDS.csv")), row.names = F, na = "")
-  write.csv(x = egret_monthly_kalman, file.path(path, "WRTDS Outputs", paste0(out_prefix, "Monthly_Kalman_WRTDS.csv")), row.names = F, na = "")
+  # write.csv(x = egret_monthly_kalman, file.path(path, "WRTDS Outputs", paste0(out_prefix, "Monthly_Kalman_WRTDS.csv")), row.names = F, na = "")
   
   # Extract daily chemical value from run
   egret_concentration <- egret_list_out$Daily
-  egret_concentration_kalman <- egret_kalman$Daily
+  # egret_concentration_kalman <- egret_kalman$Daily
   
   # Export that as well
   write.csv(x = egret_concentration, file.path(path, "WRTDS Outputs", paste0(out_prefix, "Daily_GFN_WRTDS.csv")), row.names = F, na = "")
-  write.csv(x = egret_concentration_kalman, file.path(path, "WRTDS Outputs", paste0(out_prefix, "Daily_Kalman_WRTDS.csv")), row.names = F, na = "")
+  # write.csv(x = egret_concentration_kalman, file.path(path, "WRTDS Outputs", paste0(out_prefix, "Daily_Kalman_WRTDS.csv")), row.names = F, na = "")
   
   # Get flow normalized trends (flux and concentration)
   egret_trends <- HERON::egret_trends(eList_series = egret_list_out, flux_unit = 8)
