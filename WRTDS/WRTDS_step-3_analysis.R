@@ -138,11 +138,11 @@ rivers_to_do <- setdiff(x = unique(good_rivers),
                         y = c(unique(done_rivers$river), bad_rivers))
 
 # Kalman step throws the following error:
-## Pseudo only supported after running modelEstimation
+## "Pseudo only supported after running modelEstimation
 ## Please double check that the Sample dataframe is correctly defined.
 ## Missing columns:ConcLowConcHighConcAve
 ## Error in `[.data.frame`(localSample, , c("Julian", "ConcAve")) : 
-##  undefined columns selected
+##  undefined columns selected"
 
 # Loop across rivers and elements to run WRTDS workflow!
 for(river in rivers_to_do){ # actual loop
