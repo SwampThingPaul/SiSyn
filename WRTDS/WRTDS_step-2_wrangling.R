@@ -72,13 +72,13 @@ disc_main <- disc_raw %>%
 # Wrangle chemistry as well
 chem_main <- chem_raw %>%
   # Fix some Finnish site names that get messed up by some stage of this wrangling
-  dplyr::mutate(site = gsub(pattern = "[<]e4[>]", replacement = "a", x = site)) %>%
-  dplyr::mutate(site = gsub(pattern = "[<]f6[>]", replacement = "o", x = site)) %>%
+  # dplyr::mutate(site = gsub(pattern = "[<]e4[>]", replacement = "a", x = site)) %>%
+  # dplyr::mutate(site = gsub(pattern = "[<]f6[>]", replacement = "o", x = site)) %>%
   # Need to fix in both 'site name' columns
-  dplyr::mutate(Site.Stream.Name = gsub(pattern = "[<]e4[>]", replacement = "a",
-                                        x = Site.Stream.Name)) %>%
-  dplyr::mutate(Site.Stream.Name = gsub(pattern = "[<]f6[>]", replacement = "o",
-                                        x = Site.Stream.Name)) %>%
+  dplyr::mutate(Stream_Name = gsub(pattern = "[<]e4[>]", replacement = "a", 
+                                   x = Stream_Name)) %>%
+  dplyr::mutate(Stream_Name = gsub(pattern = "[<]f6[>]", replacement = "o",
+                                   x = Stream_Name)) %>%
   # Drop all chemicals other than the core ones we're interested in
   dplyr::filter(variable %in% c("SRP", "PO4", "DSi", "NO3", "NOx", "NH4"))
 
