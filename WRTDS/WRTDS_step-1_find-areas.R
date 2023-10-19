@@ -143,11 +143,6 @@ basin_simp <- all_basins %>%
 # Re-check structure
 str(basin_simp)
 
-# Drop the individual regional/continental objects
-# Clean up environment to have less data stored as we move forward
-rm(list = c("arctic", "asia", "oceania", "greenland", "north_am", 
-            "south_am", "siberia", "africa", "europe"))
-
 ## ---------------------------------------------- ##
            # Identify Focal Polygon ----
 ## ---------------------------------------------- ##
@@ -161,7 +156,7 @@ sf::sf_use_s2(F)
 sites_actual <- sites_spatial %>%
   dplyr::mutate(
     # Find the interaction points as integers
-    ixn = as.integer(st_intersects(geometry, basin_simp)),
+    ixn = as.integer(sf::st_intersects(geometry, basin_simp)),
     # If a given interaction is not NA (meaning it does overlap)...
     HYBAS_ID = ifelse(test = !is.na(ixn),
                       # ...retain the HYBAS_ID of that interaction...
@@ -196,6 +191,11 @@ sites_actual$SUB_AREA <- basin_needs$SUB_AREA[match(sites_actual$HYBAS_ID, basin
 dplyr::glimpse(sites_actual)
 ## This object has polygons defined at the finest possible level
 ## We may want to visualize aggregated basins so let's go that direction now
+
+# Drop the individual regional/continental objects
+# Clean up environment to have less data stored as we move forward
+rm(list = c("arctic", "asia", "oceania", "greenland", "north_am", 
+            "south_am", "siberia", "africa", "europe"))
 
 ## ---------------------------------------------- ##
       # Load Modified HydroSHEDS Functions ----
