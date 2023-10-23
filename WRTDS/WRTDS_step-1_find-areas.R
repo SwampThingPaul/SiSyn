@@ -172,7 +172,8 @@ sites_actual <- sites_spatial %>%
 
 # And to make our lives easier, check out which continents we actually need
 sort(unique(stringr::str_sub(sites_actual$HYBAS_ID, 1, 1)))
-# 1 = Africa; 2 = Europe; 3 = Siberia; 4 = Asia; 5 = Australia; 6 = South America; 7 = North America; 8 = Arctic (North America); 9 = Greenland 
+## 1 = Africa; 2 = Europe; 3 = Siberia; 4 = Asia; 5 = Australia
+## 6 = South America; 7 = North America; 8 = Arctic (North America); 9 = Greenland 
 
 # The missing IDs are Antarctica streams
 sites_actual %>%
@@ -182,7 +183,7 @@ sites_actual %>%
   unique()
 
 # Prepare only needed HydroSheds 'continents'
-basin_needs <- rbind(europe, siberia, north_am, arctic)
+basin_needs <- rbind(africa, europe, oceania, north_am, arctic)
 
 # Get area for our focal polygons
 sites_actual$SUB_AREA <- basin_needs$SUB_AREA[match(sites_actual$HYBAS_ID, basin_needs$HYBAS_ID)]
@@ -208,8 +209,7 @@ rm(list = c("arctic", "asia", "oceania", "greenland", "north_am",
 find_next_up <- function(HYBAS, HYBAS.ID, ignore.endorheic = F){
   
   # Process sf object into a regular dataframe
-  HYBAS_df <- HYBAS %>%
-    sf::st_drop_geometry()
+  HYBAS_df <- HYBAS
   
   # Find next upstream polygon(s) as character
   upstream.ab <- HYBAS_df[HYBAS_df$NEXT_DOWN == HYBAS.ID, c("HYBAS_ID", "ENDO")]
@@ -260,6 +260,10 @@ find_all_up <- function(HYBAS, HYBAS.ID, ignore.endorheic = F, split = F){
 # It makes sense to identify areas / polygons based on that focal polygon
 # rather than stream name to save on computation time
 
+# Drop geometry information for Hydrosheds basins
+basin_df <- basin_needs %>%
+  sf::st_drop_geometry()
+
 # Create an empty list
 id_list <- list()
 
@@ -290,7 +294,7 @@ for(focal_poly in unique(sites_actual$HYBAS_ID)){
   message( "Processing for HYBAS ID '", focal_poly, "' begun at ", Sys.time())
   
   # Identify all upstream shapes
-  fxn_out <- find_all_up(HYBAS = basin_needs, HYBAS.ID = focal_poly)
+  fxn_out <- find_all_up(HYBAS = basin_df, HYBAS.ID = focal_poly)
   
   # Make a dataframe of this
   hydro_df <- data.frame(focal_poly = as.character(rep(focal_poly, (length(fxn_out) + 1))),
