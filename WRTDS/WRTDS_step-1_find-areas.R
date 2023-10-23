@@ -8,7 +8,7 @@
 ## Find area of drainage basins for sites where that is not known from expert sources
 
 ## ---------------------------------------------- ##
-                 # Housekeeping ----
+                  # Housekeeping ----
 ## ---------------------------------------------- ##
 # Read needed libraries
 # install.packages("librarian")
@@ -21,7 +21,7 @@ rm(list = ls())
 (path <- scicomptools::wd_loc(local = F, remote_path = file.path('/', "home", "shares", "lter-si", "si-watershed-extract")))
 
 ## ---------------------------------------------- ##
-        # Site Coordinate Preparation ----
+# Site Coordinate Preparation ----
 ## ---------------------------------------------- ##
 
 # If you've never used the `googledrive` R package, you'll need to "authorize" it
@@ -144,7 +144,7 @@ basin_simp <- all_basins %>%
 str(basin_simp)
 
 ## ---------------------------------------------- ##
-           # Identify Focal Polygon ----
+            # Identify Focal Polygon ----
 ## ---------------------------------------------- ##
 
 # Pre-emptively resolve an error with 'invalid spherical geometry'
@@ -260,7 +260,7 @@ find_all_up <- function(HYBAS, HYBAS.ID, ignore.endorheic = F, split = F){
 # It makes sense to identify areas / polygons based on that focal polygon
 # rather than stream name to save on computation time
 
-# Drop geometry information for Hydrosheds basins
+# Drop geometry information for HydroSHEDS basins
 basin_df <- basin_needs %>%
   sf::st_drop_geometry()
 
@@ -269,7 +269,7 @@ id_list <- list()
 
 # Identify area for sites where we don't know it already
 for(focal_poly in unique(sites_actual$HYBAS_ID)){
-# for(focal_poly in "7000073120"){
+  # for(focal_poly in "7000073120"){
   
   # Create/identify name and path of file
   poly_file <- file.path(path, 'hydrosheds-basin-ids',
@@ -282,33 +282,33 @@ for(focal_poly in unique(sites_actual$HYBAS_ID)){
     hydro_df <- read.csv(file = poly_file)
     
     # Add to the list
-    id_list[[focal_poly]] <- hydro_df
+    id_list[[as.character(focal_poly)]] <- hydro_df
     
     # Message outcome
     message("Upstream HydroSheds IDs for HYBAS ID '", focal_poly, "' already identified.")
     
     # If we *don't* have the polygon, continue!
   } else {
-  
-  # Print start-up message
-  message( "Processing for HYBAS ID '", focal_poly, "' begun at ", Sys.time())
-  
-  # Identify all upstream shapes
-  fxn_out <- find_all_up(HYBAS = basin_df, HYBAS.ID = focal_poly)
-  
-  # Make a dataframe of this
-  hydro_df <- data.frame(focal_poly = as.character(rep(focal_poly, (length(fxn_out) + 1))),
-                         hybas_id = c(focal_poly, fxn_out))
-  
-  # Save this out
-  write.csv(x = hydro_df, file = poly_file, na = '', row.names = F)
-  
-  # And add it to the list
-  id_list[[focal_poly]] <- hydro_df
-  
-  # Print finishing message
-  message( "Processing for HYBAS ID '", focal_poly, "' finished at ", Sys.time())
-  
+    
+    # Print start-up message
+    message( "Processing for HYBAS ID '", focal_poly, "' begun at ", Sys.time())
+    
+    # Identify all upstream shapes
+    fxn_out <- find_all_up(HYBAS = basin_df, HYBAS.ID = focal_poly)
+    
+    # Make a dataframe of this
+    hydro_df <- data.frame(focal_poly = as.character(rep(focal_poly, (length(fxn_out) + 1))),
+                           hybas_id = c(focal_poly, fxn_out))
+    
+    # Save this out
+    write.csv(x = hydro_df, file = poly_file, na = '', row.names = F)
+    
+    # And add it to the list
+    id_list[[as.character(focal_poly)]] <- hydro_df
+    
+    # Print finishing message
+    message( "Processing for HYBAS ID '", focal_poly, "' finished at ", Sys.time())
+    
   } # Close `else` clause
 } # Close `loop`
 
@@ -321,7 +321,7 @@ hydro_out <- id_list %>%
 dplyr::glimpse(hydro_out)
 
 ## ---------------------------------------------- ##
-               # Wrangle Output -----
+                # Wrangle Output -----
 ## ---------------------------------------------- ##
 
 # Pre-emptively resolve an error with 'invalid spherical geometry'
@@ -357,6 +357,8 @@ unk_actual <- sites_actual %>%
   dplyr::select(-drainSqKm) %>%
   # Drop geometry
   sf::st_drop_geometry() %>%
+  # Make HYBAS ID into a character
+  dplyr::mutate(HYBAS_ID = as.character(HYBAS_ID)) %>%
   # Join on newly identified areas
   dplyr::left_join(y = hydro_poly_df, by = c("HYBAS_ID"))
 
@@ -387,8 +389,8 @@ ref_table_final <- ref_table_actual %>%
   dplyr::filter(drainSqKm != 0)
 
 # How many areas do we gain by doing this operation?
-sites_v1 %>% dplyr::filter(is.na(drainSqKm)) %>% length()
-ref_table_final %>% dplyr::filter(is.na(drainSqKm)) %>% length()
+sites_v1 %>% dplyr::filter(is.na(drainSqKm)) %>% nrow()
+ref_table_final %>% dplyr::filter(is.na(drainSqKm)) %>% nrow()
 
 # Define name/path of this file
 out_name <- file.path(path, "WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv")
