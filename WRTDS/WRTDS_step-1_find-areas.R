@@ -48,7 +48,7 @@ sites_v0 <- readxl::read_excel(path = file.path(path, "Site_Reference_Table.xlsx
 # Do some pre-processing to pare down to only desired information
 sites_v1 <- sites_v0 %>%
   # Filter out sites not used in WRTDS
-  dplyr::filter(Use_WRTDS != "No") %>%
+  dplyr::filter(tolower(Use_WRTDS) != "no") %>%
   # Drop the WRTDS column now that we've subsetted by it
   dplyr::select(-Use_WRTDS) %>%
   # Make a uniqueID column
@@ -260,18 +260,11 @@ find_all_up <- function(HYBAS, HYBAS.ID, ignore.endorheic = F, split = F){
 # It makes sense to identify areas / polygons based on that focal polygon
 # rather than stream name to save on computation time
 
-# Let's not waste time on sites where we already know the drainage basin area
-known_area <- dplyr::filter(sites_v1, !is.na(drainSqKm))
-
-# Split off only sites where we don't know area
-unk_area <- sites_actual %>%
-  dplyr::filter(is.na(drainSqKm))
-
 # Create an empty list
 id_list <- list()
 
 # Identify area for sites where we don't know it already
-for(focal_poly in unique(unk_area$HYBAS_ID)){
+for(focal_poly in unique(sites_actual$HYBAS_ID)){
 # for(focal_poly in "7000073120"){
   
   # Create/identify name and path of file
@@ -355,7 +348,7 @@ hydro_poly_df <- hydro_out %>%
 dplyr::glimpse(hydro_poly_df)
 
 # Combine polygon IDs with the unknown areas dataframe
-unk_actual <- unk_area %>%
+unk_actual <- sites_actual %>%
   # Drop old (and empty) drainage area column
   dplyr::select(-drainSqKm) %>%
   # Drop geometry
@@ -373,7 +366,7 @@ ref_table_actual <- known_area %>%
   # Drop geometry
   sf::st_drop_geometry() %>%
   # Remove some unneeded columns
-  dplyr::select(-uniqueID, -ixn, -HYBAS_ID)
+  dplyr::select(-uniqueID, -ixn, -HYBAS_ID, -SUB_AREA)
 
 # Glimpse it
 dplyr::glimpse(ref_table_actual)
@@ -388,6 +381,10 @@ nrow(filter(ref_table_actual, nchar(drainSqKm) == 0))
 ref_table_final <- ref_table_actual %>%
   dplyr::filter(!is.na(drainSqKm)) %>%
   dplyr::filter(drainSqKm != 0)
+
+# How many areas do we gain by doing this operation?
+sites_v1 %>% dplyr::filter(is.na(drainSqKm)) %>% length()
+ref_table_final %>% dplyr::filter(is.na(drainSqKm)) %>% length()
 
 # Define name/path of this file
 out_name <- file.path(path, "WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv")
