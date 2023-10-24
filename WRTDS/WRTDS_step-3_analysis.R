@@ -82,6 +82,7 @@ odd_ones <- c(
   "Australia__DARLING RIVER AT BURTUNDY_P",
   "Australia__DARLING RIVER AT WILCANNIA MAIN CHANNEL_NO3",
   "Australia__EDWARD RIVER AT MOULAMEIN_NOx",
+  "Cameroon__Nsimi_outlet_DSi", "Cameroon__Nsimi_outlet_NO3",
   # Crashes R without a specific warning message
   "USGS__GREEN RIVER_P", "USGS__McDonalds Branch_P", "USGS__MERCED R_P",
   "USGS__PINE CREEK_P", "USGS__SOPCHOPPY RIVER_NOx",
@@ -108,7 +109,7 @@ few_data <- c(
   "Australia__EDWARD RIVER AT DENILIQUIN_NH4",
   "Australia__EDWARD RIVER AT DENILIQUIN_NO3",
   "Australia__NARRABRI CREEK AT NARRABRI_NH4",
-  "Australia__PEEL RIVER AT UPSTREAM PARADISE WEIR_P",
+  "Australia__PEEL RIVER AT UPSTREAM PARADISE WEIR_P", "HYBAM__Atalaya Aval_NO3",
   # Error in `EGRET::runSeries`
   ## "Error in runSurvReg(estPtYear, estPtLogQ, DecLow, DecHigh, localSample,  : minNumObs is greater than total number of samples"
   ## Note: error timing is near-instant
