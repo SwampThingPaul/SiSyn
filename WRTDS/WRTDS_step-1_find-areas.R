@@ -21,7 +21,7 @@ rm(list = ls())
 (path <- scicomptools::wd_loc(local = F, remote_path = file.path('/', "home", "shares", "lter-si", "si-watershed-extract")))
 
 ## ---------------------------------------------- ##
-# Site Coordinate Preparation ----
+        # Site Coordinate Preparation ----
 ## ---------------------------------------------- ##
 
 # If you've never used the `googledrive` R package, you'll need to "authorize" it
