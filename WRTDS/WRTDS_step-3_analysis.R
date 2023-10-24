@@ -83,6 +83,8 @@ odd_ones <- c(
   "Australia__DARLING RIVER AT WILCANNIA MAIN CHANNEL_NO3",
   "Australia__EDWARD RIVER AT MOULAMEIN_NOx",
   "Cameroon__Nsimi_outlet_DSi", "Cameroon__Nsimi_outlet_NO3",
+  "HYBAM__Borja_DSi", "HYBAM__Itaituba_DSi", "HYBAM__Itaituba_NO3",
+  "HYBAM__Langa Tabiki_DSi", "HYBAM__Langa Tabiki_NO3", 
   # Crashes R without a specific warning message
   "USGS__GREEN RIVER_P", "USGS__McDonalds Branch_P", "USGS__MERCED R_P",
   "USGS__PINE CREEK_P", "USGS__SOPCHOPPY RIVER_NOx",
@@ -140,7 +142,8 @@ few_data <- c(
   "Australia__NAMOI RIVER AT GOANGRA_P",
   "Australia__NARRABRI CREEK AT NARRABRI_NOx",
   "Australia__NARRABRI CREEK AT NARRABRI_P",
-  "Australia__PEEL RIVER AT UPSTREAM PARADISE WEIR_NH4"
+  "Australia__PEEL RIVER AT UPSTREAM PARADISE WEIR_NH4",
+  "HYBAM__Borja_NO3", "HYBAM__Ciudad Bolivar_NO3"
   )
 
 # Identify all rivers that aren't in the broken data vectors
