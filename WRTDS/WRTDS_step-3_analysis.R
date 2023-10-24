@@ -75,9 +75,18 @@ odd_ones <- c(
   "USGS__Lower Atchafalaya_NOx", "USGS__Lower Atchafalaya_P",
   "USGS__YAZOO RIVER_DSi", "USGS__YAZOO RIVER_NH4",
   "USGS__YAZOO RIVER_NOx", "USGS__YAZOO RIVER_P",
+  # "Error in if (lastMonth == 2 & (lastYear%%4 == 0) & ((lastYear%%100 !=  : missing value where TRUE/FALSE needed"
+  "Australia__DARLING RIVER AT BOURKE TOWN_NO3",
+  "Australia__DARLING RIVER AT BURTUNDY_NO3",
+  "Australia__DARLING RIVER AT BURTUNDY_NOx",
+  "Australia__DARLING RIVER AT BURTUNDY_P",
+  "Australia__DARLING RIVER AT WILCANNIA MAIN CHANNEL_NO3",
+  "Australia__EDWARD RIVER AT MOULAMEIN_NOx",
   # Crashes R without a specific warning message
   "USGS__GREEN RIVER_P", "USGS__McDonalds Branch_P", "USGS__MERCED R_P",
-  "USGS__PINE CREEK_P", "USGS__SOPCHOPPY RIVER_NOx"
+  "USGS__PINE CREEK_P", "USGS__SOPCHOPPY RIVER_NOx",
+  "Australia__EDWARD RIVER AT DENILIQUIN_NOx",
+  "Australia__PEEL RIVER AT UPSTREAM PARADISE WEIR_NO3"
 )
 
 # Rivers without sufficient data
@@ -89,7 +98,17 @@ few_data <- c(
   "MCM__Von Guerard Stream at F6_NH4", "NIVA__VESENUM_P", "NIVA__OSTEGLO_NH4",
   "Australia__BARWON RIVER AT DANGAR BRIDGE WALGETT_NOx",
   "Australia__BARWON RIVER AT DANGAR BRIDGE WALGETT_P",
-  
+  "Australia__BILLABONG CREEK AT DARLOT_P",
+  "Australia__DARLING RIVER AT BOURKE TOWN_NH4",
+  "Australia__DARLING RIVER AT BOURKE TOWN_NOx",
+  "Australia__DARLING RIVER AT BOURKE TOWN_P",
+  "Australia__DARLING RIVER AT WILCANNIA MAIN CHANNEL_NH4",
+  "Australia__DARLING RIVER AT WILCANNIA MAIN CHANNEL_NOx",
+  "Australia__DARLING RIVER AT WILCANNIA MAIN CHANNEL_P",
+  "Australia__EDWARD RIVER AT DENILIQUIN_NH4",
+  "Australia__EDWARD RIVER AT DENILIQUIN_NO3",
+  "Australia__NARRABRI CREEK AT NARRABRI_NH4",
+  "Australia__PEEL RIVER AT UPSTREAM PARADISE WEIR_P",
   # Error in `EGRET::runSeries`
   ## "Error in runSurvReg(estPtYear, estPtLogQ, DecLow, DecHigh, localSample,  : minNumObs is greater than total number of samples"
   ## Note: error timing is near-instant
@@ -107,7 +126,20 @@ few_data <- c(
   "NWT__ALBION_P", "NWT__MARTINELLI_P", "NWT__SADDLE STREAM 007_NOx",
   "NWT__SADDLE STREAM 007_P", "Sagehen__Sagehen_NH4", "USGS__ANDREWS CREEK_NH4",
   "USGS__ANDREWS CREEK_P", "USGS__SOUTH PLATTE_NH4", "USGS__SOUTH PLATTE_NOx",
-  "USGS__SOUTH PLATTE_P"
+  "USGS__SOUTH PLATTE_P", "Australia__BARWON RIVER AT MUNGINDI_NO3",
+  "Australia__BARWON RIVER AT MUNGINDI_P", "Australia__BILLABONG CREEK AT DARLOT_NO3",
+  "Australia__BILLABONG CREEK AT DARLOT_NOx",
+  "Australia__DARLING RIVER AT BURTUNDY_NH4",
+  "Australia__DARLING RIVER AT MENINDEE UPSTREAM WEIR 32_NH4",
+  "Australia__EDWARD RIVER AT DENILIQUIN_P",
+  "Australia__EDWARD RIVER AT MOULAMEIN_P",
+  "Australia__MURRAY RIVER DOWNSTREAM YARRAWONGA WEIR_NH4",
+  "Australia__NAMOI RIVER AT GOANGRA_NH4",
+  "Australia__NAMOI RIVER AT GOANGRA_NOx",
+  "Australia__NAMOI RIVER AT GOANGRA_P",
+  "Australia__NARRABRI CREEK AT NARRABRI_NOx",
+  "Australia__NARRABRI CREEK AT NARRABRI_P",
+  "Australia__PEEL RIVER AT UPSTREAM PARADISE WEIR_NH4"
   )
 
 # Identify all rivers that aren't in the broken data vectors
@@ -129,6 +161,9 @@ bad_rivers <- c( )
 # Identify rivers to run
 rivers_to_do <- setdiff(x = unique(good_rivers), 
                         y = c(unique(done_rivers$river), bad_rivers))
+
+# What are the next few that will be processed?
+rivers_to_do[1:5]
 
 # Kalman step throws the following error:
 ## "Pseudo only supported after running modelEstimation
