@@ -52,6 +52,10 @@ ref_raw <- readxl::read_excel(path = file.path(path, "WRTDS Source Files",
 disc_raw <- read.csv(file = file.path(path, "WRTDS Source Files", file_names[3]))
 chem_raw <- read.csv(file = file.path(path, "WRTDS Source Files", file_names[4]))
 
+## ---------------------------------------------- ##
+        # Process Raw Files (v0 -> v1) ----
+## ---------------------------------------------- ##
+
 # Generate a complete reference table (areas + other info)
 ref_table <- ref_raw %>%
   # Pare down to only some columns
@@ -107,9 +111,12 @@ setdiff(x = unique(ref_table$Stream_Name),
 # Wrangle chemistry as well
 chem_main <- chem_raw %>%
   # Pare down to only particular solutes that we're interested in
-  dplyr::filter(variable %in% c("SRP", "PO4", "DSi", "NO3", "NOx", "NH4")) %>% 
+  dplyr::filter(variable %in% c("SRP", "PO4", "DSi", "NO3", "NOx", "NH4")) %>%
+  # Drop old LTER column
+  dplyr::select(-LTER) %>% 
+  # Attach reference table information
   dplyr::left_join(y = dplyr::select(ref_table, -drainSqKm),
-                   by = c("LTER", "Stream_Name")) %>% 
+                   by = c("Stream_Name")) %>% 
   # Drop any rivers we don't want to use in WRTDS
   dplyr::filter(Use_WRTDS == "yes") %>%
   dplyr::select(-Use_WRTDS)
@@ -119,6 +126,9 @@ chem_main %>%
   dplyr::filter(is.na(Discharge_File_Name) | nchar(Discharge_File_Name) == 0) %>%
   dplyr::pull(Stream_Name) %>%
   unique()
+
+# Check structure
+dplyr::glimpse(chem_main)
 
 # Clean up the environment before continuing
 rm(list = setdiff(ls(), c("path", "ref_raw", "ref_table", "disc_main", "chem_main")))
@@ -150,23 +160,20 @@ mdl_info <- ref_raw %>%
 dplyr::glimpse(mdl_info)
 
 ## ---------------------------------------------- ##
-              # Initial Wrangling ----
+        # Initial Wrangling (v1 -> v2) ----
 ## ---------------------------------------------- ##
 # Includes:
 ## Column name standardization
 ## Removal of unnecessary columns
+## Removal of data without dates / values (i.e., discharge or solute values)
 ## Unit standardization (by conversion)
-## Removal of streams not in reference table / look-up (that file is an exhaustive list of streams to include)
 
 # Wrangle the discharge data objects to standardize naming somewhat
 disc_v2 <- disc_main %>%
-  # Filter out streams not found in the name look-up 
-  ## The lookup table is an exhaustive set of all sites to include
-  dplyr::filter(Discharge_File_Name %in% name_lkup$Discharge_File_Name) %>%
   # Convert date to true date format
   dplyr::mutate(Date = as.Date(Date, "%Y-%m-%d")) %>%
   # Average through duplicate LTER-stream-date combinations to get rid of them
-  dplyr::group_by(Discharge_File_Name, Date) %>%
+  dplyr::group_by(dplyr::across(c(-Qcms))) %>%
   dplyr::summarize(Qcms = mean(Qcms, na.rm = T)) %>%
   dplyr::ungroup() %>%
   # Drop any NAs in the discharge or date columns
@@ -181,7 +188,7 @@ disc_v2 <- disc_main %>%
 dplyr::glimpse(disc_v2)
 
 # Check for lost/gained streams
-supportR::diff_check(old = unique(disc_main$DischargeFileName),
+supportR::diff_check(old = unique(disc_main$Discharge_File_Name),
                      new = unique(disc_v2$Discharge_File_Name))
 
 # Clean up the chemistry data
@@ -189,27 +196,24 @@ chem_v2 <- chem_main %>%
   # Calculate the mg/L (from micro moles) for each of these chemicals
   dplyr::mutate(value_mgL = dplyr::case_when(
     ## Phosphorous
-    variable == "SRP" ~ (((value / 10^6) * 30.973762) * 1000),
-    variable == "PO4" ~ (((value / 10^6) * 30.973762) * 1000),
-    variable == "TP" ~ (((value / 10^6) * 30.973762) * 1000),
+    variable == "SRP" ~ (((value / 10^6) * 30.973762) * 10^3),
+    variable == "PO4" ~ (((value / 10^6) * 30.973762) * 10^3),
+    variable == "TP" ~ (((value / 10^6) * 30.973762) * 10^3),
     ## Silica
-    variable == "DSi" ~ (((value / 10^6) * 28.0855) * 1000),
+    variable == "DSi" ~ (((value / 10^6) * 28.0855) * 10^3),
     ## Nitrogen
-    variable == "NOx" ~ (((value / 10^6) * 14.0067) * 1000),
-    variable == "NO3" ~ (((value / 10^6) * 14.0067) * 1000),
-    variable == "NH4" ~ (((value / 10^6) * 14.0067) * 1000),
-    variable == "TN" ~ (((value / 10^6) * 14.0067) * 1000))) %>%
-  # Drop units, site, and value columns because they're outdated now
-  dplyr::select(-units, -value) %>%
+    variable == "NOx" ~ (((value / 10^6) * 14.0067) * 10^3),
+    variable == "NO3" ~ (((value / 10^6) * 14.0067) * 10^3),
+    variable == "NH4" ~ (((value / 10^6) * 14.0067) * 10^3),
+    variable == "TN" ~ (((value / 10^6) * 14.0067) * 10^3))) %>% 
+  # Drop some unwanted columns
+  dplyr::select(-Dataset, -Raw_Filename, -units, -value) %>%
   # Rename some columns
-  dplyr::rename(Date = date) %>%
-  # Filter out streams not found in the name look-up 
-  ## The lookup table is an exhaustive set of all sites to include
-  dplyr::filter(Stream_Name %in% name_lkup$Stream_Name) %>%
+  dplyr::rename(Date = date) %>% 
   # Convert date to true date format
-  dplyr::mutate(Date = as.Date(Date, "%Y-%m-%d")) %>%
+  dplyr::mutate(Date = as.Date(Date, "%Y-%m-%d")) %>% 
   # Average through duplicate LTER-stream-date-variable combinations to get rid of them
-  dplyr::group_by(LTER, Stream_Name, variable, Date) %>%
+  dplyr::group_by(dplyr::across(c(-value_mgL))) %>%
   dplyr::summarize(value_mgL = mean(value_mgL, na.rm = T)) %>%
   dplyr::ungroup() %>%
   # Drop any NAs in the value column
