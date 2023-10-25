@@ -46,19 +46,37 @@ purrr::walk2(.x = ids$name, .y = ids$id,
                                                 path = file.path(path, "WRTDS Source Files", .x)))
 
 # Read in each of these files
-ref_raw <- read.csv(file = file.path(path, "WRTDS Source Files", file_names[1])) 
-total_ref <- readxl::read_excel(path = file.path(path, "WRTDS Source Files", paste0(file_names[2], ".xlsx"))) 
+areas <- read.csv(file = file.path(path, "WRTDS Source Files", file_names[1])) 
+ref_raw <- readxl::read_excel(path = file.path(path, "WRTDS Source Files", 
+                                               paste0(file_names[2], ".xlsx"))) 
 disc_raw <- read.csv(file = file.path(path, "WRTDS Source Files", file_names[3]))
 chem_raw <- read.csv(file = file.path(path, "WRTDS Source Files", file_names[4]))
 
-# Figure out which files should even be used for WRTDS
-use_wrtds <- total_ref %>%
+# Generate a complete reference table (areas + other info)
+ref_table <- ref_raw %>%
   # Pare down to only some columns
   dplyr::select(LTER, Discharge_File_Name, Stream_Name, Use_WRTDS) %>%
   # Standardize WRTDS column
   dplyr::mutate(Use_WRTDS = tolower(Use_WRTDS)) %>%
   # Drop non-unique rows
-  dplyr::distinct()
+  dplyr::distinct() %>%
+  # Attach areas
+  dplyr::left_join(y = dplyr::select(areas, LTER, Discharge_File_Name, Stream_Name, drainSqKm),
+                   by = c("LTER", "Discharge_File_Name", "Stream_Name")) %>%
+  # Filter to only rivers where we *do* want to use WRTDS
+  dplyr::filter(Use_WRTDS == "yes")
+  
+# Should be no missing areas
+ref_table %>%
+  dplyr::filter(is.na(drainSqKm) | nchar(drainSqKm) == 0)
+
+# Check that out
+dplyr::glimpse(ref_table)
+
+
+# Figure out which files should even be used for WRTDS
+use_wrtds <- total_ref %>%
+  
   
 # Wrangle the reference table file that we actually want to use
 ref_table <- ref_raw %>%
