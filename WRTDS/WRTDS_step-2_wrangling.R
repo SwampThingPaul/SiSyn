@@ -461,108 +461,18 @@ sab_check <- ref_table %>%
 dplyr::glimpse(sab_check)
 ## tibble::view(sab_check)
 
-# Make a streams only version of each of the discharge objects
-d1 <- disc_v1 %>%
-  dplyr::select(Discharge_File_Name = DischargeFileName) %>%
-  unique() %>%
-  dplyr::mutate(in_d1 = 1)
-d2 <- disc_v2 %>%
-  dplyr::select(Discharge_File_Name) %>%
-  unique() %>%
-  dplyr::mutate(in_d2 = 1)
-d3 <- disc_v3 %>%
-  dplyr::select(LTER, Discharge_File_Name, Stream_Name) %>%
-  unique() %>%
-  dplyr::mutate(in_d3 = 1)
-d4 <- disc_v4 %>%
-  dplyr::select(Stream_ID, LTER, Discharge_File_Name, Stream_Name) %>%
-  unique() %>%
-  dplyr::mutate(in_d4 = 1)
-d5 <- discharge %>%
-  dplyr::select(Stream_ID) %>%
-  unique() %>%
-  dplyr::mutate(in_d5 = 1)
+# Make a file name
+(sab_file <- paste0("WRTDS_", Sys.Date(), "_sabotage_check_SITES.csv"))
 
-# Make one for chemistry as well
-c1 <- chem_v1 %>%
-  dplyr::select(Stream_Name) %>%
-  unique() %>%
-  dplyr::mutate(in_c1 = 1)
-c2 <- chem_v2 %>%
-  dplyr::select(Stream_Name) %>%
-  unique() %>%
-  dplyr::mutate(in_c2 = 1)
-c3 <- chem_v3 %>%
-  dplyr::select(LTER, Discharge_File_Name, Stream_Name) %>%
-  unique() %>%
-  dplyr::mutate(in_c3 = 1)
-c4 <- chem_v4 %>%
-  dplyr::select(Stream_ID, LTER, Discharge_File_Name, Stream_Name) %>%
-  unique() %>%
-  dplyr::mutate(in_c4 = 1)
-c5 <- chemistry %>%
-  dplyr::select(Stream_ID) %>%
-  unique() %>%
-  dplyr::mutate(in_c5 = 1)
+# Export locally
+write.csv(x = sab_check, na = "", row.names = F,
+          file.path(path, "WRTDS Source Files", sab_file))
 
-# Prep a 'name_check' object by streamlining the ref table
-sab_check_v0 <- ref_table %>%
-  # Pare down to needed columns only
-  dplyr::select(LTER, Discharge_File_Name, Stream_Name) %>%
-  # Create a "Stream_ID"
-  dplyr::mutate(Stream_ID = paste0(LTER, "__", Stream_Name),
-                .before = dplyr::everything()) %>%
-  # Bind in version 1 data
-  dplyr::full_join(y = d1, by = "Discharge_File_Name") %>%
-  dplyr::full_join(y = c1, by = "Stream_Name") %>%
-  # Bind in version 2 data
-  dplyr::full_join(y = d2, by = "Discharge_File_Name") %>%
-  dplyr::full_join(y = c2, by = "Stream_Name") %>%
-  # Bind in version 3 data
-  dplyr::full_join(y = d3, by = c("LTER", "Discharge_File_Name", "Stream_Name")) %>%
-  dplyr::full_join(y = c3, by = c("LTER", "Discharge_File_Name", "Stream_Name")) %>%
-  # Version 4
-  dplyr::full_join(y = d4, by = c("Stream_ID", "LTER", "Discharge_File_Name", "Stream_Name")) %>%
-  dplyr::full_join(y = c4, by = c("Stream_ID", "LTER", "Discharge_File_Name", "Stream_Name")) %>%
-  # Version 5
-  dplyr::full_join(y = d5, by = "Stream_ID") %>%
-  dplyr::full_join(y = c5, by = "Stream_ID")
-
-# Drop any rows without NAs (i.e., those in the data at all stages)
-sab_check <- sab_check_v0[ !complete.cases(sab_check_v0), ] %>%
-  # Get rowSums to figure out how many versions of data include a given stream
-  dplyr::mutate(incl_data_count = rowSums(dplyr::across(dplyr::starts_with("in_")), na.rm = T)) %>%
-  # Order by that column
-  dplyr::arrange(desc(incl_data_count)) %>%
-  # Generate a rough "diagnosis" column from the included data count
-  dplyr::mutate(diagnosis = dplyr::case_when(
-    incl_data_count == 0 ~ "in reference table but not in either master data file",
-    incl_data_count == 1 & is.na(in_c1) ~ "in master discharge but not in master chemistry",
-    incl_data_count == 1 & is.na(in_d1) ~ "in master chemistry but not in master discharge",
-    incl_data_count == 3 ~ "GUESS: in one dataset but not other so dropped at switch from v3 to v4",
-    Stream_Name == "OSTEGLO" ~ "No discharge data (all NAs) so dropped when missing discharge data are filtered out",
-    incl_data_count == 4 ~ "Unknown but likely an issue with one master file"
-    ), .before = in_d1)
-
-# Take a look!
-dplyr::glimpse(sab_check)
-
-# If there are any streams in the sabotage object, export a list for later diagnosis!
-if(nrow(sab_check) > 0){
-  
-  # Make a file name
-  (sab_file <- paste0("WRTDS_", Sys.Date(), "_sabotage_check_SITES.csv"))
-  
-  # Export locally
-  write.csv(x = sab_check, na = "", row.names = F,
-            file.path(path, "WRTDS Source Files", sab_file))
-  
-  # Export it to GoogleDrive too
-  googledrive::drive_upload(media = file.path(path, "WRTDS Source Files", sab_file),
-                            name = "WRTDS_Sabotage_Check_SITES.csv",
-                            overwrite = T,
-                            path = googledrive::as_id("https://drive.google.com/drive/u/0/folders/1aJXFBt61bntXDQec9Ne0F2m5yjvA6TsK"))
-}
+# Export it to GoogleDrive too
+googledrive::drive_upload(media = file.path(path, "WRTDS Source Files", sab_file),
+                          name = "WRTDS_Sabotage_Check_SITES.csv",
+                          overwrite = T,
+                          path = googledrive::as_id("https://drive.google.com/drive/u/0/folders/1aJXFBt61bntXDQec9Ne0F2m5yjvA6TsK"))
 
 ## ---------------------------------------------- ##
       # Check - Find Dropped Chemicals ----
