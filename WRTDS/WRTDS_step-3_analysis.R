@@ -75,6 +75,9 @@ odd_ones <- c(
   "USGS__Lower Atchafalaya_NOx", "USGS__Lower Atchafalaya_P",
   "USGS__YAZOO RIVER_DSi", "USGS__YAZOO RIVER_NH4",
   "USGS__YAZOO RIVER_NOx", "USGS__YAZOO RIVER_P",
+  "UMR__AL02.3M_DSi", "UMR__AL02.3M_NOx", "UMR__AL02.3M_P",
+  "UMR__BK14.2M_NOx", "UMR__BK14.2M_P", "UMR__BM00.7S_DSi",
+  "UMR__BM00.7S_NOx", "UMR__BM00.7S_P",
   ## "Error in if (lastMonth == 2 & (lastYear%%4 == 0) & ((lastYear%%100 !=  : missing value where TRUE/FALSE needed"
   "Australia__DARLING RIVER AT BOURKE TOWN_NO3",
   "Australia__DARLING RIVER AT BURTUNDY_NO3",
@@ -85,8 +88,11 @@ odd_ones <- c(
   "Cameroon__Nsimi_outlet_DSi", "Cameroon__Nsimi_outlet_NO3",
   "HYBAM__Borja_DSi", "HYBAM__Itaituba_DSi", "HYBAM__Itaituba_NO3",
   "HYBAM__Langa Tabiki_DSi", "HYBAM__Langa Tabiki_NO3", 
+  "UK__ALT AT KIRKBY_DSi", "UK__ARUN AT PALLINGHAM_DSi",
+  "UK__AVON AT BATHFORD_DSi", "UK__AVON AT LODDISWELL_DSi",
+  "UK__CALDER AT WHALLEY WEIR_DSi", "UK__CUCKMERE AT SHERMAN BRIDGE_DSi",
   ## "Error in if (good) { : missing value where TRUE/FALSE needed"
-  "HYBAM__Manacapuru_DSi",
+  "HYBAM__Manacapuru_DSi", "UK__BURE AT HORSTEAD MILL_DSi",
   # Crashes R without a specific warning message
   "USGS__GREEN RIVER_P", "USGS__McDonalds Branch_P", "USGS__MERCED R_P",
   "USGS__PINE CREEK_P", "USGS__SOPCHOPPY RIVER_NOx",
