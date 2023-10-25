@@ -462,7 +462,7 @@ dplyr::glimpse(sab_check)
 ## tibble::view(sab_check)
 
 # Make a file name
-(sab_file <- paste0("WRTDS_", Sys.Date(), "_sabotage_check_SITES.csv"))
+sab_file <- "WRTDS_Sabotage_Check_SITES.csv"
 
 # Export locally
 write.csv(x = sab_check, na = "", row.names = F,
@@ -470,7 +470,7 @@ write.csv(x = sab_check, na = "", row.names = F,
 
 # Export it to GoogleDrive too
 googledrive::drive_upload(media = file.path(path, "WRTDS Source Files", sab_file),
-                          name = "WRTDS_Sabotage_Check_SITES.csv",
+                          name = sab_file,
                           overwrite = T,
                           path = googledrive::as_id("https://drive.google.com/drive/u/0/folders/1aJXFBt61bntXDQec9Ne0F2m5yjvA6TsK"))
 
@@ -480,73 +480,73 @@ googledrive::drive_upload(media = file.path(path, "WRTDS Source Files", sab_file
 # We also want to be sure that included chemistry sites keep only chemicals
 # Above check would (correctly) give green light even if a given chem site lost all but one chemical's data
 
-# Identify stream-element combinations for each data file (except main)
-c2_var <- chem_v2 %>%
-  # Fix LTER as we do in version 3 of the chem file
-  # Standardize some LTER names to match the lookup table
-  dplyr::mutate(LTER = dplyr::case_when(
-    LTER == "KRR(Julian)" ~ "KRR",
-    LTER == "LMP(Wymore)" ~ "LMP",
-    LTER == "NWQA" ~ "USGS",
-    LTER == "Sagehen(Sullivan)" ~ "Sagehen",
-    LTER == "UMR(Jankowski)" ~ "UMR",
-    TRUE ~ LTER)) %>%
-  dplyr::mutate(Stream_Element_ID = paste0(LTER, "__", Stream_Name, "_", variable)) %>%
-  dplyr::select(Stream_Name, Stream_Element_ID) %>%
-  unique() %>%
-  dplyr::mutate(in_c2 = 1)
-c3_var <- chem_v3 %>%
-  dplyr::mutate(Stream_Element_ID = paste0(LTER, "__", Stream_Name, "_", variable)) %>%
-  dplyr::select(Stream_Element_ID) %>%
-  unique() %>%
-  dplyr::mutate(in_c3 = 1)
-c4_var <- chem_v4 %>%
-  dplyr::mutate(Stream_Element_ID = paste0(LTER, "__", Stream_Name, "_", variable)) %>%
-  dplyr::select(Stream_Element_ID) %>%
-  unique() %>%
-  dplyr::mutate(in_c4 = 1)
-c5_var <- chemistry %>%
-  dplyr::select(Stream_Element_ID) %>%
-  unique() %>%
-  dplyr::mutate(in_c5 = 1)
-
-# Bind these together to assemble the first pass at this check
-var_check_v0 <- c2_var %>%
-  dplyr::full_join(y = c3_var, by = "Stream_Element_ID") %>%
-  dplyr::full_join(y = c4_var, by = "Stream_Element_ID") %>%
-  dplyr::full_join(y = c5_var, by = "Stream_Element_ID")
-
-# Drop any rows that aren't missing in any dataset
-var_check <- var_check_v0[ !complete.cases(var_check_v0), ] %>% 
-  # Drop any streams that are caught by the "sabotage check" above
-  dplyr::filter(!Stream_Name %in% sab_check$Stream_Name) %>%
-  # Count how many datasets these streams are included in
-  dplyr::mutate(incl_data_count = rowSums(dplyr::across(dplyr::starts_with("in_")), na.rm = T)) %>%
-  # Order by that column
-  dplyr::arrange(desc(incl_data_count)) %>%
-  # Generate a rough "diagnosis" column from the included data count
-  dplyr::mutate(diagnosis = dplyr::case_when(
-    incl_data_count == 2 ~ "Dropped at date cropping step. Maybe dates are wrong for these elements?",
-  ), .before = in_c2)
-
-# Take a look!
-dplyr::glimpse(var_check)
-
-# If there are any streams in the sabotage object, export a list for later diagnosis!
-if(nrow(var_check) > 0){
-  
-  # Make a file name
-  (var_file <- paste0("WRTDS_", Sys.Date(), "_sabotage_check_CHEMICALS.csv"))
-  
-  # Export locally
-  write.csv(x = var_check, na = "", row.names = F,
-            file.path(path, "WRTDS Source Files", var_file))
-  
-  # Export it to GoogleDrive too
-  googledrive::drive_upload(media = file.path(path, "WRTDS Source Files", var_file),
-                            name = "WRTDS_Sabotage_Check_CHEMICALS.csv",
-                            overwrite = T,
-                            path = googledrive::as_id("https://drive.google.com/drive/u/0/folders/1aJXFBt61bntXDQec9Ne0F2m5yjvA6TsK"))
-}
+# # Identify stream-element combinations for each data file (except main)
+# c2_var <- chem_v2 %>%
+#   # Fix LTER as we do in version 3 of the chem file
+#   # Standardize some LTER names to match the lookup table
+#   dplyr::mutate(LTER = dplyr::case_when(
+#     LTER == "KRR(Julian)" ~ "KRR",
+#     LTER == "LMP(Wymore)" ~ "LMP",
+#     LTER == "NWQA" ~ "USGS",
+#     LTER == "Sagehen(Sullivan)" ~ "Sagehen",
+#     LTER == "UMR(Jankowski)" ~ "UMR",
+#     TRUE ~ LTER)) %>%
+#   dplyr::mutate(Stream_Element_ID = paste0(LTER, "__", Stream_Name, "_", variable)) %>%
+#   dplyr::select(Stream_Name, Stream_Element_ID) %>%
+#   unique() %>%
+#   dplyr::mutate(in_c2 = 1)
+# c3_var <- chem_v3 %>%
+#   dplyr::mutate(Stream_Element_ID = paste0(LTER, "__", Stream_Name, "_", variable)) %>%
+#   dplyr::select(Stream_Element_ID) %>%
+#   unique() %>%
+#   dplyr::mutate(in_c3 = 1)
+# c4_var <- chem_v4 %>%
+#   dplyr::mutate(Stream_Element_ID = paste0(LTER, "__", Stream_Name, "_", variable)) %>%
+#   dplyr::select(Stream_Element_ID) %>%
+#   unique() %>%
+#   dplyr::mutate(in_c4 = 1)
+# c5_var <- chemistry %>%
+#   dplyr::select(Stream_Element_ID) %>%
+#   unique() %>%
+#   dplyr::mutate(in_c5 = 1)
+# 
+# # Bind these together to assemble the first pass at this check
+# var_check_v0 <- c2_var %>%
+#   dplyr::full_join(y = c3_var, by = "Stream_Element_ID") %>%
+#   dplyr::full_join(y = c4_var, by = "Stream_Element_ID") %>%
+#   dplyr::full_join(y = c5_var, by = "Stream_Element_ID")
+# 
+# # Drop any rows that aren't missing in any dataset
+# var_check <- var_check_v0[ !complete.cases(var_check_v0), ] %>% 
+#   # Drop any streams that are caught by the "sabotage check" above
+#   dplyr::filter(!Stream_Name %in% sab_check$Stream_Name) %>%
+#   # Count how many datasets these streams are included in
+#   dplyr::mutate(incl_data_count = rowSums(dplyr::across(dplyr::starts_with("in_")), na.rm = T)) %>%
+#   # Order by that column
+#   dplyr::arrange(desc(incl_data_count)) %>%
+#   # Generate a rough "diagnosis" column from the included data count
+#   dplyr::mutate(diagnosis = dplyr::case_when(
+#     incl_data_count == 2 ~ "Dropped at date cropping step. Maybe dates are wrong for these elements?",
+#   ), .before = in_c2)
+# 
+# # Take a look!
+# dplyr::glimpse(var_check)
+# 
+# # If there are any streams in the sabotage object, export a list for later diagnosis!
+# if(nrow(var_check) > 0){
+#   
+#   # Make a file name
+#   (var_file <- paste0("WRTDS_", Sys.Date(), "_sabotage_check_CHEMICALS.csv"))
+#   
+#   # Export locally
+#   write.csv(x = var_check, na = "", row.names = F,
+#             file.path(path, "WRTDS Source Files", var_file))
+#   
+#   # Export it to GoogleDrive too
+#   googledrive::drive_upload(media = file.path(path, "WRTDS Source Files", var_file),
+#                             name = "WRTDS_Sabotage_Check_CHEMICALS.csv",
+#                             overwrite = T,
+#                             path = googledrive::as_id("https://drive.google.com/drive/u/0/folders/1aJXFBt61bntXDQec9Ne0F2m5yjvA6TsK"))
+# }
 
 # End ----
