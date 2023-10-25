@@ -39,19 +39,9 @@ if(!file_names[1] %in% ids$name | !file_names[2] %in% ids$name | !file_names[3] 
     message("All file names found in Google Drive. Please continue") }
 
 # Download the files we want
-for(k in 1:length(file_names)){
-  
-  # Processing message
-  message("Downloading file '", file_names[k], "'")
-  
-  # Download files
-  ids %>%
-    # Filter to desired file
-    dplyr::filter(name == file_names[k]) %>%
-    # Download that file!
-    googledrive::drive_download(file = as_id(.), overwrite = T,
-                                path = file.path(path, "WRTDS Source Files", file_names[k]))
-}
+purrr::walk2(.x = ids$name, .y = ids$id,
+             .f = ~ googledrive::drive_download(file = .y, overwrite = T,
+                                                path = file.path(path, "WRTDS Source Files", .x)))
 
 # Read in each of these files
 ref_raw <- read.csv(file = file.path(path, "WRTDS Source Files", file_names[1])) 
