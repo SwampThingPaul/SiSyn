@@ -70,21 +70,12 @@ ref_table <- ref_raw %>%
 ref_table %>%
   dplyr::filter(is.na(drainSqKm) | nchar(drainSqKm) == 0)
 
-# Check that out
-dplyr::glimpse(ref_table)
-
-
-# Figure out which files should even be used for WRTDS
-use_wrtds <- total_ref %>%
-  
-  
-# Wrangle the reference table file that we actually want to use
-ref_table <- ref_raw %>%
-  # Drop some wrong sites (don't want to delete from ref table in case they are correct for other related datasets)
-  dplyr::filter(!Discharge_File_Name %in% c("GRO_Kolyma_Q_fill", "GRO_Mackenzie_Q_fill"))
-
 # Check structure
 dplyr::glimpse(ref_table)
+
+# Any *discharge* rivers not in reference table?
+setdiff(x = unique(ref_table$Discharge_File_Name),
+        y = unique(disc_raw$DischargeFileName))
 
 # Wrangle discharge
 disc_main <- disc_raw %>%
@@ -93,12 +84,21 @@ disc_main <- disc_raw %>%
   # Fix any broken names (special characters from Scandinavia)
   dplyr::mutate(Discharge_File_Name = gsub(pattern = "ØSTEGLO_Q", replacement = "OSTEGLO_Q",
                                            x = Discharge_File_Name)) %>%
-  # Attach the Use_WRTDS data object
-  dplyr::left_join(y = dplyr::select(use_wrtds, -Stream_Name), by = "")
+  # Attach the reference table object
+  dplyr::left_join(y = dplyr::select(ref_table, -drainSqKm),
+                   by = c("Discharge_File_Name")) %>%
+  # Drop any rivers we don't want to use in WRTDS
+  dplyr::filter(Use_WRTDS == "yes") %>%
+  dplyr::select(-Use_WRTDS)
 
-# Any rivers that should be there that are not?
-supportR::diff_check(old = unique(disc_main$Discharge_File_Name),
-                     new = unique(ref_table$Discharge_File_Name))
+# Any rivers without a corresponding chemistry name?
+disc_main %>%
+  dplyr::filter(is.na(Stream_Name) | nchar(Stream_Name) == 0) %>%
+  dplyr::pull(Discharge_File_Name) %>%
+  unique()
+
+# Check structure
+dplyr::glimpse(disc_main)
 
 # Wrangle chemistry as well
 chem_main <- chem_raw %>%
