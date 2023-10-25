@@ -47,18 +47,23 @@ purrr::walk2(.x = ids$name, .y = ids$id,
 
 # Read in each of these files
 ref_raw <- read.csv(file = file.path(path, "WRTDS Source Files", file_names[1])) 
-total_ref <- read.csv(file = file.path(path, "WRTDS Source Files", file_names[2])) 
+total_ref <- readxl::read_excel(path = file.path(path, "WRTDS Source Files", paste0(file_names[2], ".xlsx"))) 
 disc_raw <- read.csv(file = file.path(path, "WRTDS Source Files", file_names[3]))
 chem_raw <- read.csv(file = file.path(path, "WRTDS Source Files", file_names[4]))
 
+# Figure out which files should even be used for WRTDS
+use_wrtds <- total_ref %>%
+  # Pare down to only some columns
+  dplyr::select(LTER, Discharge_File_Name, Stream_Name, Use_WRTDS) %>%
+  # Standardize WRTDS column
+  dplyr::mutate(Use_WRTDS = tolower(Use_WRTDS)) %>%
+  # Drop non-unique rows
+  dplyr::distinct()
+  
 # Wrangle the reference table file that we actually want to use
 ref_table <- ref_raw %>%
   # Drop some wrong sites (don't want to delete from ref table in case they are correct for other related datasets)
-  dplyr::filter(!Discharge_File_Name %in% c("GRO_Kolyma_Q_fill", "GRO_Mackenzie_Q_fill")) %>%
-  # Pare down to only needed columns
-  dplyr::select(LTER, Discharge_File_Name, Stream_Name) %>%
-  # Drop non-unique rows
-  dplyr::distinct()
+  dplyr::filter(!Discharge_File_Name %in% c("GRO_Kolyma_Q_fill", "GRO_Mackenzie_Q_fill"))
 
 # Check structure
 dplyr::glimpse(ref_table)
@@ -69,7 +74,9 @@ disc_main <- disc_raw %>%
   dplyr::rename(Discharge_File_Name = DischargeFileName) %>%
   # Fix any broken names (special characters from Scandinavia)
   dplyr::mutate(Discharge_File_Name = gsub(pattern = "ØSTEGLO_Q", replacement = "OSTEGLO_Q",
-                                           x = Discharge_File_Name))
+                                           x = Discharge_File_Name)) %>%
+  # Attach the Use_WRTDS data object
+  dplyr::left_join(y = dplyr::select(use_wrtds, -Stream_Name), by = "")
 
 # Any rivers that should be there that are not?
 supportR::diff_check(old = unique(disc_main$Discharge_File_Name),
