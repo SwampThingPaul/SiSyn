@@ -121,23 +121,15 @@ chem_main %>%
   unique()
 
 # Clean up the environment before continuing
-rm(list = setdiff(ls(), c("path", "ref_table", "disc_main", "chem_main")))
+rm(list = setdiff(ls(), c("path", "ref_raw", "ref_table", "disc_main", "chem_main")))
 ## Above line removes anything *other* than objects specified
 
 ## ---------------------------------------------- ##
              # Prep Supporting Files ----
 ## ---------------------------------------------- ##
 
-# Make a lookup table from the reference table for just stream names
-name_lkup <- ref_table %>%
-  # Pare to only some columns
-  dplyr::select(LTER, Discharge_File_Name, Stream_Name)
-
-# Glimpse it
-dplyr::glimpse(name_lkup)
-
-# Wrangle a special minimum detection limit object too
-mdl_info <- ref_table %>%
+# Wrangle a special minimum detection limit (MDL) object too
+mdl_info <- ref_raw %>%
   # Drop unneeded columns
   dplyr::select(Stream_Name, dplyr::starts_with("MDL_")) %>%
   # Pivot longer
@@ -147,13 +139,10 @@ mdl_info <- ref_table %>%
   # Drop any NAs that result from the pivoting
   dplyr::filter(!is.na(MDL)) %>%
   # Clean up variable name
-  dplyr::mutate(variable_simp = dplyr::case_when(
-    variable == "MDL_P_mgL" ~ "P",
-    variable == "MDL_NOx_mgL" ~ "NOx",
-    variable == "MDL_NH4_mgL" ~ "NH4",
-    variable == "MDL_Si_mgL" ~ "DSi"), .after = variable) %>%
+  dplyr::mutate(variable_simp = gsub("MDL\\_|\\_mgL", replacement = "", x = variable),
+                .after = variable) %>% 
   # Drop duplicate rows
-  unique() %>%
+  dplyr::distinct() %>%
   # Drop original variable column
   dplyr::select(-variable)
 
