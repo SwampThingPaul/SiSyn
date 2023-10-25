@@ -100,19 +100,25 @@ disc_main %>%
 # Check structure
 dplyr::glimpse(disc_main)
 
+# Any *chemistry* rivers not in reference table?
+setdiff(x = unique(ref_table$Stream_Name),
+        y = unique(chem_raw$Stream_Name))
+
 # Wrangle chemistry as well
 chem_main <- chem_raw %>%
-  # Fix some Finnish site names that get messed up by some stage of this wrangling
-  dplyr::mutate(Stream_Name = gsub(pattern = "[<]e4[>]", replacement = "a", 
-                                   x = Stream_Name)) %>%
-  dplyr::mutate(Stream_Name = gsub(pattern = "[<]f6[>]", replacement = "o",
-                                   x = Stream_Name)) %>%
-  # Drop all chemicals other than the core ones we're interested in
-  dplyr::filter(variable %in% c("SRP", "PO4", "DSi", "NO3", "NOx", "NH4"))
+  # Pare down to only particular solutes that we're interested in
+  dplyr::filter(variable %in% c("SRP", "PO4", "DSi", "NO3", "NOx", "NH4")) %>% 
+  dplyr::left_join(y = dplyr::select(ref_table, -drainSqKm),
+                   by = c("LTER", "Stream_Name")) %>% 
+  # Drop any rivers we don't want to use in WRTDS
+  dplyr::filter(Use_WRTDS == "yes") %>%
+  dplyr::select(-Use_WRTDS)
 
-# Any rivers that should be there that are not?
-supportR::diff_check(old = unique(chem_main$Stream_Name),
-                     new = unique(ref_table$Stream_Name))
+# Any rivers without a corresponding chemistry name?
+chem_main %>%
+  dplyr::filter(is.na(Discharge_File_Name) | nchar(Discharge_File_Name) == 0) %>%
+  dplyr::pull(Stream_Name) %>%
+  unique()
 
 # Clean up the environment before continuing
 rm(list = setdiff(ls(), c("path", "ref_table", "disc_main", "chem_main")))
