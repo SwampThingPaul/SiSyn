@@ -22,21 +22,23 @@ dir.create(path = file.path(path, "WRTDS Source Files"), showWarnings = F)
 dir.create(path = file.path(path, "WRTDS Inputs"), showWarnings = F)
 
 # Define the names of the Drive files we need
-file_names <- c("WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv", # No.1 Ref table
-                "Discharge_master_10232023.csv", # No.2 Main discharge
-                "20231024_masterdata_chem.csv") # No.3 Main chemistry
+file_names <- c("WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv", # No.1 Simplified ref table
+                "Site_Reference_Table", # No.2 Full ref table
+                "Discharge_master_10232023.csv", # No.3 Main discharge
+                "20231024_masterdata_chem.csv") # No.4 Main chemistry
 
 # Find those files' IDs
-ids <- googledrive::drive_ls(as_id("https://drive.google.com/drive/u/0/folders/15FEoe2vu3OAqMQHqdQ9XKpFboR4DvS9M"), pattern = "WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv") %>%
-  dplyr::bind_rows(googledrive::drive_ls(as_id("https://drive.google.com/drive/u/0/folders/1hbkUsTdo4WAEUnlPReOUuXdeeXm92mg-"), type = "csv",  pattern = "Discharge_master_")) %>%
-  dplyr::bind_rows(googledrive::drive_ls(as_id("https://drive.google.com/drive/u/0/folders/1dTENIB5W2ClgW0z-8NbjqARiaGO2_A7W"), pattern = "_masterdata_chem.csv")) %>%
+ids <- googledrive::drive_ls(as_id("https://drive.google.com/drive/u/0/folders/15FEoe2vu3OAqMQHqdQ9XKpFboR4DvS9M")) %>%
+  dplyr::bind_rows(googledrive::drive_ls(as_id("https://drive.google.com/drive/u/0/folders/1hbkUsTdo4WAEUnlPReOUuXdeeXm92mg-"))) %>%
+  dplyr::bind_rows(googledrive::drive_ls(as_id("https://drive.google.com/drive/u/0/folders/1dTENIB5W2ClgW0z-8NbjqARiaGO2_A7W")))%>%
+  dplyr::bind_rows(googledrive::drive_ls(as_id("https://drive.google.com/drive/u/0/folders/0AIPkWhVuXjqFUk9PVA"))) %>%
   ## And filter out any extraneous files
   dplyr::filter(name %in% file_names)
 
-# Check that no file names have changed!
-if(!file_names[1] %in% ids$name | !file_names[2] %in% ids$name | !file_names[3] %in% ids$name){
-  message("At least one source file name has changed! Update the 'names' vector before proceeding") } else {
-    message("All file names found in Google Drive. Please continue") }
+# Check that no file names have changed
+for(file in file_names){
+  if(!file %in% ids$name){ message("File '", file, "' not found.") 
+    } else { message("File '", file, "' found!") } }
 
 # Download the files we want
 purrr::walk2(.x = ids$name, .y = ids$id,
@@ -45,32 +47,47 @@ purrr::walk2(.x = ids$name, .y = ids$id,
 
 # Read in each of these files
 ref_raw <- read.csv(file = file.path(path, "WRTDS Source Files", file_names[1])) 
-disc_raw <- read.csv(file = file.path(path, "WRTDS Source Files", file_names[2]))
-chem_raw <- read.csv(file = file.path(path, "WRTDS Source Files", file_names[3]))
+total_ref <- read.csv(file = file.path(path, "WRTDS Source Files", file_names[2])) 
+disc_raw <- read.csv(file = file.path(path, "WRTDS Source Files", file_names[3]))
+chem_raw <- read.csv(file = file.path(path, "WRTDS Source Files", file_names[4]))
 
-# Wrangle the reference table file
+# Wrangle the reference table file that we actually want to use
 ref_table <- ref_raw %>%
   # Drop some wrong sites (don't want to delete from ref table in case they are correct for other related datasets)
-  dplyr::filter(!Discharge_File_Name %in% c("GRO_Kolyma_Q_fill", "GRO_Mackenzie_Q_fill"))
+  dplyr::filter(!Discharge_File_Name %in% c("GRO_Kolyma_Q_fill", "GRO_Mackenzie_Q_fill")) %>%
+  # Pare down to only needed columns
+  dplyr::select(LTER, Discharge_File_Name, Stream_Name) %>%
+  # Drop non-unique rows
+  dplyr::distinct()
+
+# Check structure
+dplyr::glimpse(ref_table)
 
 # Wrangle discharge
 disc_main <- disc_raw %>%
+  # Rename site column as it appears in the reference table
+  dplyr::rename(Discharge_File_Name = DischargeFileName) %>%
   # Fix any broken names (special characters from Scandinavia)
-  dplyr::mutate(DischargeFileName = gsub(pattern = "ØSTEGLO_Q", replacement = "OSTEGLO_Q",
-                                           x = DischargeFileName))
+  dplyr::mutate(Discharge_File_Name = gsub(pattern = "ØSTEGLO_Q", replacement = "OSTEGLO_Q",
+                                           x = Discharge_File_Name))
+
+# Any rivers that should be there that are not?
+supportR::diff_check(old = unique(disc_main$Discharge_File_Name),
+                     new = unique(ref_table$Discharge_File_Name))
 
 # Wrangle chemistry as well
 chem_main <- chem_raw %>%
   # Fix some Finnish site names that get messed up by some stage of this wrangling
-  # dplyr::mutate(site = gsub(pattern = "[<]e4[>]", replacement = "a", x = site)) %>%
-  # dplyr::mutate(site = gsub(pattern = "[<]f6[>]", replacement = "o", x = site)) %>%
-  # Need to fix in both 'site name' columns
   dplyr::mutate(Stream_Name = gsub(pattern = "[<]e4[>]", replacement = "a", 
                                    x = Stream_Name)) %>%
   dplyr::mutate(Stream_Name = gsub(pattern = "[<]f6[>]", replacement = "o",
                                    x = Stream_Name)) %>%
   # Drop all chemicals other than the core ones we're interested in
   dplyr::filter(variable %in% c("SRP", "PO4", "DSi", "NO3", "NOx", "NH4"))
+
+# Any rivers that should be there that are not?
+supportR::diff_check(old = unique(chem_main$Stream_Name),
+                     new = unique(ref_table$Stream_Name))
 
 # Clean up the environment before continuing
 rm(list = setdiff(ls(), c("path", "ref_table", "disc_main", "chem_main")))
@@ -123,8 +140,6 @@ dplyr::glimpse(mdl_info)
 
 # Wrangle the discharge data objects to standardize naming somewhat
 disc_v2 <- disc_main %>%
-  # Rename site column as it appears in the discharge log file
-  dplyr::rename(Discharge_File_Name = DischargeFileName) %>%
   # Filter out streams not found in the name look-up 
   ## The lookup table is an exhaustive set of all sites to include
   dplyr::filter(Discharge_File_Name %in% name_lkup$Discharge_File_Name) %>%
