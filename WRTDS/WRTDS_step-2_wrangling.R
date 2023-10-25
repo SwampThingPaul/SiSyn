@@ -159,6 +159,23 @@ mdl_info <- ref_raw %>%
 # Check it
 dplyr::glimpse(mdl_info)
 
+# Create the scaffold for what will become the "information" file required by WRTDS
+wrtds_info <- ref_table %>%
+  # Make empty columns to fill later
+  dplyr::mutate(param.units = "mg/L",
+                shortName = stringr::str_sub(string = Stream_Name, start = 1, end = 8),
+                paramShortName = NA,
+                constitAbbrev = NA,
+                station.nm = paste0(LTER, "__", Stream_Name)) %>%
+  # Drop unwanted column(s)
+  dplyr::select(-Use_WRTDS) %>%
+  # Make a combo column for LTER and Stream_Name
+  dplyr::mutate(Stream_ID = paste0(LTER, "__", Stream_Name),
+                .before = dplyr::everything())
+
+# Check that out
+dplyr::glimpse(wrtds_info)
+
 ## ---------------------------------------------- ##
         # Initial Wrangling (v1 -> v2) ----
 ## ---------------------------------------------- ##
@@ -250,14 +267,16 @@ supportR::diff_check(old = unique(chem_main$Stream_Name),
                      new = unique(chem_v2$Stream_Name))
 
 ## ---------------------------------------------- ##
-          # Crop Time Series for WRTDS ----
+    # Crop Time Series for WRTDS (v2 -> v3) ----
 ## ---------------------------------------------- ##
-# WRTDS runs best when there are 10 years of discharge data *before* the first chemistry datapoint. Similarly, we can't have more chemistry data than we have discharge data.
-# So we need to identify the min/max dates of discharge and chemistry (separately) to be able to use them to crop the actual data as WRTDS requires
+# WRTDS runs best when there are 10 years of discharge data *before* the first chemistry datapoint
+# Similarly, we can't have more chemistry data than we have discharge data.
+# So we need to identify the min/max dates of discharge and chemistry (separately)...
+# ...to be able to use them to crop the actual data as WRTDS requires
 
 # Identify earliest chemical data at each site
-disc_lims <- chem_v3 %>%
-  # Make a new column of earliest days per stream
+disc_lims <- chem_v2 %>%
+  # Make a new column of earliest days per stream (note we don't care which solute this applies to)
   dplyr::group_by(LTER, Stream_Name, Discharge_File_Name) %>%
   dplyr::mutate(min_date = min(Date, na.rm = T)) %>%
   dplyr::ungroup() %>%
@@ -268,13 +287,13 @@ disc_lims <- chem_v3 %>%
   # Subtract 10 years to crop the discharge data to 10 yrs per chemistry data
   dplyr::mutate(disc_start = (min_date - (10 * 365.25)) - 1) %>%
   # Keep only unique rows
-  unique()
+  dplyr::distinct()
 
 # Check that
 dplyr::glimpse(disc_lims)
 
 # Identify min/max of discharge data
-chem_lims <- disc_v3 %>%
+chem_lims <- disc_v2 %>%
   # Group by stream and identify the first and last days of sampling
   dplyr::group_by(LTER, Stream_Name, Discharge_File_Name) %>%
   dplyr::summarize(min_date = min(Date, na.rm = T),
@@ -286,79 +305,58 @@ chem_lims <- disc_v3 %>%
   # Find difference between beginning of next water year and end of chem file
   dplyr::mutate(water_year_diff = 365 - max_hydro) %>%
   # Keep only unique rows
-  unique()
+  dplyr::distinct()
 
 # Look at that outcome
 dplyr::glimpse(chem_lims)
 
 # Crop the discharge file!
-disc_v4 <- disc_v3 %>%
+disc_v3 <- disc_v2 %>%
   # Left join on the start date from the chemistry data
   dplyr::left_join(y = disc_lims, by = c("LTER", "Discharge_File_Name", "Stream_Name")) %>%
   # Drop any years before the ten year buffer suggested by WRTDS
-  dplyr::filter(Date > disc_start) %>%
-  # Remove unneeded columns (implicitly)
-  dplyr::select(LTER, Discharge_File_Name, Stream_Name, Date, Qcms) %>%
-  # Rename the discharge (Q) column without units
-  dplyr::rename(Q = Qcms) %>%
+  dplyr::filter(Date > disc_start) %>% 
+  # Reorder columns / rename Q column / implicitly drop unwanted columns
+  dplyr::select(LTER, Discharge_File_Name, Stream_Name, Date, Q = Qcms) %>%
   # Make a combo column for LTER and Stream_Name
   dplyr::mutate(Stream_ID = paste0(LTER, "__", Stream_Name),
                 .before = dplyr::everything())
 
 # Take another look
-dplyr::glimpse(disc_v4)
+dplyr::glimpse(disc_v3)
 
 # Check for gained/lost streams
-supportR::diff_check(old = unique(disc_v3$Discharge_File_Name),
-                     new = unique(disc_v4$Discharge_File_Name))
+supportR::diff_check(old = unique(disc_v2$Discharge_File_Name),
+                     new = unique(disc_v3$Discharge_File_Name))
 
 # Check for unintentionally lost columns
-supportR::diff_check(old = names(disc_v3), new = names(disc_v4))
+supportR::diff_check(old = names(disc_v2), new = names(disc_v3))
 ## Change to discharge column name is fine
 ## Added "Stream_ID" column is purposeful
 
 # Now crop chemistry to the min and max dates of discharge
-chem_v4 <- chem_v3 %>%
+chem_v3 <- chem_v2 %>%
   # Attach important discharge dates
   dplyr::left_join(y = chem_lims, by = c("LTER", "Discharge_File_Name", "Stream_Name")) %>%
   # Use those to crop the dataframe
   dplyr::filter(Date > min_date & Date < max_date) %>%
-  # Drop to only needed columns
-  dplyr::select(LTER, Discharge_File_Name, Stream_Name,
-                variable, Date, remarks, value_mgL) %>%
+  # Reorder columns / implicitly drop unwanted columns
+  dplyr::select(LTER, Discharge_File_Name, Stream_Name, variable, Date, remarks, value_mgL) %>% 
   # Make a combo column for LTER and Stream_Name
   dplyr::mutate(Stream_ID = paste0(LTER, "__", Stream_Name),
                 .before = dplyr::everything())
   
 # Glimpse it
-dplyr::glimpse(chem_v4)
+dplyr::glimpse(chem_v3)
 
 # Check for gained/lost streams
-supportR::diff_check(old = unique(chem_v3$Stream_Name),
-                     new = unique(chem_v4$Stream_Name))
-## Any streams lost here are lost because somehow *all* chemistry dates are outside of the allowed range defined by the min and max dates found in the discharge data.
+supportR::diff_check(old = unique(chem_v2$Stream_Name), new = unique(chem_v3$Stream_Name))
+## Any streams lost here are lost because somehow *all* chemistry dates are outside of the allowed range defined by the min and max dates found in the discharge data
+## Or possibly because the range limits identified from the discharge file were flawed...
 
 # Check for unintentionally lost columns
-supportR::diff_check(old = names(chem_v3), new = names(chem_v4))
-
-# Create the scaffold for what will become the "information" file required by WRTDS
-info_v2 <- ref_table %>%
-  # Make empty columns to fill later
-  dplyr::mutate(param.units = "mg/L",
-                shortName = stringr::str_sub(string = Stream_Name, start = 1, end = 8),
-                paramShortName = NA,
-                constitAbbrev = NA,
-                drainSqKm = drainSqKm,
-                station.nm = paste0(LTER, "__", Stream_Name)) %>%
-  # Drop to only desired columns
-  dplyr::select(LTER, Discharge_File_Name, Stream_Name, param.units, shortName,
-                paramShortName, constitAbbrev, drainSqKm, station.nm) %>%
-  # Make a combo column for LTER and Stream_Name
-  dplyr::mutate(Stream_ID = paste0(LTER, "__", Stream_Name),
-                .before = dplyr::everything())
-
-# Check that out
-dplyr::glimpse(info_v2)
+supportR::diff_check(old = names(chem_v2), new = names(chem_v3))
+## Should only gain Stream ID and lose nothing
 
 ## ---------------------------------------------- ##
           # Final Processing & Export ----
