@@ -137,9 +137,8 @@ chem_v1 %>%
 # Check structure
 dplyr::glimpse(chem_v1)
 
-# Clean up the environment before continuing
-rm(list = setdiff(ls(), c("path", "ref_v0", "ref_table", "disc_v1", "chem_v1")))
-## Above line removes anything *other* than objects specified
+# Drop some objects we won't need again
+rm(list = c("ids", "file", "file_names", "areas"))
 
 ## ---------------------------------------------- ##
              # Prep Supporting Files ----
@@ -431,7 +430,8 @@ googledrive::drive_upload(path = tidy_dest, overwrite = T,
 
 # We want to be super sure we didn't (somehow) drop any sites in the wrangling steps above.
 # Data versions are as follows:
-## [disc/chem]_v1 = "Raw" data (i.e., initial master files)
+## [disc/chem]_v0 = "Raw" data (i.e., initial master files)
+## [disc/chem]_v1 = Drop rivers not included for WRTDS
 ## [disc/chem]_v2 = Coarse wrangling and averaging within date-stream- combos
 ## [disc/chem]_v3 = Cropping by date range (uses both discharge and chemistry)
 
@@ -443,56 +443,23 @@ sab_check <- ref_table %>%
   ## Note that it shouldn't matter which final data object stream ID is pulled from
   dplyr::filter(!Stream_ID %in% discharge$Stream_ID) %>% 
   # Identify *when* rivers were dropped
-  dplyr::mutate(drop_timing = dplyr::case_when(
-    ## Streams dropped in creation of final object
-    Stream_ID %in% unique(disc_v3$Stream_ID) & 
-      !Stream_ID %in% unique(discharge$Stream_ID) ~ "final processing step",
-    Stream_ID %in% unique(chem_v3$Stream_ID) & 
-      !Stream_ID %in% unique(chemistry$Stream_ID) ~ "final processing step",
-    ## Streams dropped between v2 and v3
-    Stream_ID %in% unique(disc_v2$Stream_ID) & 
-      !Stream_ID %in% unique(disc_v3$Stream_ID) ~ "time series cropping",
-    Stream_ID %in% unique(chem_v2$Stream_ID) & 
-      !Stream_ID %in% unique(chem_v3$Stream_ID) ~ "time series cropping",
-    ## Streams dropped between v1 and v2
-    Stream_ID %in% unique(disc_v1$Stream_ID) & 
-      !Stream_ID %in% unique(disc_v2$Stream_ID) ~ "date/response value check",
-    Stream_ID %in% unique(chem_v1$Stream_ID) & 
-      !Stream_ID %in% unique(chem_v2$Stream_ID) ~ "date/response value check",
-    ## Otherwise...
-    T ~ "before 'version 1' of data")) %>% 
-  # Now generate diagnoses for *why* these were/are dropped
-  dplyr::mutate(diagnosis = dplyr::case_when(
-    ## Before V1
-    drop_timing == "before 'version 1' of data" ~ "GUESS: fully absent from raw data OR missing drainage area",
-    ## Date/Response Value Checks
-    drop_timing == "date/response value check" ~ "GUESS: missing all date or value information",
-    ## Time Series Cropping
-    drop_timing == "time series cropping" & !Stream_Name %in% unique(chem_lims$Stream_Name) ~ "CHEMISTRY date limits absent so subsets out all of this river",
-    drop_timing == "time series cropping" & !Discharge_File_Name %in% unique(disc_lims$Discharge_File_Name) ~ "DISCHARGE date limits absent so subsets out all of this river",
-    ## Before Final processing
-    drop_timing == "final processing step" & Stream_ID %in% unique(discharge$Stream_ID) &
-      !Stream_ID %in% unique(chemistry$Stream_ID) ~ "absent from v3 CHEMISTRY object",
-    drop_timing == "final processing step" & Stream_ID %in% unique(chemistry$Stream_ID) & 
-      !Stream_ID %in% unique(discharge$Stream_ID) ~ "absent from v3 DISCHARGE object",
-    ## Otherwise...
-    T ~ "?") )
-
-# Check timing representation
-sab_check %>% 
-  dplyr::group_by(drop_timing) %>%
-  dplyr::summarize(ct = dplyr::n())
-
-# Check diagnosis representation
-sab_check %>% 
-  dplyr::group_by(diagnosis) %>%
-  dplyr::summarize(ct = dplyr::n())
-
+  dplyr::mutate(
+    chem_v1 = ifelse(Stream_ID %in% unique(chem_v1$Stream_ID),
+                     yes = 'found in ref table / had drainage area', no = NA),
+    disc_v1 = ifelse(Stream_ID %in% unique(disc_v1$Stream_ID),
+                     yes = 'found in ref table / had drainage area', no = NA),
+    chem_v2 = ifelse(Stream_ID %in% unique(chem_v2$Stream_ID),
+                     yes = 'had chemistry data/dates', no = NA),
+    disc_v2 = ifelse(Stream_ID %in% unique(disc_v2$Stream_ID),
+                     yes = 'had chemistry data/dates', no = NA),
+    chem_v3 = ifelse(Stream_ID %in% unique(chem_v3$Stream_ID),
+                     yes = 'survived time series cropping', no = NA),
+    disc_v3 = ifelse(Stream_ID %in% unique(disc_v3$Stream_ID),
+                     yes = 'survived time series cropping', no = NA) )
+  
 # Check structure
 dplyr::glimpse(sab_check)
 ## tibble::view(sab_check)
-
-
 
 # Make a streams only version of each of the discharge objects
 d1 <- disc_v1 %>%
