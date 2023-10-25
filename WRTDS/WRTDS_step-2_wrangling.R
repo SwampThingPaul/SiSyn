@@ -68,7 +68,10 @@ ref_table <- ref_v0 %>%
   dplyr::left_join(y = dplyr::select(areas, LTER, Discharge_File_Name, Stream_Name, drainSqKm),
                    by = c("LTER", "Discharge_File_Name", "Stream_Name")) %>%
   # Filter to only rivers where we *do* want to use WRTDS
-  dplyr::filter(Use_WRTDS == "yes")
+  dplyr::filter(Use_WRTDS == "yes") %>%
+  # Generate a 'stream ID' column that combines LTER and chemistry stream name
+  dplyr::mutate(Stream_ID = paste0(LTER, "__", Stream_Name),
+                .before = dplyr::everything())
   
 # Should be no missing areas
 ref_table %>%
@@ -78,8 +81,7 @@ ref_table %>%
 dplyr::glimpse(ref_table)
 
 # Any *discharge* rivers not in reference table?
-setdiff(x = unique(ref_table$Discharge_File_Name),
-        y = unique(disc_v0$DischargeFileName))
+setdiff(x = unique(ref_table$Discharge_File_Name), y = unique(disc_v0$DischargeFileName))
 
 # Wrangle discharge
 disc_v1 <- disc_v0 %>%
@@ -93,7 +95,10 @@ disc_v1 <- disc_v0 %>%
                    by = c("Discharge_File_Name")) %>%
   # Drop any rivers we don't want to use in WRTDS
   dplyr::filter(Use_WRTDS == "yes") %>%
-  dplyr::select(-Use_WRTDS)
+  dplyr::select(-Use_WRTDS) %>% 
+  # Generate a 'stream ID' column that combines LTER and chemistry stream name
+  dplyr::mutate(Stream_ID = paste0(LTER, "__", Stream_Name),
+                .before = dplyr::everything())
 
 # Any rivers without a corresponding chemistry name?
 disc_v1 %>%
@@ -105,8 +110,7 @@ disc_v1 %>%
 dplyr::glimpse(disc_v1)
 
 # Any *chemistry* rivers not in reference table?
-setdiff(x = unique(ref_table$Stream_Name),
-        y = unique(chem_v0$Stream_Name))
+setdiff(x = unique(ref_table$Stream_Name), y = unique(chem_v0$Stream_Name))
 
 # Wrangle chemistry as well
 chem_v1 <- chem_v0 %>%
@@ -119,7 +123,10 @@ chem_v1 <- chem_v0 %>%
                    by = c("Stream_Name")) %>% 
   # Drop any rivers we don't want to use in WRTDS
   dplyr::filter(Use_WRTDS == "yes") %>%
-  dplyr::select(-Use_WRTDS)
+  dplyr::select(-Use_WRTDS) %>% 
+  # Generate a 'stream ID' column that combines LTER and chemistry stream name
+  dplyr::mutate(Stream_ID = paste0(LTER, "__", Stream_Name),
+                .before = dplyr::everything())
 
 # Any rivers without a corresponding chemistry name?
 chem_v1 %>%
@@ -168,10 +175,7 @@ wrtds_info <- ref_table %>%
                 constitAbbrev = NA,
                 station.nm = paste0(LTER, "__", Stream_Name)) %>%
   # Drop unwanted column(s)
-  dplyr::select(-Use_WRTDS) %>%
-  # Make a combo column for LTER and Stream_Name
-  dplyr::mutate(Stream_ID = paste0(LTER, "__", Stream_Name),
-                .before = dplyr::everything())
+  dplyr::select(-Use_WRTDS)
 
 # Check that out
 dplyr::glimpse(wrtds_info)
@@ -317,10 +321,7 @@ disc_v3 <- disc_v2 %>%
   # Drop any years before the ten year buffer suggested by WRTDS
   dplyr::filter(Date > disc_start) %>% 
   # Reorder columns / rename Q column / implicitly drop unwanted columns
-  dplyr::select(LTER, Discharge_File_Name, Stream_Name, Date, Q = Qcms) %>%
-  # Make a combo column for LTER and Stream_Name
-  dplyr::mutate(Stream_ID = paste0(LTER, "__", Stream_Name),
-                .before = dplyr::everything())
+  dplyr::select(Stream_ID, LTER, Discharge_File_Name, Stream_Name, Date, Q = Qcms)
 
 # Take another look
 dplyr::glimpse(disc_v3)
@@ -341,10 +342,7 @@ chem_v3 <- chem_v2 %>%
   # Use those to crop the dataframe
   dplyr::filter(Date > min_date & Date < max_date) %>%
   # Reorder columns / implicitly drop unwanted columns
-  dplyr::select(LTER, Discharge_File_Name, Stream_Name, variable, Date, remarks, value_mgL) %>% 
-  # Make a combo column for LTER and Stream_Name
-  dplyr::mutate(Stream_ID = paste0(LTER, "__", Stream_Name),
-                .before = dplyr::everything())
+  dplyr::select(Stream_ID, LTER, Discharge_File_Name, Stream_Name, variable, Date, remarks, value_mgL)
   
 # Glimpse it
 dplyr::glimpse(chem_v3)
@@ -393,7 +391,8 @@ supportR::diff_check(old = unique(chem_v3$Stream_ID), new = unique(chemistry$Str
 # And finally for information
 information <- wrtds_info %>%
   dplyr::filter(Stream_ID %in% incl_streams) %>%
-  dplyr::select(-LTER, -Discharge_File_Name, -Stream_Name)
+  dplyr::select(-LTER, -Discharge_File_Name, -Stream_Name) %>%
+  dplyr::relocate(drainSqKm, .before = station.nm)
 
 # Final glimpse
 dplyr::glimpse(information)
@@ -434,8 +433,22 @@ googledrive::drive_upload(path = tidy_dest, overwrite = T,
 # Data versions are as follows:
 ## [disc/chem]_v1 = "Raw" data (i.e., initial master files)
 ## [disc/chem]_v2 = Coarse wrangling and averaging within date-stream- combos
-## [disc/chem]_v3 = Integration with lookup table to get other data's naming convention
-## [disc/chem]_v4 = Cropping by date
+## [disc/chem]_v3 = Cropping by date range (uses both discharge and chemistry)
+
+# Generate a 'sabotage check' to flag where rivers are dropped
+sab_check_v0 <- ref_table %>%
+  # Pare down to needed columns only
+  dplyr::select(LTER, Discharge_File_Name, Stream_Name) %>%
+  # Create a "Stream_ID"
+  dplyr::mutate(Stream_ID = paste0(LTER, "__", Stream_Name),
+                .before = dplyr::everything()) %>%
+  # Filter out any Streams found in the final data objects
+  ## Note that it shouldn't matter which final data object stream ID is pulled from
+  dplyr::filter(!Stream_ID %in% discharge$Stream_ID) %>%
+  # Now generate diagnoses for why these were/are dropped
+  dplyr::mutate(drop_timing = dplyr::case_when(
+    T ~ NA))
+
 
 # Make a streams only version of each of the discharge objects
 d1 <- disc_v1 %>%
