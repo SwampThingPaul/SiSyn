@@ -250,47 +250,6 @@ supportR::diff_check(old = unique(chem_main$Stream_Name),
                      new = unique(chem_v2$Stream_Name))
 
 ## ---------------------------------------------- ##
-           # Match Stream "Aliases" ----
-## ---------------------------------------------- ##
-# Explanation:
-## Discharge streams are identified by the "Discharge_File_Name" column
-## Chemistry streams are identified by the "Stream_Name" column
-## We need to use the 'name_lkup' object to allow these two dataframes to cross-talk
-## One discharge stream can have *multiple* chemisry streams that match
-
-# Wrangle the discharge information
-disc_v3 <- disc_v2 %>%
-  # Bring in the ref table stream names and LTER names as well
-  dplyr::left_join(y = name_lkup, by = c("Discharge_File_Name"))
-
-# Glimpse it
-dplyr::glimpse(disc_v3)
-
-# Check for gained/lost streams
-supportR::diff_check(old = unique(disc_v2$Discharge_File_Name),
-                     new = unique(disc_v3$Discharge_File_Name))
-
-# Wrangle the chemistry data
-chem_v3 <- chem_v2 %>%
-  # Standardize some LTER names to match the lookup table
-  dplyr::mutate(LTER = dplyr::case_when(
-    LTER == "KRR(Julian)" ~ "KRR",
-    LTER == "LMP(Wymore)" ~ "LMP",
-    LTER == "NWQA" ~ "USGS",
-    LTER == "Sagehen(Sullivan)" ~ "Sagehen",
-    LTER == "UMR(Jankowski)" ~ "UMR",
-    TRUE ~ LTER)) %>%
-  # Now left join on the name for the stream in the discharge file
-  dplyr::left_join(y = name_lkup, by = c("LTER", "Stream_Name"))
-
-# Take a quick look
-glimpse(chem_v3)
-
-# Check for gained/lost streams
-supportR::diff_check(old = unique(chem_v2$Stream_Name),
-                     new = unique(chem_v3$Stream_Name))
-
-## ---------------------------------------------- ##
           # Crop Time Series for WRTDS ----
 ## ---------------------------------------------- ##
 # WRTDS runs best when there are 10 years of discharge data *before* the first chemistry datapoint. Similarly, we can't have more chemistry data than we have discharge data.
