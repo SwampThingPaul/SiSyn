@@ -47,17 +47,17 @@ purrr::walk2(.x = ids$name, .y = ids$id,
 
 # Read in each of these files
 areas <- read.csv(file = file.path(path, "WRTDS Source Files", file_names[1])) 
-ref_raw <- readxl::read_excel(path = file.path(path, "WRTDS Source Files", 
+ref_v0 <- readxl::read_excel(path = file.path(path, "WRTDS Source Files", 
                                                paste0(file_names[2], ".xlsx"))) 
-disc_raw <- read.csv(file = file.path(path, "WRTDS Source Files", file_names[3]))
-chem_raw <- read.csv(file = file.path(path, "WRTDS Source Files", file_names[4]))
+disc_v0 <- read.csv(file = file.path(path, "WRTDS Source Files", file_names[3]))
+chem_v0 <- read.csv(file = file.path(path, "WRTDS Source Files", file_names[4]))
 
 ## ---------------------------------------------- ##
         # Process Raw Files (v0 -> v1) ----
 ## ---------------------------------------------- ##
 
 # Generate a complete reference table (areas + other info)
-ref_table <- ref_raw %>%
+ref_table <- ref_v0 %>%
   # Pare down to only some columns
   dplyr::select(LTER, Discharge_File_Name, Stream_Name, Use_WRTDS) %>%
   # Standardize WRTDS column
@@ -79,10 +79,10 @@ dplyr::glimpse(ref_table)
 
 # Any *discharge* rivers not in reference table?
 setdiff(x = unique(ref_table$Discharge_File_Name),
-        y = unique(disc_raw$DischargeFileName))
+        y = unique(disc_v0$DischargeFileName))
 
 # Wrangle discharge
-disc_main <- disc_raw %>%
+disc_v1 <- disc_v0 %>%
   # Rename site column as it appears in the reference table
   dplyr::rename(Discharge_File_Name = DischargeFileName) %>%
   # Fix any broken names (special characters from Scandinavia)
@@ -96,20 +96,20 @@ disc_main <- disc_raw %>%
   dplyr::select(-Use_WRTDS)
 
 # Any rivers without a corresponding chemistry name?
-disc_main %>%
+disc_v1 %>%
   dplyr::filter(is.na(Stream_Name) | nchar(Stream_Name) == 0) %>%
   dplyr::pull(Discharge_File_Name) %>%
   unique()
 
 # Check structure
-dplyr::glimpse(disc_main)
+dplyr::glimpse(disc_v1)
 
 # Any *chemistry* rivers not in reference table?
 setdiff(x = unique(ref_table$Stream_Name),
-        y = unique(chem_raw$Stream_Name))
+        y = unique(chem_v0$Stream_Name))
 
 # Wrangle chemistry as well
-chem_main <- chem_raw %>%
+chem_v1 <- chem_v0 %>%
   # Pare down to only particular solutes that we're interested in
   dplyr::filter(variable %in% c("SRP", "PO4", "DSi", "NO3", "NOx", "NH4")) %>%
   # Drop old LTER column
@@ -122,16 +122,16 @@ chem_main <- chem_raw %>%
   dplyr::select(-Use_WRTDS)
 
 # Any rivers without a corresponding chemistry name?
-chem_main %>%
+chem_v1 %>%
   dplyr::filter(is.na(Discharge_File_Name) | nchar(Discharge_File_Name) == 0) %>%
   dplyr::pull(Stream_Name) %>%
   unique()
 
 # Check structure
-dplyr::glimpse(chem_main)
+dplyr::glimpse(chem_v1)
 
 # Clean up the environment before continuing
-rm(list = setdiff(ls(), c("path", "ref_raw", "ref_table", "disc_main", "chem_main")))
+rm(list = setdiff(ls(), c("path", "ref_v0", "ref_table", "disc_v1", "chem_v1")))
 ## Above line removes anything *other* than objects specified
 
 ## ---------------------------------------------- ##
@@ -139,7 +139,7 @@ rm(list = setdiff(ls(), c("path", "ref_raw", "ref_table", "disc_main", "chem_mai
 ## ---------------------------------------------- ##
 
 # Wrangle a special minimum detection limit (MDL) object too
-mdl_info <- ref_raw %>%
+mdl_info <- ref_v0 %>%
   # Drop unneeded columns
   dplyr::select(Stream_Name, dplyr::starts_with("MDL_")) %>%
   # Pivot longer
@@ -186,7 +186,7 @@ dplyr::glimpse(wrtds_info)
 ## Unit standardization (by conversion)
 
 # Wrangle the discharge data objects to standardize naming somewhat
-disc_v2 <- disc_main %>%
+disc_v2 <- disc_v1 %>%
   # Convert date to true date format
   dplyr::mutate(Date = as.Date(Date, "%Y-%m-%d")) %>%
   # Average through duplicate LTER-stream-date combinations to get rid of them
@@ -205,11 +205,11 @@ disc_v2 <- disc_main %>%
 dplyr::glimpse(disc_v2)
 
 # Check for lost/gained streams
-supportR::diff_check(old = unique(disc_main$Discharge_File_Name),
+supportR::diff_check(old = unique(disc_v1$Discharge_File_Name),
                      new = unique(disc_v2$Discharge_File_Name))
 
 # Clean up the chemistry data
-chem_v2 <- chem_main %>%
+chem_v2 <- chem_v1 %>%
   # Calculate the mg/L (from micro moles) for each of these chemicals
   dplyr::mutate(value_mgL = dplyr::case_when(
     ## Phosphorous
@@ -263,7 +263,7 @@ chem_v2 <- chem_main %>%
 dplyr::glimpse(chem_v2)
 
 # Check for lost/gained streams
-supportR::diff_check(old = unique(chem_main$Stream_Name),
+supportR::diff_check(old = unique(chem_v1$Stream_Name),
                      new = unique(chem_v2$Stream_Name))
 
 ## ---------------------------------------------- ##
@@ -435,13 +435,13 @@ googledrive::drive_upload(path = tidy_dest, overwrite = T,
 
 # We want to be super sure we didn't (somehow) drop any sites in the wrangling steps above.
 # Data versions are as follows:
-## [disc/chem]_main = "Raw" data (i.e., initial master files)
+## [disc/chem]_v1 = "Raw" data (i.e., initial master files)
 ## [disc/chem]_v2 = Coarse wrangling and averaging within date-stream- combos
 ## [disc/chem]_v3 = Integration with lookup table to get other data's naming convention
 ## [disc/chem]_v4 = Cropping by date
 
 # Make a streams only version of each of the discharge objects
-d1 <- disc_main %>%
+d1 <- disc_v1 %>%
   dplyr::select(Discharge_File_Name = DischargeFileName) %>%
   unique() %>%
   dplyr::mutate(in_d1 = 1)
@@ -463,7 +463,7 @@ d5 <- discharge %>%
   dplyr::mutate(in_d5 = 1)
 
 # Make one for chemistry as well
-c1 <- chem_main %>%
+c1 <- chem_v1 %>%
   dplyr::select(Stream_Name) %>%
   unique() %>%
   dplyr::mutate(in_c1 = 1)
