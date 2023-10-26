@@ -91,14 +91,15 @@ odd_ones <- c(
   "UK__ALT AT KIRKBY_DSi", "UK__ARUN AT PALLINGHAM_DSi",
   "UK__AVON AT BATHFORD_DSi", "UK__AVON AT LODDISWELL_DSi",
   "UK__CALDER AT WHALLEY WEIR_DSi", "UK__CUCKMERE AT SHERMAN BRIDGE_DSi",
-  "UK__DEARNE AT ADWICK_DSi",
+  "UK__DEARNE AT ADWICK_DSi", "UK__DON AT DONCASTER_DSi",
   ## "Error in if (good) { : missing value where TRUE/FALSE needed"
   "HYBAM__Manacapuru_DSi", "UK__BURE AT HORSTEAD MILL_DSi",
   # Crashes R without a specific warning message
   "USGS__GREEN RIVER_P", "USGS__McDonalds Branch_P", "USGS__MERCED R_P",
   "USGS__PINE CREEK_P", "USGS__SOPCHOPPY RIVER_NOx",
   "Australia__EDWARD RIVER AT DENILIQUIN_NOx",
-  "Australia__PEEL RIVER AT UPSTREAM PARADISE WEIR_NO3"
+  "Australia__PEEL RIVER AT UPSTREAM PARADISE WEIR_NO3",
+  "UK__DON AT SHEFFIELD HADFIELDS_DSi"
 )
 
 # Rivers without sufficient data
