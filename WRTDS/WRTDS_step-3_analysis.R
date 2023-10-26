@@ -77,7 +77,7 @@ odd_ones <- c(
   "USGS__YAZOO RIVER_NOx", "USGS__YAZOO RIVER_P",
   "UMR__AL02.3M_DSi", "UMR__AL02.3M_NOx", "UMR__AL02.3M_P",
   "UMR__BK14.2M_NOx", "UMR__BK14.2M_P", "UMR__BM00.7S_DSi",
-  "UMR__BM00.7S_NOx", "UMR__BM00.7S_P",
+  "UMR__BM00.7S_NOx", "UMR__BM00.7S_P", "UMR__DC01.0M_NOx",
   ## "Error in if (lastMonth == 2 & (lastYear%%4 == 0) & ((lastYear%%100 !=  : missing value where TRUE/FALSE needed"
   "Australia__DARLING RIVER AT BOURKE TOWN_NO3",
   "Australia__DARLING RIVER AT BURTUNDY_NO3",
@@ -91,6 +91,7 @@ odd_ones <- c(
   "UK__ALT AT KIRKBY_DSi", "UK__ARUN AT PALLINGHAM_DSi",
   "UK__AVON AT BATHFORD_DSi", "UK__AVON AT LODDISWELL_DSi",
   "UK__CALDER AT WHALLEY WEIR_DSi", "UK__CUCKMERE AT SHERMAN BRIDGE_DSi",
+  "UK__DEARNE AT ADWICK_DSi",
   ## "Error in if (good) { : missing value where TRUE/FALSE needed"
   "HYBAM__Manacapuru_DSi", "UK__BURE AT HORSTEAD MILL_DSi",
   # Crashes R without a specific warning message
@@ -151,7 +152,7 @@ few_data <- c(
   "Australia__NARRABRI CREEK AT NARRABRI_NOx",
   "Australia__NARRABRI CREEK AT NARRABRI_P",
   "Australia__PEEL RIVER AT UPSTREAM PARADISE WEIR_NH4",
-  "HYBAM__Borja_NO3", "HYBAM__Ciudad Bolivar_NO3"
+  "HYBAM__Borja_NO3", "HYBAM__Ciudad Bolivar_NO3", "UK__DERWENT AT SEATON MILL_DSi"
   )
 
 # Identify all rivers that aren't in the broken data vectors
