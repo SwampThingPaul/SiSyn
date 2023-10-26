@@ -92,8 +92,10 @@ odd_ones <- c(
   "UK__AVON AT BATHFORD_DSi", "UK__AVON AT LODDISWELL_DSi",
   "UK__CALDER AT WHALLEY WEIR_DSi", "UK__CUCKMERE AT SHERMAN BRIDGE_DSi",
   "UK__DEARNE AT ADWICK_DSi", "UK__DON AT DONCASTER_DSi",
+  "UK__ELY OUSE AT DENVER COMPLEX_DSi",
   ## "Error in if (good) { : missing value where TRUE/FALSE needed"
   "HYBAM__Manacapuru_DSi", "UK__BURE AT HORSTEAD MILL_DSi",
+  "UK__DOUGLAS AT WANES BLADES BRIDGE_DSi", "UK__EAMONT AT UDFORD_DSi",
   # Crashes R without a specific warning message
   "USGS__GREEN RIVER_P", "USGS__McDonalds Branch_P", "USGS__MERCED R_P",
   "USGS__PINE CREEK_P", "USGS__SOPCHOPPY RIVER_NOx",
@@ -170,7 +172,11 @@ done_rivers <- data.frame("file" = dir(path = file.path(path, "WRTDS Loop Diagno
   dplyr::mutate(river = gsub(pattern = "\\_Loop\\_Diagnostic.csv", replacement = "", x = file))
 
 # Set of problem rivers to drop from the loop
-bad_rivers <- c( )
+bad_rivers <- c(
+  # River names with slashes cause a file path issue later on
+  "UK__EDEN AT PENSHURST / VEXOUR BRIDGE_DSi"
+  
+)
 
 # Identify rivers to run
 rivers_to_do <- setdiff(x = unique(good_rivers), 
@@ -178,13 +184,6 @@ rivers_to_do <- setdiff(x = unique(good_rivers),
 
 # What are the next few that will be processed?
 rivers_to_do[1:5]
-
-# Kalman step throws the following error:
-## "Pseudo only supported after running modelEstimation
-## Please double check that the Sample dataframe is correctly defined.
-## Missing columns:ConcLowConcHighConcAve
-## Error in `[.data.frame`(localSample, , c("Julian", "ConcAve")) : 
-##  undefined columns selected"
 
 # Loop across rivers and elements to run WRTDS workflow!
 for(river in rivers_to_do){ # actual loop
@@ -303,7 +302,7 @@ for(river in rivers_to_do){ # actual loop
                                              minNumObs = 50, verbose = F)
   
   # Fit WRTDS Kalman
-  egret_kalman <- EGRET::WRTDSKalman(eList = egret_estimation, niter = 200, verbose = F)
+  egret_kalman <- EGRET::WRTDSKalman(eList = egret_estimation, niter = 200, verbose = T)
   
   # Identify error statistics
   # egret_error <- EGRET::errorStats(eList = egret_estimation)
