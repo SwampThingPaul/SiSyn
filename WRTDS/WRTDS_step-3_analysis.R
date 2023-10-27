@@ -78,6 +78,7 @@ odd_ones <- c(
   "UMR__AL02.3M_DSi", "UMR__AL02.3M_NOx", "UMR__AL02.3M_P",
   "UMR__BK14.2M_NOx", "UMR__BK14.2M_P", "UMR__BM00.7S_DSi",
   "UMR__BM00.7S_NOx", "UMR__BM00.7S_P", "UMR__DC01.0M_NOx",
+  "UMR__I007.0W_DSi", "UMR__I007.0W_P", 
   ## "Error in if (lastMonth == 2 & (lastYear%%4 == 0) & ((lastYear%%100 !=  : missing value where TRUE/FALSE needed"
   "Australia__DARLING RIVER AT BOURKE TOWN_NO3",
   "Australia__DARLING RIVER AT BURTUNDY_NO3",
@@ -93,9 +94,14 @@ odd_ones <- c(
   "UK__CALDER AT WHALLEY WEIR_DSi", "UK__CUCKMERE AT SHERMAN BRIDGE_DSi",
   "UK__DEARNE AT ADWICK_DSi", "UK__DON AT DONCASTER_DSi",
   "UK__ELY OUSE AT DENVER COMPLEX_DSi",
+  "UK__HULL AT HEMPHOLME LOCK_DSi", "UK__IRWELL AT ADELPHI WEIR_DSi",
+  "UK__KENT AT SEDGWICK_DSi", "HYBAM__Saut Maripa_DSi",
+  "HYBAM__Saut Maripa_NO3", "MD__Lock 5_DSi", "MD__Lock 5_NOx",
+  "MD__Lock 5_P", "UK__LEE AT LEA BRIDGE_DSi",
   ## "Error in if (good) { : missing value where TRUE/FALSE needed"
   "HYBAM__Manacapuru_DSi", "UK__BURE AT HORSTEAD MILL_DSi",
   "UK__DOUGLAS AT WANES BLADES BRIDGE_DSi", "UK__EAMONT AT UDFORD_DSi",
+  "HYBAM__Manacapuru_NO3",
   # Crashes R without a specific warning message
   "USGS__GREEN RIVER_P", "USGS__McDonalds Branch_P", "USGS__MERCED R_P",
   "USGS__PINE CREEK_P", "USGS__SOPCHOPPY RIVER_NOx",
@@ -124,6 +130,8 @@ few_data <- c(
   "Australia__EDWARD RIVER AT DENILIQUIN_NO3",
   "Australia__NARRABRI CREEK AT NARRABRI_NH4",
   "Australia__PEEL RIVER AT UPSTREAM PARADISE WEIR_P", "HYBAM__Atalaya Aval_NO3",
+  "HYBAM__Manacapuru_NOx", "HYBAM__Manacapuru_P", "HYBAM__Nazareth_DSi",
+  "HYBAM__Nazareth_NO3", "HYBAM__Obidos_NOx", "HYBAM__Obidos_P",
   # Error in `EGRET::runSeries`
   ## "Error in runSurvReg(estPtYear, estPtLogQ, DecLow, DecHigh, localSample,  : minNumObs is greater than total number of samples"
   ## Note: error timing is near-instant
@@ -179,11 +187,11 @@ bad_rivers <- c(
 )
 
 # Identify rivers to run
-rivers_to_do <- setdiff(x = unique(good_rivers), 
-                        y = c(unique(done_rivers$river), bad_rivers))
+rivers_to_do <- sort(setdiff(x = unique(good_rivers), 
+                             y = c(unique(done_rivers$river), bad_rivers)))
 
-# What are the next few that will be processed?
-rivers_to_do[1:5]
+# What are the next few that will be processed and how many total left?
+rivers_to_do[1:5]; length(rivers_to_do)
 
 # Loop across rivers and elements to run WRTDS workflow!
 for(river in rivers_to_do){ # actual loop
