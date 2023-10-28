@@ -97,11 +97,13 @@ odd_ones <- c(
   "UK__HULL AT HEMPHOLME LOCK_DSi", "UK__IRWELL AT ADELPHI WEIR_DSi",
   "UK__KENT AT SEDGWICK_DSi", "HYBAM__Saut Maripa_DSi",
   "HYBAM__Saut Maripa_NO3", "MD__Lock 5_DSi", "MD__Lock 5_NOx",
-  "MD__Lock 5_P", "UK__LEE AT LEA BRIDGE_DSi",
+  "MD__Lock 5_P", "UK__LEE AT LEA BRIDGE_DSi", "UK__LUNE AT CATON_DSi",
+  "UK__MERSEY AT WESTY_DSi", "UK__MOLE AT ESHER_DSi", 
+  "UK__NENE AT ORTON_DSi", "UK__OUSE AT BARCOMBE MILLS_DSi", 
   ## "Error in if (good) { : missing value where TRUE/FALSE needed"
   "HYBAM__Manacapuru_DSi", "UK__BURE AT HORSTEAD MILL_DSi",
   "UK__DOUGLAS AT WANES BLADES BRIDGE_DSi", "UK__EAMONT AT UDFORD_DSi",
-  "HYBAM__Manacapuru_NO3",
+  "HYBAM__Manacapuru_NO3", "UK__NORTH TYNE AT REAVERHILL_DSi",
   # Crashes R without a specific warning message
   "USGS__GREEN RIVER_P", "USGS__McDonalds Branch_P", "USGS__MERCED R_P",
   "USGS__PINE CREEK_P", "USGS__SOPCHOPPY RIVER_NOx",
@@ -182,7 +184,8 @@ done_rivers <- data.frame("file" = dir(path = file.path(path, "WRTDS Loop Diagno
 # Set of problem rivers to drop from the loop
 bad_rivers <- c(
   # River names with slashes cause a file path issue later on
-  "UK__EDEN AT PENSHURST / VEXOUR BRIDGE_DSi"
+  "UK__EDEN AT PENSHURST / VEXOUR BRIDGE_DSi", 
+  "UK__MEDWAY AT TESTON / EAST FARLEIGH_DSi"
   
 )
 
