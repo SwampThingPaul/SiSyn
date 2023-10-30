@@ -38,8 +38,6 @@ dplyr::glimpse(ref_table)
 # Define the GoogleDrive URL to upload flat results files
 ## Original destination
 dest_url <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/1V5EqmOlWA8U9NWfiBcWdqEH9aRAP-zCk")
-## New destination while checking that seasonality alterations produce desired confidence
-# dest_url <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/1bm2a-rBkvbFXECGXmZ-pLDtoTomtFLYI")
 
 # Check current contents of this folder
 googledrive::drive_ls(path = dest_url)
@@ -124,7 +122,7 @@ for(type in out_types){
   # Once all files of that type are retrieved, unlist the sub_list!
   type_df <- sub_list %>%
     # Actual unlisting of the list
-    purrr::map_dfr(.f = dplyr::select, dplyr::everything()) %>%
+    purrr::list_rbind(x = .) %>%
     # Bring in other desired columns
     dplyr::left_join(y = wrtds_outs, by = "file_name") %>%
     # Drop the redundant data_type column
@@ -545,7 +543,7 @@ for(type in boot_out_types){
   # Once all files of that type are retrieved, unlist the sub_list!
   boot_type_df <- boot_sub_list %>%
     # Actual unlisting of the list
-    purrr::map_dfr(.f = dplyr::select, dplyr::everything()) %>%
+    purrr::list_rbind(x = .) %>%
     # Bring in other desired columns
     dplyr::left_join(y = boot_outs, by = "file_name") %>%
     # Drop the redundant data_type column
