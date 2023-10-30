@@ -78,7 +78,10 @@ odd_ones <- c(
   "UMR__AL02.3M_DSi", "UMR__AL02.3M_NOx", "UMR__AL02.3M_P",
   "UMR__BK14.2M_NOx", "UMR__BK14.2M_P", "UMR__BM00.7S_DSi",
   "UMR__BM00.7S_NOx", "UMR__BM00.7S_P", "UMR__DC01.0M_NOx",
-  "UMR__I007.0W_DSi", "UMR__I007.0W_P", 
+  "UMR__I007.0W_DSi", "UMR__I007.0W_P", "UMR__LX00.1M_NOx", 
+  "UMR__LX00.1M_P", "UMR__MK04.4M_NOx", "UMR__MK04.4M_P",
+  "UMR__S000.2K_DSi", "UMR__S000.2K_NOx", "UMR__S000.2K_P",
+  "UMR__UI02.9M_P",
   ## "Error in if (lastMonth == 2 & (lastYear%%4 == 0) & ((lastYear%%100 !=  : missing value where TRUE/FALSE needed"
   "Australia__DARLING RIVER AT BOURKE TOWN_NO3",
   "Australia__DARLING RIVER AT BURTUNDY_NO3",
@@ -107,7 +110,7 @@ odd_ones <- c(
   "UK__THAMES AT ROYAL WINDSOR PARK_DSi", "UK__TORRIDGE AT TORRINGTON_DSi",
   "UK__TRENT AT NORTH MUSKHAM_DSi", "UK__TYNE AT BYWELL_DSi", 
   "UK__WELLAND AT BARROWDEN_DSi", "UK__WELLAND AT TALLINGTON TOTAL_DSi",
-  
+  "UK__WENSUM AT COSTESSEY MILL_DSi", "UK__WEY AT WEYBRIDGE_DSi",
   ## "Error in if (good) { : missing value where TRUE/FALSE needed"
   "HYBAM__Manacapuru_DSi", "UK__BURE AT HORSTEAD MILL_DSi",
   "UK__DOUGLAS AT WANES BLADES BRIDGE_DSi", "UK__EAMONT AT UDFORD_DSi",
