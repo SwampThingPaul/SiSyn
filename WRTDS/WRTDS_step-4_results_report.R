@@ -176,7 +176,7 @@ rm(list = setdiff(ls(), c("path", "dest_url", "out_list", "ref_table",
                           "wrtds_outs", "wrtds_outs_v0", "done_rivers", "done_boots")))
 
 ## ---------------------------------------------- ##
-       # Process WRTDS Outputs - Trends ----
+           # Process WRTDS - Trends ----
 ## ---------------------------------------------- ##
 
 # Handle trends table
@@ -186,7 +186,7 @@ trends_table <- out_list[["TrendsTable_GFN_WRTDS.csv"]]
 dplyr::glimpse(trends_table)
 
 ## ---------------------------------------------- ##
-  # Process WRTDS Outputs - Flux Bias Stats ----
+          # Process WRTDS - Flux Bias ----
 ## ---------------------------------------------- ##
 
 # Handle trends table
@@ -196,7 +196,7 @@ flux_stats <- out_list[["FluxBias_WRTDS.csv"]]
 dplyr::glimpse(flux_stats)
 
 ## ---------------------------------------------- ##
-        # Process WRTDS Outputs - GFN ----
+        # Process WRTDS - GFN & Kalman ----
 ## ---------------------------------------------- ##
 
 # GFN output
@@ -210,8 +210,19 @@ gfn <- out_list[["GFN_WRTDS.csv"]] %>%
 # Glimpse
 dplyr::glimpse(gfn)
 
+# Handle primary Kalman output
+kalm_main <- out_list[["Kalman_WRTDS.csv"]] %>%
+  # Attach basin area
+  dplyr::left_join(y = ref_table, by = c("LTER", "stream")) %>%
+  # Calculate some additional columns
+  dplyr::mutate(Yield = FluxDay / drainSqKm,
+                FNYield = FNFlux / drainSqKm)
+
+# Glimpse it
+dplyr::glimpse(kalm_main)
+
 ## ---------------------------------------------- ##
-    # Process WRTDS Outputs - Error Stats ----
+         # Process WRTDS - Error Stats ----
 ## ---------------------------------------------- ##
 
 # Error statistics
@@ -221,7 +232,7 @@ error_stats <- out_list[["ErrorStats_WRTDS.csv"]]
 dplyr::glimpse(error_stats)
 
 ## ---------------------------------------------- ##
-   # Process WRTDS Outputs - Monthly Results ----
+      # Process WRTDS - Monthly Results ----
 ## ---------------------------------------------- ##
 
 # Monthly information
@@ -316,7 +327,102 @@ monthly <- out_list[["Monthly_GFN_WRTDS.csv"]] %>%
 dplyr::glimpse(monthly)
 
 ## ---------------------------------------------- ##
-   # Process WRTDS Outputs - Annual Results ----
+      # Process WRTDS - Monthly Kalman ----
+## ---------------------------------------------- ##
+
+# Monthly information
+kalman_monthly <- out_list[["Monthly_Kalman_WRTDS.csv"]] %>%
+  # Attach basin area
+  dplyr::left_join(y = ref_table, by = c("LTER", "stream")) %>%
+  # Compute season of each month
+  dplyr::mutate(season = dplyr::case_when(
+    !LTER %in% c("LUQ", "MCM") & Month %in% 1:3 ~ "winter",
+    !LTER %in% c("LUQ", "MCM") & Month %in% 4:6 ~ "freshet",
+    !LTER %in% c("LUQ", "MCM") & Month %in% 7:9 ~ "growing season",
+    !LTER %in% c("LUQ", "MCM") & Month %in% 10:12 ~ "fall",
+    LTER == "MCM" & Month %in% 12 ~ "freshet",
+    LTER == "MCM" & Month %in% 1 ~ "growing season",
+    LTER == "MCM" & Month %in% 2 ~ "fall",
+    LTER == "MCM" & Month %in% 3:11 ~ "winter",
+    TRUE ~ ""), .after = Month) %>%
+  # Rename columns to be more explicit about starting units
+  dplyr::rename(Discharge_cms = Q,
+                Conc_mgL = Conc,
+                FNConc_mgL = FNConc,
+                Flux_10_6kg_yr = Flux,
+                FNFlux_10_6kg_yr = FNFlux) %>%
+  # Do some unit conversions
+  dplyr::mutate(
+    Conc_uM = dplyr::case_when(
+      chemical %in% c("DSi") ~ (Conc_mgL / 28) * 1000,
+      chemical %in% c("NOx", "NH4", "NO3", "TN") ~ (Conc_mgL / 14) * 1000,
+      chemical %in% c("P", "TP") ~ (Conc_mgL / 30.9) * 1000),
+    FNConc_uM = dplyr::case_when(
+      chemical %in% c("DSi") ~ (FNConc_mgL / 28) * 1000,
+      chemical %in% c("NOx", "NH4", "NO3", "TN") ~ (FNConc_mgL / 14) * 1000,
+      chemical %in% c("P", "TP") ~ (FNConc_mgL / 30.9) * 1000),
+    Flux_10_6kmol_yr = dplyr::case_when(
+      chemical %in% c("DSi") ~ (Flux_10_6kg_yr / 28),
+      chemical %in% c("NOx", "NH4", "NO3", "TN") ~ (Flux_10_6kg_yr / 14),
+      chemical %in% c("P", "TP") ~ (Flux_10_6kg_yr / 30.9)),
+    FNFlux_10_6kmol_yr = dplyr::case_when(
+      chemical %in% c("DSi") ~ (FNFlux_10_6kg_yr / 28),
+      chemical %in% c("NOx", "NH4", "NO3", "TN") ~ (FNFlux_10_6kg_yr / 14),
+      chemical %in% c("P", "TP") ~ (FNFlux_10_6kg_yr / 30.9)) ) %>%
+  # Move area to the left
+  dplyr::relocate(drainSqKm, .after = stream) %>%
+  # Calculate ratios of different chemicals
+  ## Pivot longer to get various responses into a column
+  tidyr::pivot_longer(cols = Discharge_cms:FNFlux_10_6kmol_yr,
+                      names_to = "response_types",
+                      values_to = "response_values") %>%
+  # Handle "duplicate" values for sites that break across a year so have two values for one year
+  ## Only relevant to the McMurdo sites where we altered period of analysis
+  dplyr::group_by(LTER, stream, drainSqKm, chemical, Month, season,
+                  Year, nDays, DecYear, response_types) %>%
+  dplyr::summarize(response_values = mean(response_values, na.rm = TRUE)) %>%
+  dplyr::ungroup() %>%
+  ## Pivot back wider but with chemicals as columns
+  tidyr::pivot_wider(names_from = chemical,
+                     values_from = response_values) %>%
+  ## Calculate DIN (DIN = NOx <or> NO3 + NH4)
+  dplyr::mutate(DIN = dplyr::case_when(
+    ### NOx is preferred for calculating DIN because it is NO3 + NOx
+    !is.na(NOx) & !is.na(NH4) ~ (NOx + NH4),
+    !is.na(NO3) & !is.na(NH4) ~ (NO3 + NH4))) %>%
+  ## Calculate ratios
+  dplyr::mutate(Si_to_DIN = ifelse(test = (!is.na(DSi) & !is.na(DIN)),
+                                   yes = (DSi / DIN), no = NA),
+                Si_to_P = ifelse(test = (!is.na(DSi) & !is.na(P)),
+                                 yes = (DSi / P), no = NA)) %>%
+  ## Pivot back long
+  tidyr::pivot_longer(cols = DSi:Si_to_P,
+                      names_to = "chemical",
+                      values_to = "response_values") %>%
+  ## Drop NAs this pivot introduces
+  dplyr::filter(!is.na(response_values)) %>%
+  ## Pivot back wide *again* using the original column names
+  tidyr::pivot_wider(names_from = response_types,
+                     values_from = response_values) %>%
+  ## Fix the ratio specification now that they're not column names
+  dplyr::mutate(
+    chemical = gsub(pattern = "_to_", replacement = ":", x = chemical),
+    .before = dplyr::everything()) %>%
+  # Reorder column names
+  dplyr::select(LTER:chemical, Discharge_cms,
+                dplyr::ends_with("Conc_mgL"), dplyr::ends_with("Conc_uM"),
+                dplyr::ends_with("Flux_10_6kg_yr"), dplyr::ends_with("Flux_10_6kmol_yr")) %>%
+  # Calculate yield for both units
+  dplyr::mutate(Yield = Flux_10_6kg_yr / drainSqKm,
+                FNYield = FNFlux_10_6kg_yr / drainSqKm,
+                Yield_10_6kmol_yr_km2 = Flux_10_6kmol_yr / drainSqKm,
+                FNYield_10_6kmol_yr_km2 = FNFlux_10_6kmol_yr / drainSqKm)
+
+# Check it out
+dplyr::glimpse(kalman_monthly)
+
+## ---------------------------------------------- ##
+      # Process WRTDS - Annual Results ----
 ## ---------------------------------------------- ##
 
 # Results table
@@ -399,16 +505,34 @@ results_table <- out_list[["ResultsTable_GFN_WRTDS.csv"]] %>%
 dplyr::glimpse(results_table)
 
 ## ---------------------------------------------- ##
+        # Process WRTDS - Annual Kalman ----
+## ---------------------------------------------- ##
+
+# Results table
+kalman_annual <- out_list[["ResultsTable_Kalman_WRTDS.csv"]] %>%
+  # Attach basin area
+  dplyr::left_join(y = ref_table, by = c("LTER", "stream"))
+
+# Glimpse this as well
+dplyr::glimpse(kalman_annual)
+
+## ---------------------------------------------- ##
             # Export WRTDS Outputs ----
 ## ---------------------------------------------- ##
 
 # Combine processed files into a list
 export_list <- list("WRTDS_trends.csv" = trends_table,
-                    "WRTDS_daily.csv" = gfn,
-                    "WRTDS_monthly.csv" = monthly,
-                    "WRTDS_annual.csv" = results_table,
                     "WRTDS_flux_bias.csv" = flux_stats,
-                    "WRTDS_error_stats.csv" = error_stats)
+                    "WRTDS_error_stats.csv" = error_stats,
+                    ## Daily
+                    "WRTDS_daily.csv" = gfn,
+                    "WRTDS_kalman_daily.csv" = kalm_main,
+                    ## Monthly
+                    "WRTDS_monthly.csv" = monthly,
+                    "WRTDS_kalman_monthly.csv" = kalman_monthly,
+                    ## Yearly
+                    "WRTDS_annual.csv" = results_table,
+                    "WRTDS_kalman_annual.csv" = kalman_annual)
 
 # Loop across the list to export locally and to GoogleDrive
 ## Note that the "GFN_WRTDS.csv" file is *huge* so it takes a few seconds to upload
