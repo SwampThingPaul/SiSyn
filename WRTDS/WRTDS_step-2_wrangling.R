@@ -25,7 +25,7 @@ dir.create(path = file.path(path, "WRTDS Inputs"), showWarnings = F)
 file_names <- c("WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv", # No.1 Simplified ref table
                 "Site_Reference_Table", # No.2 Full ref table
                 "Discharge_master_10232023.csv", # No.3 Main discharge
-                "20231024_masterdata_chem.csv") # No.4 Main chemistry
+                "20231030_masterdata_chem.csv") # No.4 Main chemistry
 
 # Find those files' IDs
 ids <- googledrive::drive_ls(as_id("https://drive.google.com/drive/u/0/folders/15FEoe2vu3OAqMQHqdQ9XKpFboR4DvS9M")) %>%
