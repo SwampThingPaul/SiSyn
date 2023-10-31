@@ -207,8 +207,12 @@ new_bads <- c(
   ## "Error in seq.Date(surfaceStart, by = "1 year", length.out = nSeg):
   ## 'from' must be of length 1"
   "GRO__Kolyma_DSi", "GRO__Kolyma_NH4", "GRO__Kolyma_NOx",
-  "GRO__Mackenzie_DSi", "GRO__Mackenzie_NH4", "GRO__Mackenzie_NOx"
+  "GRO__Mackenzie_DSi", "GRO__Mackenzie_NH4", "GRO__Mackenzie_NOx",
   
+  # `EGRET::errorStats` issue:
+  ## "Error in runSurvReg(SampleCrossV$DecYear[i], SampleCrossV$LogQ[i], DecLow,: 
+  ## minNumUncen is greater than total number of samples"
+  "GRO__Yenisey_P"
 )
 
 # Identify rivers to run
