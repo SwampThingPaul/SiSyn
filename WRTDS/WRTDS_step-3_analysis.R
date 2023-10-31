@@ -201,9 +201,19 @@ bad_rivers <- c(
   
 )
 
+# Bad rivers identified as of 10/30/23
+new_bads <- c(
+  # `EGRET::runSeries` issue:
+  ## "Error in seq.Date(surfaceStart, by = "1 year", length.out = nSeg):
+  ## 'from' must be of length 1"
+  "GRO__Kolyma_DSi", "GRO__Kolyma_NH4", "GRO__Kolyma_NOx",
+  "GRO__Mackenzie_DSi", "GRO__Mackenzie_NH4", "GRO__Mackenzie_NOx"
+  
+)
+
 # Identify rivers to run
 rivers_to_do <- sort(setdiff(x = unique(good_rivers), 
-                             y = c(unique(done_rivers$river), bad_rivers)))
+                             y = c(unique(done_rivers$river), bad_rivers, new_bads)))
 
 # What are the next few that will be processed and how many total left?
 rivers_to_do[1:5]; length(rivers_to_do)
@@ -389,6 +399,15 @@ for(river in rivers_to_do){ # actual loop
   
   # Message completion of loop
   message("Processing complete for '", element, "' at stream '", stream_id, "'")
+  
+  # Remove all objects created inside loop
+  ## This makes figuring out where the loop breaks *much* easier!
+  rm(list = c("stream_id", "element", "river_chem", "river_disc", "out_prefix", 
+              "start", "river_info", "egret_disc", "egret_chem", "egret_info", 
+              "egret_list", "egret_list_out", "egret_estimation", "egret_error", 
+              "flux_bias", "egret_annual", "egret_annual_kalman", 
+              "egret_monthly", "egret_monthly_kalman", "egret_concentration", 
+              "egret_conc_kalman", "egret_flownorm", "end", "loop_diagnostic"))
   
 } # End loop
 
