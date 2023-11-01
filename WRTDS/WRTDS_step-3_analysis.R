@@ -212,7 +212,12 @@ new_bads <- c(
   # `EGRET::errorStats` issue:
   ## "Error in runSurvReg(SampleCrossV$DecYear[i], SampleCrossV$LogQ[i], DecLow,: 
   ## minNumUncen is greater than total number of samples"
-  "GRO__Yenisey_P"
+  "GRO__Yenisey_P",
+  
+  # `EGRET::errorStats` issue:
+  ## Error in runSurvReg(SampleCrossV$DecYear[i], SampleCrossV$LogQ[i], DecLow,:
+  ## minNumUncen is greater than total number of samples
+  "MCM__Onyx River at Lower Wright Weir_NH4"
 )
 
 # Identify rivers to run
