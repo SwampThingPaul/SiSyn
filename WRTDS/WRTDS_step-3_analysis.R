@@ -215,9 +215,13 @@ new_bads <- c(
   "GRO__Yenisey_P",
   
   # `EGRET::errorStats` issue:
-  ## Error in runSurvReg(SampleCrossV$DecYear[i], SampleCrossV$LogQ[i], DecLow,:
-  ## minNumUncen is greater than total number of samples
-  "MCM__Onyx River at Lower Wright Weir_NH4"
+  ## "Error in runSurvReg(SampleCrossV$DecYear[i], SampleCrossV$LogQ[i], DecLow,:
+  ## minNumUncen is greater than total number of samples"
+  "MCM__Onyx River at Lower Wright Weir_NH4",
+  
+  # `EGRET::tableResults` issue:
+  ## "Error in if (good) { : missing value where TRUE/FALSE needed"
+  "MD__Barr Creek_NOx"
 )
 
 # Identify rivers to run
@@ -419,5 +423,20 @@ for(river in rivers_to_do){ # actual loop
               "egret_conc_kalman", "egret_flownorm", "end", "loop_diagnostic"))
   
 } # End loop
+
+# Object creation order (for error diagnostics):
+## 0. stream_id; element; river_chem; river_disc; out_prefix; start; river_info
+## 1. egret_disc; egret_chem; egret_info -- `EGRET::readUser___`
+## 2. egret_list; egret_list_out -- `EGRET::mergeReport` & `EGRET::runSeries`
+## 3. egret_estimation -- `EGRET::modelEstimation`
+## 4. egret_kalman -- `EGRET::WRTDSKalman`
+## 5. egret_error -- `EGRET::errorStats`
+## 6. flux_bias -- `EGRET::fluxBiasStat`
+## 7A. egret_annual -- `EGRET::tableResults`
+## 7B. egret_annual_kalman -- `EGRET::tableResults`
+## 8. egret_monthly; egret_monthly_kalman -- `EGRET::calculateMonthlyResults`
+## 9. egret_concentration; egret_conc_kalman
+## 10. egret_flownorm -- `HERON::egret_trends`
+## 11. end; loop_diagnostic
 
 # End ----
