@@ -180,26 +180,20 @@ few_data <- c(
   "HYBAM__Borja_NO3", "HYBAM__Ciudad Bolivar_NO3", "UK__DERWENT AT SEATON MILL_DSi"
   )
 
+# Set of problem rivers to drop from the loop (for reasons not specified above)
+bad_rivers <- c(
+  # River names with slashes cause a file path issue later on
+  "UK__EDEN AT PENSHURST / VEXOUR BRIDGE_DSi", 
+  "UK__MEDWAY AT TESTON / EAST FARLEIGH_DSi")
+
 # Identify all rivers that aren't in the broken data vectors
 good_rivers <- setdiff(x = unique(chemistry$Stream_Element_ID),
-                       y = unique(c(missing_data, few_data, duplicate_data, odd_ones)))
+                       y = unique(c(missing_data, few_data, duplicate_data, odd_ones, bad_rivers)))
 ## Note this includes weird rivers that need special treatment and those that don't
 
 ## ---------------------------------------------- ##
               # Analysis Workflow ----
 ## ---------------------------------------------- ##
-# Set of rivers we've already run the workflow for
-done_rivers <- data.frame("file" = dir(path = file.path(path, "WRTDS Loop Diagnostic"))) %>%
-  # Drop the file suffix part of the file name 
-  dplyr::mutate(river = gsub(pattern = "\\_Loop\\_Diagnostic.csv", replacement = "", x = file))
-
-# Set of problem rivers to drop from the loop
-bad_rivers <- c(
-  # River names with slashes cause a file path issue later on
-  "UK__EDEN AT PENSHURST / VEXOUR BRIDGE_DSi", 
-  "UK__MEDWAY AT TESTON / EAST FARLEIGH_DSi"
-  
-)
 
 # Bad rivers identified as of 10/30/23
 new_bads <- c(
@@ -208,6 +202,11 @@ new_bads <- c(
   ## 'from' must be of length 1"
   "GRO__Kolyma_DSi", "GRO__Kolyma_NH4", "GRO__Kolyma_NOx",
   "GRO__Mackenzie_DSi", "GRO__Mackenzie_NH4", "GRO__Mackenzie_NOx",
+  
+  # `EGRET::tableResults` issue:
+  ## "Error in seq.default(xFirst, xLast) : 'from' must be a finite number"
+  "UMR__CH00.1M_NOx", "UMR__CH00.1M_P", "UMR__CN00.1M_P",
+  "UMR__CU11.6M_DSi", "UMR__CU11.6M_NOx", 
   
   # `EGRET::errorStats` issue:
   ## "Error in runSurvReg(SampleCrossV$DecYear[i], SampleCrossV$LogQ[i], DecLow,: 
@@ -231,9 +230,14 @@ new_bads <- c(
   "MD__Gunbower Creek_P"
 )
 
+# Set of rivers we've already run the workflow for
+done_rivers <- data.frame("file" = dir(path = file.path(path, "WRTDS Loop Diagnostic"))) %>%
+  # Drop the file suffix part of the file name 
+  dplyr::mutate(river = gsub(pattern = "\\_Loop\\_Diagnostic.csv", replacement = "", x = file))
+
 # Identify rivers to run
 rivers_to_do <- sort(setdiff(x = unique(good_rivers), 
-                             y = c(unique(done_rivers$river), bad_rivers, new_bads)))
+                             y = c(unique(done_rivers$river), new_bads)))
 
 # What are the next few that will be processed and how many total left?
 rivers_to_do[1:5]; length(rivers_to_do)
