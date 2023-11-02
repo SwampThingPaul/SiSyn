@@ -218,10 +218,17 @@ new_bads <- c(
   ## "Error in runSurvReg(SampleCrossV$DecYear[i], SampleCrossV$LogQ[i], DecLow,:
   ## minNumUncen is greater than total number of samples"
   "MCM__Onyx River at Lower Wright Weir_NH4",
+  "NIVA__ROGEORR_NH4",
   
   # `EGRET::tableResults` issue:
   ## "Error in if (good) { : missing value where TRUE/FALSE needed"
-  "MD__Barr Creek_NOx"
+  "MD__Barr Creek_NOx", "MD__Barr Creek_P",
+  
+  # `EGRET::` issue:
+  ## "Error in if (lastMonth == 2 & (lastYear%%4 == 0) & ((lastYear%%100 != : 
+  ## missing value where TRUE/FALSE needed"
+  "MD__Broken Creek_NOx", "MD__Broken Creek_P", "MD__Gunbower Creek_NOx", 
+  "MD__Gunbower Creek_P"
 )
 
 # Identify rivers to run
