@@ -206,7 +206,14 @@ new_bads <- c(
   # `EGRET::tableResults` issue:
   ## "Error in seq.default(xFirst, xLast) : 'from' must be a finite number"
   "UMR__CH00.1M_NOx", "UMR__CH00.1M_P", "UMR__CN00.1M_P",
-  "UMR__CU11.6M_DSi", "UMR__CU11.6M_NOx", 
+  "UMR__CU11.6M_DSi", "UMR__CU11.6M_NOx", "UMR__CU11.6M_P",
+  "UMR__LM00.5M_NOx", "UMR__LM00.5M_P", "UMR__M078.0B_NOx",
+  "UMR__M241.4K_NOx", "UMR__M241.4K_P", "UMR__M556.4A_NOx",
+  "UMR__M556.4A_P", "UMR__M701.1B_NOx", "UMR__M701.1B_P",
+  "UMR__M764.3A_NOx", "UMR__M764.3A_P", "UMR__M786.2C_P",
+  "UMR__MQ02.1M_NOx", "UMR__MQ02.1M_P", "UMR__SG16.2C_NOx",
+  "UMR__SG16.2C_P", "UMR__WP02.6M_DSi", "UMR__WP02.6M_NOx", 
+  "UMR__WP02.6M_P", 
   
   # `EGRET::errorStats` issue:
   ## "Error in runSurvReg(SampleCrossV$DecYear[i], SampleCrossV$LogQ[i], DecLow,: 
