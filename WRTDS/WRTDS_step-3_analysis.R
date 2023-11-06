@@ -45,8 +45,8 @@ duplicate_data <- c(
   # Warning about "duplicated Daily dates" and "duplicated Sample dates"
   ### "Error in seq.Date(surfaceStart, by = "1 year", length.out = nSeg) : 
   ###'from' must be of length 1"
-  "USGS__Wild River_DSi", "USGS__Wild River_NH4", "USGS__Wild River_NOx", 
-  "USGS__Wild River_P"
+  # "USGS__Wild River_DSi", "USGS__Wild River_NH4", "USGS__Wild River_NOx", 
+  # "USGS__Wild River_P"
   )
 
 pa5_5 <- c(
@@ -63,140 +63,11 @@ pa5_3 <- c(
 missing_data <- c(
   # Warning in `EGRET::mergeReport`
   ### "Some Sample dates do not have corresponding flow data. Not all EGRET functions will work correctly."
-  "LUQ__RI_DSi", "LUQ__RI_NH4", "LUQ__RI_NOx", "LUQ__RI_P"
+  # "LUQ__RI_DSi", "LUQ__RI_NH4", "LUQ__RI_NOx", "LUQ__RI_P"
   )
 
 # Other odd errors
 odd_ones <- c(
-  # "Error in seq.default(xFirst, xLast) : 'from' must be a finite number"
-  ### Looks like this may be caused by "negative flow days"?
-  ### Need to check range of values to see these problem values
-  "USGS__Lower Atchafalaya_DSi", "USGS__Lower Atchafalaya_NH4", 
-  "USGS__Lower Atchafalaya_NOx", "USGS__Lower Atchafalaya_P",
-  "USGS__YAZOO RIVER_DSi", "USGS__YAZOO RIVER_NH4",
-  "USGS__YAZOO RIVER_NOx", "USGS__YAZOO RIVER_P",
-  "UMR__AL02.3M_DSi", "UMR__AL02.3M_NOx", "UMR__AL02.3M_P",
-  "UMR__BK14.2M_NOx", "UMR__BK14.2M_P", "UMR__BM00.7S_DSi",
-  "UMR__BM00.7S_NOx", "UMR__BM00.7S_P", "UMR__DC01.0M_NOx",
-  "UMR__I007.0W_DSi", "UMR__I007.0W_P", "UMR__LX00.1M_NOx", 
-  "UMR__LX00.1M_P", "UMR__MK04.4M_NOx", "UMR__MK04.4M_P",
-  "UMR__S000.2K_DSi", "UMR__S000.2K_NOx", "UMR__S000.2K_P",
-  "UMR__UI02.9M_P",
-  ## "Error in if (lastMonth == 2 & (lastYear%%4 == 0) & ((lastYear%%100 !=  : missing value where TRUE/FALSE needed"
-  "Australia__DARLING RIVER AT BOURKE TOWN_NO3",
-  "Australia__DARLING RIVER AT BURTUNDY_NO3",
-  "Australia__DARLING RIVER AT BURTUNDY_NOx",
-  "Australia__DARLING RIVER AT BURTUNDY_P",
-  "Australia__DARLING RIVER AT WILCANNIA MAIN CHANNEL_NO3",
-  "Australia__EDWARD RIVER AT MOULAMEIN_NOx",
-  "Cameroon__Nsimi_outlet_DSi", "Cameroon__Nsimi_outlet_NO3",
-  "HYBAM__Borja_DSi", "HYBAM__Itaituba_DSi", "HYBAM__Itaituba_NO3",
-  "HYBAM__Langa Tabiki_DSi", "HYBAM__Langa Tabiki_NO3", 
-  "UK__ALT AT KIRKBY_DSi", "UK__ARUN AT PALLINGHAM_DSi",
-  "UK__AVON AT BATHFORD_DSi", "UK__AVON AT LODDISWELL_DSi",
-  "UK__CALDER AT WHALLEY WEIR_DSi", "UK__CUCKMERE AT SHERMAN BRIDGE_DSi",
-  "UK__DEARNE AT ADWICK_DSi", "UK__DON AT DONCASTER_DSi",
-  "UK__ELY OUSE AT DENVER COMPLEX_DSi",
-  "UK__HULL AT HEMPHOLME LOCK_DSi", "UK__IRWELL AT ADELPHI WEIR_DSi",
-  "UK__KENT AT SEDGWICK_DSi", "HYBAM__Saut Maripa_DSi",
-  "HYBAM__Saut Maripa_NO3", "MD__Lock 5_DSi", "MD__Lock 5_NOx",
-  "MD__Lock 5_P", "UK__LEE AT LEA BRIDGE_DSi", "UK__LUNE AT CATON_DSi",
-  "UK__MERSEY AT WESTY_DSi", "UK__MOLE AT ESHER_DSi", 
-  "UK__NENE AT ORTON_DSi", "UK__OUSE AT BARCOMBE MILLS_DSi", 
-  "UK__OUSE AT SKELTON_DSi", "UK__PLYM AT CARN WOOD_DSi",
-  "UK__ROTHER AT WOODHOUSE MILL_DSi", "UK__SEVERN AT HAW BRIDGE_DSi",
-  "UK__SOAR AT KEGWORTH_DSi", "UK__TAME AT PORTWOOD_DSi", 
-  "UK__TAVY AT LUDBROOK_DSi", "UK__TEES AT LOW MOOR_DSi",
-  "UK__THAMES AT ROYAL WINDSOR PARK_DSi", "UK__TORRIDGE AT TORRINGTON_DSi",
-  "UK__TRENT AT NORTH MUSKHAM_DSi", "UK__TYNE AT BYWELL_DSi", 
-  "UK__WELLAND AT BARROWDEN_DSi", "UK__WELLAND AT TALLINGTON TOTAL_DSi",
-  "UK__WENSUM AT COSTESSEY MILL_DSi", "UK__WEY AT WEYBRIDGE_DSi",
-  ## "Error in if (good) { : missing value where TRUE/FALSE needed"
-  "HYBAM__Manacapuru_DSi", "UK__BURE AT HORSTEAD MILL_DSi",
-  "UK__DOUGLAS AT WANES BLADES BRIDGE_DSi", "UK__EAMONT AT UDFORD_DSi",
-  "HYBAM__Manacapuru_NO3", "UK__NORTH TYNE AT REAVERHILL_DSi",
-  "UK__ROTHER AT UDIAM_DSi", "UK__WEAVER AT ASHBROOK_DSi",
-  # Crashes R without a specific warning message
-  "USGS__GREEN RIVER_P", "USGS__McDonalds Branch_P", "USGS__MERCED R_P",
-  "USGS__PINE CREEK_P", "USGS__SOPCHOPPY RIVER_NOx",
-  "Australia__EDWARD RIVER AT DENILIQUIN_NOx",
-  "Australia__PEEL RIVER AT UPSTREAM PARADISE WEIR_NO3",
-  "UK__DON AT SHEFFIELD HADFIELDS_DSi"
-)
-
-# Rivers without sufficient data
-few_data <- c(
-  # Error in `EGRET::modelEstimation`
-  ## "Error in runSurvReg(SampleCrossV$DecYear[i], SampleCrossV$LogQ[i], DecLow,  : minNumUncen is greater than total number of samples"
-  ## Note: error timing is 1-3 minutes despite `modelEstimation` being an early function
-  "AND__GSWS06_NOx", "MCM__Priscu Stream at B1_NH4", "MCM__Von Guerard Stream at F6_NH4",
-  "MCM__Von Guerard Stream at F6_NH4", "NIVA__VESENUM_P", "NIVA__OSTEGLO_NH4",
-  "Australia__BARWON RIVER AT DANGAR BRIDGE WALGETT_NOx",
-  "Australia__BARWON RIVER AT DANGAR BRIDGE WALGETT_P",
-  "Australia__BILLABONG CREEK AT DARLOT_P",
-  "Australia__DARLING RIVER AT BOURKE TOWN_NH4",
-  "Australia__DARLING RIVER AT BOURKE TOWN_NOx",
-  "Australia__DARLING RIVER AT BOURKE TOWN_P",
-  "Australia__DARLING RIVER AT WILCANNIA MAIN CHANNEL_NH4",
-  "Australia__DARLING RIVER AT WILCANNIA MAIN CHANNEL_NOx",
-  "Australia__DARLING RIVER AT WILCANNIA MAIN CHANNEL_P",
-  "Australia__EDWARD RIVER AT DENILIQUIN_NH4",
-  "Australia__EDWARD RIVER AT DENILIQUIN_NO3",
-  "Australia__NARRABRI CREEK AT NARRABRI_NH4",
-  "Australia__PEEL RIVER AT UPSTREAM PARADISE WEIR_P", "HYBAM__Atalaya Aval_NO3",
-  "HYBAM__Manacapuru_NOx", "HYBAM__Manacapuru_P", "HYBAM__Nazareth_DSi",
-  "HYBAM__Nazareth_NO3", "HYBAM__Obidos_NOx", "HYBAM__Obidos_P",
-  # Error in `EGRET::runSeries`
-  ## "Error in runSurvReg(estPtYear, estPtLogQ, DecLow, DecHigh, localSample,  : minNumObs is greater than total number of samples"
-  ## Note: error timing is near-instant
-  "AND__GSWS07_NOx", "GRO__Kolyma_P", "GRO__Lena_P", "GRO__Mackenzie_P", "GRO__Yukon_P",
-  "HBR__ws1_P", "HBR__ws2_P", "HBR__ws3_P", "HBR__ws4_P", "HBR__ws5_P",
-  "HBR__ws6_P", "HBR__ws7_P", "HBR__ws8_P", "HBR__ws9_P",
-  "MCM__Canada Stream at F1_P", "MCM__Onyx River at Lake Vanda Weir_NH4",
-  "MCM__Onyx River at Lake Vanda Weir_P", "MCM__Onyx River at Lower Wright Weir_P",
-  "NIVA__AAGEVEG_DSi", "NIVA__BUSEDRA_NH4", "NIVA__BUSEDRA_P", "NIVA__FINEALT_NH4",
-  "NIVA__FINEALT_P", "NIVA__FINEPAS_DSi", "NIVA__FINETAN_DSi", "NIVA__HOREVOS_DSi",
-  "NIVA__MROEDRI_DSi", "NIVA__NOREVEF_NH4", "NIVA__NOREVEF_P", "NIVA__OSLEALN_DSi",
-  "NIVA__ROGEBJE_DSi", "NIVA__ROGEVIK_DSi", "NIVA__SFJENAU_DSi", "NIVA__STRENID_DSi",
-  "NIVA__STREORK_NH4", "NIVA__STREORK_P", "NIVA__TELESKI_NH4", "NIVA__TELESKI_P",
-  "NIVA__VAGEOTR_NH4", "NIVA__VAGEOTR_P", "NIVA__VESENUM_NH4", "NWT__ALBION_NOx",
-  "NWT__ALBION_P", "NWT__MARTINELLI_P", "NWT__SADDLE STREAM 007_NOx",
-  "NWT__SADDLE STREAM 007_P", "Sagehen__Sagehen_NH4", "USGS__ANDREWS CREEK_NH4",
-  "USGS__ANDREWS CREEK_P", "USGS__SOUTH PLATTE_NH4", "USGS__SOUTH PLATTE_NOx",
-  "USGS__SOUTH PLATTE_P", "Australia__BARWON RIVER AT MUNGINDI_NO3",
-  "Australia__BARWON RIVER AT MUNGINDI_P", "Australia__BILLABONG CREEK AT DARLOT_NO3",
-  "Australia__BILLABONG CREEK AT DARLOT_NOx",
-  "Australia__DARLING RIVER AT BURTUNDY_NH4",
-  "Australia__DARLING RIVER AT MENINDEE UPSTREAM WEIR 32_NH4",
-  "Australia__EDWARD RIVER AT DENILIQUIN_P",
-  "Australia__EDWARD RIVER AT MOULAMEIN_P",
-  "Australia__MURRAY RIVER DOWNSTREAM YARRAWONGA WEIR_NH4",
-  "Australia__NAMOI RIVER AT GOANGRA_NH4",
-  "Australia__NAMOI RIVER AT GOANGRA_NOx",
-  "Australia__NAMOI RIVER AT GOANGRA_P",
-  "Australia__NARRABRI CREEK AT NARRABRI_NOx",
-  "Australia__NARRABRI CREEK AT NARRABRI_P",
-  "Australia__PEEL RIVER AT UPSTREAM PARADISE WEIR_NH4",
-  "HYBAM__Borja_NO3", "HYBAM__Ciudad Bolivar_NO3", "UK__DERWENT AT SEATON MILL_DSi"
-  )
-
-# Set of problem rivers to drop from the loop (for reasons not specified above)
-bad_rivers <- c(
-  # River names with slashes cause a file path issue later on
-  "UK__EDEN AT PENSHURST / VEXOUR BRIDGE_DSi", 
-  "UK__MEDWAY AT TESTON / EAST FARLEIGH_DSi")
-
-# Identify all rivers that aren't in the broken data vectors
-good_rivers <- setdiff(x = unique(chemistry$Stream_Element_ID),
-                       y = unique(c(missing_data, few_data, duplicate_data, odd_ones, bad_rivers)))
-## Note this includes weird rivers that need special treatment and those that don't
-
-## ---------------------------------------------- ##
-              # Analysis Workflow ----
-## ---------------------------------------------- ##
-
-# Bad rivers identified as of 10/30/23
-new_bads <- c(
   # `EGRET::runSeries` issue:
   ## "Error in seq.Date(surfaceStart, by = "1 year", length.out = nSeg):
   ## 'from' must be of length 1"
@@ -205,6 +76,8 @@ new_bads <- c(
   
   # `EGRET::tableResults` issue:
   ## "Error in seq.default(xFirst, xLast) : 'from' must be a finite number"
+  ### Looks like this may be caused by "negative flow days"?
+  ### Need to check range of values to see these problem values
   "UMR__CH00.1M_NOx", "UMR__CH00.1M_P", "UMR__CN00.1M_P",
   "UMR__CU11.6M_DSi", "UMR__CU11.6M_NOx", "UMR__CU11.6M_P",
   "UMR__LM00.5M_NOx", "UMR__LM00.5M_P", "UMR__M078.0B_NOx",
@@ -215,17 +88,6 @@ new_bads <- c(
   "UMR__SG16.2C_P", "UMR__WP02.6M_DSi", "UMR__WP02.6M_NOx", 
   "UMR__WP02.6M_P", 
   
-  # `EGRET::errorStats` issue:
-  ## "Error in runSurvReg(SampleCrossV$DecYear[i], SampleCrossV$LogQ[i], DecLow,: 
-  ## minNumUncen is greater than total number of samples"
-  "GRO__Yenisey_P",
-  
-  # `EGRET::errorStats` issue:
-  ## "Error in runSurvReg(SampleCrossV$DecYear[i], SampleCrossV$LogQ[i], DecLow,:
-  ## minNumUncen is greater than total number of samples"
-  "MCM__Onyx River at Lower Wright Weir_NH4",
-  "NIVA__ROGEORR_NH4",
-  
   # `EGRET::tableResults` issue:
   ## "Error in if (good) { : missing value where TRUE/FALSE needed"
   "MD__Barr Creek_NOx", "MD__Barr Creek_P",
@@ -234,11 +96,54 @@ new_bads <- c(
   ## "Error in if (lastMonth == 2 & (lastYear%%4 == 0) & ((lastYear%%100 != : 
   ## missing value where TRUE/FALSE needed"
   "MD__Broken Creek_NOx", "MD__Broken Creek_P", "MD__Gunbower Creek_NOx", 
-  "MD__Gunbower Creek_P",
+  "MD__Gunbower Creek_P"
+)
+
+# Rivers without sufficient data
+few_data <- c(
+  # `EGRET::errorStats` issue:
+  ## "Error in runSurvReg(SampleCrossV$DecYear[i], SampleCrossV$LogQ[i], DecLow,:
+  ## minNumUncen is greater than total number of samples"
+  "AND__GSWS06_NOx", "AND__GSWS07_NOx",
+  "Australia__BARWON RIVER AT DANGAR BRIDGE WALGETT_NOx",
   
-  # Crashes R without a specific error message
+  "GRO__Yenisey_P",
+  
+  "MCM__Onyx River at Lower Wright Weir_NH4",
+  
+  "NIVA__ROGEORR_NH4"
+  
+  # Error in `EGRET::runSeries`
+  ## "Error in runSurvReg(estPtYear, estPtLogQ, DecLow, DecHigh, localSample,  : minNumObs is greater than total number of samples"
+
+  )
+
+# Rivers that crash R without a specific error message
+crash_rivers <- c(
   "USGS__GORE CREEK UPPER STATION_NH4", "USGS__GORE CREEK UPPER STATION_P",
   "USGS__YUKON RIVER_P"
+  
+)
+
+# Set of problem rivers to drop from the loop (for reasons not specified above)
+bad_rivers <- c(
+  # River names with slashes cause a file path issue later on
+  "UK__EDEN AT PENSHURST / VEXOUR BRIDGE_DSi", 
+  "UK__MEDWAY AT TESTON / EAST FARLEIGH_DSi")
+
+# Identify all rivers that aren't in the broken data vectors
+good_rivers <- setdiff(x = unique(chemistry$Stream_Element_ID),
+                       y = unique(c(missing_data, few_data, duplicate_data, 
+                                    odd_ones, bad_rivers, crash_rivers)))
+## Note this includes weird rivers that need special treatment and those that don't
+
+## ---------------------------------------------- ##
+              # Analysis Workflow ----
+## ---------------------------------------------- ##
+
+# Vector for storing problem rivers identified in latest run of WRTDS
+new_bads <- c(
+  
 )
 
 # Set of rivers we've already run the workflow for
