@@ -580,9 +580,7 @@ dplyr::glimpse(pdf_outs)
 
 # Identify PDF folder
 ## Standard output destination
-pdf_url <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/14pq2oLvs8KIARxlWZ3pvC3e1Dx-PjVxt")
-## Experimental destination
-# pdf_url <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/1RPYELgBlxj6uEO36eQx2BSRwogATPNXB")
+pdf_url <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/1w3htnlw4s4EhRFQ4s0RRkLJJ9JiZJJlY")
 
 # Identify PDFs already in GoogleDrive
 drive_pdfs <- googledrive::drive_ls(path = pdf_url)
