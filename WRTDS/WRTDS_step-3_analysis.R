@@ -125,7 +125,7 @@ few_data <- c(
   "Australia__EDWARD RIVER AT DENILIQUIN_NH4",
   "Australia__EDWARD RIVER AT DENILIQUIN_NO3",
   "Australia__NARRABRI CREEK AT NARRABRI_NH4",
-  
+  "Australia__PEEL RIVER AT UPSTREAM PARADISE WEIR_P",
   
   
   
@@ -154,6 +154,7 @@ few_data <- c(
 # Rivers that crash R without a specific error message
 crash_rivers <- c(
   "Australia__EDWARD RIVER AT DENILIQUIN_NOx",
+  "Australia__PEEL RIVER AT UPSTREAM PARADISE WEIR_NO3",
   
   "USGS__GORE CREEK UPPER STATION_NH4", "USGS__GORE CREEK UPPER STATION_P",
   "USGS__YUKON RIVER_P"
