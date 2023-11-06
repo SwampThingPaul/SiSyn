@@ -90,7 +90,7 @@ odd_ones <- c(
   
   # `EGRET::tableResults` issue:
   ## "Error in if (good) { : missing value where TRUE/FALSE needed"
-  "HYBAM__Manacapuru_DSi", 
+  "HYBAM__Manacapuru_DSi", "HYBAM__Manacapuru_NO3", 
   
   "MD__Barr Creek_NOx", "MD__Barr Creek_P",
   
@@ -134,8 +134,9 @@ few_data <- c(
   "HBR__ws1_P", "HBR__ws2_P", "HBR__ws3_P", 
   "HBR__ws4_P", "HBR__ws5_P", "HBR__ws6_P",
   "HBR__ws7_P", "HBR__ws8_P", "HBR__ws9_P",
-  "HYBAM__Atalaya Aval_NO3",
-  
+  "HYBAM__Atalaya Aval_NO3", "HYBAM__Manacapuru_NOx", "HYBAM__Manacapuru_P", 
+  "HYBAM__Nazareth_DSi", "HYBAM__Nazareth_NO3", "HYBAM__Obidos_NOx",
+  "HYBAM__Obidos_P",
   
   "MCM__Onyx River at Lower Wright Weir_NH4",
   
