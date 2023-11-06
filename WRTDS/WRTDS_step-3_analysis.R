@@ -100,6 +100,9 @@ odd_ones <- c(
   "Australia__DARLING RIVER AT BURTUNDY_NOx",
   "Australia__DARLING RIVER AT BURTUNDY_P",
   "Australia__DARLING RIVER AT WILCANNIA MAIN CHANNEL_NO3",
+  "Australia__EDWARD RIVER AT MOULAMEIN_NOx",
+  
+  
   
   "MD__Broken Creek_NOx", "MD__Broken Creek_P", "MD__Gunbower Creek_NOx", 
   "MD__Gunbower Creek_P"
@@ -121,7 +124,7 @@ few_data <- c(
   "Australia__DARLING RIVER AT WILCANNIA MAIN CHANNEL_P",
   "Australia__EDWARD RIVER AT DENILIQUIN_NH4",
   "Australia__EDWARD RIVER AT DENILIQUIN_NO3",
-  
+  "Australia__NARRABRI CREEK AT NARRABRI_NH4",
   
   
   
@@ -139,7 +142,12 @@ few_data <- c(
   "Australia__BILLABONG CREEK AT DARLOT_NO3", "Australia__BILLABONG CREEK AT DARLOT_NOx",
   "Australia__BILLABONG CREEK AT DARLOT_P", "Australia__DARLING RIVER AT BURTUNDY_NH4",
   "Australia__DARLING RIVER AT MENINDEE UPSTREAM WEIR 32_NH4",
-  "Australia__EDWARD RIVER AT DENILIQUIN_P"
+  "Australia__EDWARD RIVER AT DENILIQUIN_P", "Australia__EDWARD RIVER AT MOULAMEIN_P",
+  "Australia__MURRAY RIVER DOWNSTREAM YARRAWONGA WEIR_NH4",
+  "Australia__NAMOI RIVER AT GOANGRA_NH4", "Australia__NAMOI RIVER AT GOANGRA_NOx",
+  "Australia__NAMOI RIVER AT GOANGRA_P", "Australia__NARRABRI CREEK AT NARRABRI_NOx",
+  "Australia__NARRABRI CREEK AT NARRABRI_P", 
+  "Australia__PEEL RIVER AT UPSTREAM PARADISE WEIR_NH4"
   
   )
 
