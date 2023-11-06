@@ -230,11 +230,15 @@ new_bads <- c(
   ## "Error in if (good) { : missing value where TRUE/FALSE needed"
   "MD__Barr Creek_NOx", "MD__Barr Creek_P",
   
-  # `EGRET::` issue:
+  # `` issue:
   ## "Error in if (lastMonth == 2 & (lastYear%%4 == 0) & ((lastYear%%100 != : 
   ## missing value where TRUE/FALSE needed"
   "MD__Broken Creek_NOx", "MD__Broken Creek_P", "MD__Gunbower Creek_NOx", 
-  "MD__Gunbower Creek_P"
+  "MD__Gunbower Creek_P",
+  
+  # Crashes R without a specific error message
+  "USGS__GORE CREEK UPPER STATION_NH4", "USGS__GORE CREEK UPPER STATION_P",
+  "USGS__YUKON RIVER_P"
 )
 
 # Set of rivers we've already run the workflow for
