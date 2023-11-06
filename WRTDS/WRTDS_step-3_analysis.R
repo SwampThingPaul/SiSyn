@@ -96,6 +96,10 @@ odd_ones <- c(
   ## "Error in if (lastMonth == 2 & (lastYear%%4 == 0) & ((lastYear%%100 != : 
   ## missing value where TRUE/FALSE needed"
   "Australia__DARLING RIVER AT BOURKE TOWN_NO3",
+  "Australia__DARLING RIVER AT BURTUNDY_NO3",
+  "Australia__DARLING RIVER AT BURTUNDY_NOx",
+  "Australia__DARLING RIVER AT BURTUNDY_P",
+  "Australia__DARLING RIVER AT WILCANNIA MAIN CHANNEL_NO3",
   
   "MD__Broken Creek_NOx", "MD__Broken Creek_P", "MD__Gunbower Creek_NOx", 
   "MD__Gunbower Creek_P"
@@ -112,6 +116,14 @@ few_data <- c(
   "Australia__DARLING RIVER AT BOURKE TOWN_NH4",
   "Australia__DARLING RIVER AT BOURKE TOWN_NOx",
   "Australia__DARLING RIVER AT BOURKE TOWN_P",
+  "Australia__DARLING RIVER AT WILCANNIA MAIN CHANNEL_NH4",
+  "Australia__DARLING RIVER AT WILCANNIA MAIN CHANNEL_NOx",
+  "Australia__DARLING RIVER AT WILCANNIA MAIN CHANNEL_P",
+  "Australia__EDWARD RIVER AT DENILIQUIN_NH4",
+  "Australia__EDWARD RIVER AT DENILIQUIN_NO3",
+  
+  
+  
   
   
   "GRO__Yenisey_P",
@@ -125,13 +137,16 @@ few_data <- c(
   ## minNumObs is greater than total number of samples"
   "Australia__BARWON RIVER AT MUNGINDI_NO3", "Australia__BARWON RIVER AT MUNGINDI_P",
   "Australia__BILLABONG CREEK AT DARLOT_NO3", "Australia__BILLABONG CREEK AT DARLOT_NOx",
-  "Australia__BILLABONG CREEK AT DARLOT_P", "Australia__DARLING RIVER AT BURTUNDY_NH4"
-  
+  "Australia__BILLABONG CREEK AT DARLOT_P", "Australia__DARLING RIVER AT BURTUNDY_NH4",
+  "Australia__DARLING RIVER AT MENINDEE UPSTREAM WEIR 32_NH4",
+  "Australia__EDWARD RIVER AT DENILIQUIN_P"
   
   )
 
 # Rivers that crash R without a specific error message
 crash_rivers <- c(
+  "Australia__EDWARD RIVER AT DENILIQUIN_NOx",
+  
   "USGS__GORE CREEK UPPER STATION_NH4", "USGS__GORE CREEK UPPER STATION_P",
   "USGS__YUKON RIVER_P"
   
