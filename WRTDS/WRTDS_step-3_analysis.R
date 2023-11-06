@@ -121,10 +121,13 @@ few_data <- c(
   "NIVA__ROGEORR_NH4",
   
   # Error in `EGRET::runSeries`
-  ## "Error in runSurvReg(estPtYear, estPtLogQ, DecLow, DecHigh, localSample,  : minNumObs is greater than total number of samples"
+  ## "Error in runSurvReg(estPtYear, estPtLogQ, DecLow, DecHigh, localSample,:
+  ## minNumObs is greater than total number of samples"
   "Australia__BARWON RIVER AT MUNGINDI_NO3", "Australia__BARWON RIVER AT MUNGINDI_P",
   "Australia__BILLABONG CREEK AT DARLOT_NO3", "Australia__BILLABONG CREEK AT DARLOT_NOx",
-  "Australia__BILLABONG CREEK AT DARLOT_P"
+  "Australia__BILLABONG CREEK AT DARLOT_P", "Australia__DARLING RIVER AT BURTUNDY_NH4"
+  
+  
   )
 
 # Rivers that crash R without a specific error message
