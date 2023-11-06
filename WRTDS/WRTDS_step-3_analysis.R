@@ -92,9 +92,11 @@ odd_ones <- c(
   ## "Error in if (good) { : missing value where TRUE/FALSE needed"
   "MD__Barr Creek_NOx", "MD__Barr Creek_P",
   
-  # `` issue:
+  # `EGRET::tableResults` issue:
   ## "Error in if (lastMonth == 2 & (lastYear%%4 == 0) & ((lastYear%%100 != : 
   ## missing value where TRUE/FALSE needed"
+  "Australia__DARLING RIVER AT BOURKE TOWN_NO3",
+  
   "MD__Broken Creek_NOx", "MD__Broken Creek_P", "MD__Gunbower Creek_NOx", 
   "MD__Gunbower Creek_P"
 )
@@ -106,16 +108,23 @@ few_data <- c(
   ## minNumUncen is greater than total number of samples"
   "AND__GSWS06_NOx", "AND__GSWS07_NOx",
   "Australia__BARWON RIVER AT DANGAR BRIDGE WALGETT_NOx",
+  "Australia__BARWON RIVER AT DANGAR BRIDGE WALGETT_P",
+  "Australia__DARLING RIVER AT BOURKE TOWN_NH4",
+  "Australia__DARLING RIVER AT BOURKE TOWN_NOx",
+  "Australia__DARLING RIVER AT BOURKE TOWN_P",
+  
   
   "GRO__Yenisey_P",
   
   "MCM__Onyx River at Lower Wright Weir_NH4",
   
-  "NIVA__ROGEORR_NH4"
+  "NIVA__ROGEORR_NH4",
   
   # Error in `EGRET::runSeries`
   ## "Error in runSurvReg(estPtYear, estPtLogQ, DecLow, DecHigh, localSample,  : minNumObs is greater than total number of samples"
-
+  "Australia__BARWON RIVER AT MUNGINDI_NO3", "Australia__BARWON RIVER AT MUNGINDI_P",
+  "Australia__BILLABONG CREEK AT DARLOT_NO3", "Australia__BILLABONG CREEK AT DARLOT_NOx",
+  "Australia__BILLABONG CREEK AT DARLOT_P"
   )
 
 # Rivers that crash R without a specific error message
@@ -142,9 +151,7 @@ good_rivers <- setdiff(x = unique(chemistry$Stream_Element_ID),
 ## ---------------------------------------------- ##
 
 # Vector for storing problem rivers identified in latest run of WRTDS
-new_bads <- c(
-  
-)
+new_bads <- c()
 
 # Set of rivers we've already run the workflow for
 done_rivers <- data.frame("file" = dir(path = file.path(path, "WRTDS Loop Diagnostic"))) %>%
@@ -194,7 +201,7 @@ for(river in rivers_to_do){ # actual loop
   out_prefix <- paste0(stream_id, "_", element, "_") 
   
   # Message completion of loop
-  message("Processing begun for '", element, "' at stream '", stream_id, "'")
+  message("Processing begun for '", river, "'")
   
   # Grab start time for processing
   start <- Sys.time()
@@ -338,7 +345,7 @@ for(river in rivers_to_do){ # actual loop
   write.csv(x = loop_diagnostic, file.path(path, "WRTDS Loop Diagnostic", paste0(out_prefix, "Loop_Diagnostic.csv")), row.names = F, na = "")
   
   # Message completion of loop
-  message("Processing complete for '", element, "' at stream '", stream_id, "'")
+  message("Processing complete for '", river, "'")
   
   # Remove all objects created inside loop
   ## This makes figuring out where the loop breaks *much* easier!
