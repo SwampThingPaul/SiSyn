@@ -101,7 +101,7 @@ odd_ones <- c(
   "Australia__DARLING RIVER AT BURTUNDY_P",
   "Australia__DARLING RIVER AT WILCANNIA MAIN CHANNEL_NO3",
   "Australia__EDWARD RIVER AT MOULAMEIN_NOx",
-  
+  "Cameroon__Nsimi_outlet_DSi", "Cameroon__Nsimi_outlet_NO3",
   
   
   "MD__Broken Creek_NOx", "MD__Broken Creek_P", "MD__Gunbower Creek_NOx", 
@@ -126,10 +126,13 @@ few_data <- c(
   "Australia__EDWARD RIVER AT DENILIQUIN_NO3",
   "Australia__NARRABRI CREEK AT NARRABRI_NH4",
   "Australia__PEEL RIVER AT UPSTREAM PARADISE WEIR_P",
+  "GRO__Yenisey_P", "GRO__Kolyma_P", "GRO__Lena_P", 
+  "GRO__Mackenzie_P", "GRO__Yukon_P",
+  "HBR__ws1_P", "HBR__ws2_P", "HBR__ws3_P", 
+  "HBR__ws4_P", "HBR__ws5_P", "HBR__ws6_P",
+  "HBR__ws7_P", "HBR__ws8_P", "HBR__ws9_P",
+  "HYBAM__Atalaya Aval_NO3",
   
-  
-  
-  "GRO__Yenisey_P",
   
   "MCM__Onyx River at Lower Wright Weir_NH4",
   
