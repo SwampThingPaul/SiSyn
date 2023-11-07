@@ -101,9 +101,9 @@ odd_ones <- c(
   "HYBAM__Langa Tabiki_DSi", "HYBAM__Langa Tabiki_NO3", 
   "HYBAM__Saut Maripa_DSi", "HYBAM__Saut Maripa_NO3", 
   "LUQ__RI_DSi", "LUQ__RI_NH4", "LUQ__RI_NOx", "LUQ__RI_P", 
-  
   "MD__Broken Creek_NOx", "MD__Broken Creek_P", "MD__Gunbower Creek_NOx", 
-  "MD__Gunbower Creek_P"
+  "MD__Gunbower Creek_P", "MD__Lock 5_NOx", "MD__Lock 5_P"
+  
 )
 
 # Rivers without sufficient data
@@ -136,9 +136,13 @@ few_data <- c(
   "MCM__Onyx River at Lake Vanda Weir_P", "MCM__Onyx River at Lower Wright Weir_NH4",
   "MCM__Onyx River at Lower Wright Weir_P", "MCM__Priscu Stream at B1_NH4",
   "MCM__Von Guerard Stream at F6_NH4", 
-  
-  
-  "NIVA__ROGEORR_NH4",
+  "NIVA__BUSEDRA_NH4", "NIVA__BUSEDRA_P", "NIVA__FINEALT_NH4", "NIVA__FINEALT_P",
+  "NIVA__NOREVEF_NH4", "NIVA__NOREVEF_P", "NIVA__OSTEGLO_NH4", "NIVA__ROGEORR_NH4",
+  "NIVA__STREORK_NH4", "NIVA__STREORK_P", "NIVA__TELESKI_NH4", "NIVA__TELESKI_P",
+  "NIVA__VAGEOTR_NH4", "NIVA__VAGEOTR_P", "NIVA__VESENUM_NH4", "NIVA__VESENUM_P",
+  "NWT__ALBION_NOx", "NWT__ALBION_P", "NWT__MARTINELLI_P", 
+  "NWT__SADDLE STREAM 007_NOx", "NWT__SADDLE STREAM 007_P", 
+  "Sagehen__Sagehen_NH4", 
   
   # Error in `EGRET::runSeries`
   ## "Error in runSurvReg(estPtYear, estPtLogQ, DecLow, DecHigh, localSample,:
@@ -153,8 +157,10 @@ few_data <- c(
   "Australia__NAMOI RIVER AT GOANGRA_P", "Australia__NARRABRI CREEK AT NARRABRI_NOx",
   "Australia__NARRABRI CREEK AT NARRABRI_P", 
   "Australia__PEEL RIVER AT UPSTREAM PARADISE WEIR_NH4",
-  "HYBAM__Borja_NO3", "HYBAM__Ciudad Bolivar_NO3"
-  
+  "HYBAM__Borja_NO3", "HYBAM__Ciudad Bolivar_NO3",
+  "NIVA__AAGEVEG_DSi", "NIVA__FINEPAS_DSi", "NIVA__FINETAN_DSi", "NIVA__HOREVOS_DSi",
+  "NIVA__MROEDRI_DSi", "NIVA__OSLEALN_DSi", "NIVA__ROGEBJE_DSi", "NIVA__ROGEVIK_DSi",
+  "NIVA__SFJENAU_DSi", "NIVA__STRENID_DSi"
   )
 
 # Rivers that crash R without a specific error message
