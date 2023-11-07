@@ -63,7 +63,6 @@ pa5_3 <- c(
 missing_data <- c(
   # Warning in `EGRET::mergeReport`
   ### "Some Sample dates do not have corresponding flow data. Not all EGRET functions will work correctly."
-  # "LUQ__RI_DSi", "LUQ__RI_NH4", "LUQ__RI_NOx", "LUQ__RI_P"
   )
 
 # Other odd errors
@@ -106,6 +105,8 @@ odd_ones <- c(
   "Cameroon__Nsimi_outlet_DSi", "Cameroon__Nsimi_outlet_NO3",
   "HYBAM__Borja_DSi", "HYBAM__Itaituba_DSi", "HYBAM__Itaituba_NO3",
   "HYBAM__Langa Tabiki_DSi", "HYBAM__Langa Tabiki_NO3", 
+  "HYBAM__Saut Maripa_DSi", "HYBAM__Saut Maripa_NO3", 
+  "LUQ__RI_DSi", "LUQ__RI_NH4", "LUQ__RI_NOx", "LUQ__RI_P", 
   
   "MD__Broken Creek_NOx", "MD__Broken Creek_P", "MD__Gunbower Creek_NOx", 
   "MD__Gunbower Creek_P"
@@ -137,8 +138,11 @@ few_data <- c(
   "HYBAM__Atalaya Aval_NO3", "HYBAM__Manacapuru_NOx", "HYBAM__Manacapuru_P", 
   "HYBAM__Nazareth_DSi", "HYBAM__Nazareth_NO3", "HYBAM__Obidos_NOx",
   "HYBAM__Obidos_P",
+  "MCM__Canada Stream at F1_P", "MCM__Onyx River at Lake Vanda Weir_NH4",
+  "MCM__Onyx River at Lake Vanda Weir_P", "MCM__Onyx River at Lower Wright Weir_NH4",
+  "MCM__Onyx River at Lower Wright Weir_P", "MCM__Priscu Stream at B1_NH4",
+  "MCM__Von Guerard Stream at F6_NH4", 
   
-  "MCM__Onyx River at Lower Wright Weir_NH4",
   
   "NIVA__ROGEORR_NH4",
   
