@@ -85,7 +85,7 @@ odd_ones <- c(
   ## "Error in if (good) { : missing value where TRUE/FALSE needed"
   "HYBAM__Manacapuru_DSi", "HYBAM__Manacapuru_NO3", 
   "MD__Barr Creek_NOx", "MD__Barr Creek_P",
-  "UK__BURE AT HORSTEAD MILL_DSi",
+  "UK__BURE AT HORSTEAD MILL_DSi", "UK__DOUGLAS AT WANES BLADES BRIDGE_DSi", 
   
   # `EGRET::tableResults` issue:
   ## "Error in if (lastMonth == 2 & (lastYear%%4 == 0) & ((lastYear%%100 != : 
