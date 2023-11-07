@@ -59,12 +59,6 @@ pa5_3 <- c(
   "NWT__SADDLE STREAM 007_DSi", "NWT__SADDLE STREAM 007_NH4", 
   "NWT__SADDLE STREAM 007_NOx", "NWT__SADDLE STREAM 007_P")
 
-# Rivers without matching chemistry/discharge data
-missing_data <- c(
-  # Warning in `EGRET::mergeReport`
-  ### "Some Sample dates do not have corresponding flow data. Not all EGRET functions will work correctly."
-  )
-
 # Other odd errors
 odd_ones <- c(
   # `EGRET::runSeries` issue:
@@ -181,7 +175,7 @@ bad_rivers <- c(
 
 # Identify all rivers that aren't in the broken data vectors
 good_rivers <- setdiff(x = unique(chemistry$Stream_Element_ID),
-                       y = unique(c(missing_data, few_data, duplicate_data, 
+                       y = unique(c(few_data, duplicate_data, 
                                     odd_ones, bad_rivers, crash_rivers)))
 ## Note this includes weird rivers that need special treatment and those that don't
 
