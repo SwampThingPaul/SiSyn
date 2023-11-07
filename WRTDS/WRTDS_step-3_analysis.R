@@ -84,8 +84,8 @@ odd_ones <- c(
   # `EGRET::tableResults` issue:
   ## "Error in if (good) { : missing value where TRUE/FALSE needed"
   "HYBAM__Manacapuru_DSi", "HYBAM__Manacapuru_NO3", 
-  
   "MD__Barr Creek_NOx", "MD__Barr Creek_P",
+  "UK__BURE AT HORSTEAD MILL_DSi",
   
   # `EGRET::tableResults` issue:
   ## "Error in if (lastMonth == 2 & (lastYear%%4 == 0) & ((lastYear%%100 != : 
@@ -102,8 +102,11 @@ odd_ones <- c(
   "HYBAM__Saut Maripa_DSi", "HYBAM__Saut Maripa_NO3", 
   "LUQ__RI_DSi", "LUQ__RI_NH4", "LUQ__RI_NOx", "LUQ__RI_P", 
   "MD__Broken Creek_NOx", "MD__Broken Creek_P", "MD__Gunbower Creek_NOx", 
-  "MD__Gunbower Creek_P", "MD__Lock 5_NOx", "MD__Lock 5_P"
-  
+  "MD__Gunbower Creek_P", "MD__Lock 5_NOx", "MD__Lock 5_P",
+  "UK__ALT AT KIRKBY_DSi", "UK__ARUN AT PALLINGHAM_DSi", "UK__AVON AT BATHFORD_DSi",
+  "UK__AVON AT LODDISWELL_DSi", "UK__CALDER AT WHALLEY WEIR_DSi",
+  "UK__CUCKMERE AT SHERMAN BRIDGE_DSi", "UK__DEARNE AT ADWICK_DSi",
+  "UK__DON AT DONCASTER_DSi"
 )
 
 # Rivers without sufficient data
@@ -160,7 +163,8 @@ few_data <- c(
   "HYBAM__Borja_NO3", "HYBAM__Ciudad Bolivar_NO3",
   "NIVA__AAGEVEG_DSi", "NIVA__FINEPAS_DSi", "NIVA__FINETAN_DSi", "NIVA__HOREVOS_DSi",
   "NIVA__MROEDRI_DSi", "NIVA__OSLEALN_DSi", "NIVA__ROGEBJE_DSi", "NIVA__ROGEVIK_DSi",
-  "NIVA__SFJENAU_DSi", "NIVA__STRENID_DSi"
+  "NIVA__SFJENAU_DSi", "NIVA__STRENID_DSi",
+  "UK__DERWENT AT SEATON MILL_DSi"
   )
 
 # Rivers that crash R without a specific error message
