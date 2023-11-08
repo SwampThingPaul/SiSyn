@@ -79,7 +79,7 @@ odd_ones <- c(
   "UMR__M764.3A_NOx", "UMR__M764.3A_P", "UMR__M786.2C_P",
   "UMR__MQ02.1M_NOx", "UMR__MQ02.1M_P", "UMR__SG16.2C_NOx",
   "UMR__SG16.2C_P", "UMR__WP02.6M_DSi", "UMR__WP02.6M_NOx", 
-  "UMR__WP02.6M_P", 
+  "UMR__WP02.6M_P", "UMR__AL02.3M_NOx", "UMR__AL02.3M_P", 
   
   # `EGRET::tableResults` issue:
   ## "Error in if (good) { : missing value where TRUE/FALSE needed"
@@ -118,7 +118,9 @@ odd_ones <- c(
   "UK__TAME AT PORTWOOD_DSi", "UK__TAVY AT LUDBROOK_DSi", "UK__TEES AT LOW MOOR_DSi",
   "UK__THAMES AT ROYAL WINDSOR PARK_DSi", "UK__TORRIDGE AT TORRINGTON_DSi",
   "UK__TRENT AT NORTH MUSKHAM_DSi", "UK__TYNE AT BYWELL_DSi", 
-  "UK__WELLAND AT BARROWDEN_DSi"
+  "UK__WELLAND AT BARROWDEN_DSi", "UK__WELLAND AT TALLINGTON TOTAL_DSi",
+  "UK__WENSUM AT COSTESSEY MILL_DSi", "UK__WEY AT WEYBRIDGE_DSi",
+  "UMR__AL02.3M_DSi"
 )
 
 # Rivers without sufficient data
