@@ -71,6 +71,9 @@ odd_ones <- c(
   ## "Error in seq.default(xFirst, xLast) : 'from' must be a finite number"
   ### Looks like this may be caused by "negative flow days"?
   ### Need to check range of values to see these problem values
+  "UMR__AL02.3M_NOx", "UMR__AL02.3M_P", "UMR__BK14.2M_NOx", 
+  "UMR__BK14.2M_P", 
+  
   "UMR__CH00.1M_NOx", "UMR__CH00.1M_P", "UMR__CN00.1M_P",
   "UMR__CU11.6M_DSi", "UMR__CU11.6M_NOx", "UMR__CU11.6M_P",
   "UMR__LM00.5M_NOx", "UMR__LM00.5M_P", "UMR__M078.0B_NOx",
@@ -79,7 +82,7 @@ odd_ones <- c(
   "UMR__M764.3A_NOx", "UMR__M764.3A_P", "UMR__M786.2C_P",
   "UMR__MQ02.1M_NOx", "UMR__MQ02.1M_P", "UMR__SG16.2C_NOx",
   "UMR__SG16.2C_P", "UMR__WP02.6M_DSi", "UMR__WP02.6M_NOx", 
-  "UMR__WP02.6M_P", "UMR__AL02.3M_NOx", "UMR__AL02.3M_P", 
+  "UMR__WP02.6M_P", 
   
   # `EGRET::tableResults` issue:
   ## "Error in if (good) { : missing value where TRUE/FALSE needed"
