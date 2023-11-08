@@ -86,6 +86,7 @@ odd_ones <- c(
   "HYBAM__Manacapuru_DSi", "HYBAM__Manacapuru_NO3", 
   "MD__Barr Creek_NOx", "MD__Barr Creek_P",
   "UK__BURE AT HORSTEAD MILL_DSi", "UK__DOUGLAS AT WANES BLADES BRIDGE_DSi", 
+  "UK__EAMONT AT UDFORD_DSi", 
   
   # `EGRET::tableResults` issue:
   ## "Error in if (lastMonth == 2 & (lastYear%%4 == 0) & ((lastYear%%100 != : 
@@ -106,7 +107,10 @@ odd_ones <- c(
   "UK__ALT AT KIRKBY_DSi", "UK__ARUN AT PALLINGHAM_DSi", "UK__AVON AT BATHFORD_DSi",
   "UK__AVON AT LODDISWELL_DSi", "UK__CALDER AT WHALLEY WEIR_DSi",
   "UK__CUCKMERE AT SHERMAN BRIDGE_DSi", "UK__DEARNE AT ADWICK_DSi",
-  "UK__DON AT DONCASTER_DSi"
+  "UK__DON AT DONCASTER_DSi", "UK__ELY OUSE AT DENVER COMPLEX_DSi",
+  "UK__HULL AT HEMPHOLME LOCK_DSi", "UK__IRWELL AT ADELPHI WEIR_DSi",
+  "UK__KENT AT SEDGWICK_DSi", "UK__LEE AT LEA BRIDGE_DSi", "UK__LUNE AT CATON_DSi",
+  "UK__MERSEY AT WESTY_DSi", "UK__MOLE AT ESHER_DSi", "UK__NENE AT ORTON_DSi"
 )
 
 # Rivers without sufficient data
