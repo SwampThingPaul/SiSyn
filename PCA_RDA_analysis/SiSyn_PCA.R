@@ -126,12 +126,13 @@ pc_loadings<-pca$rotated[,c(1:3)]
 
 #add biome column to loadings df
 pc_loadings$Biome<-final_center$Biome2.x
+pc_loadings$Biome<-ifelse(pc_loadings$Biome == "Boreal forest", "Arctic-boreal transition", pc_loadings$Biome)
 loadings$rowname<-rownames(loadings)
 
 pc_loadings$Biome<-factor(pc_loadings$Biome, levels = c("Tropical rainforest","Tropical savanna",
                                                         "Temperate coniferous forest","Temperate deciduous forest", 
                                                          "Temperate grassland", "Alpine tundra",
-                                                         "Boreal forest","Arctic tundra", "Polar desert"))
+                                                         "Arctic-boreal transition","Arctic tundra", "Polar desert"))
 
 f <- function(pal) brewer.pal(brewer.pal.info[pal, "maxcolors"], pal)
 cols <- f("Set2")
@@ -140,7 +141,7 @@ cols_final<-c(cols, "#A46B5C")
 #show_col(cols_final)
 
 #assign colors
-col_values<-c("Boreal forest" = cols_final[1],
+col_values<-c("Arctic-boreal transition" = cols_final[1],
               "Temperate deciduous forest" = cols_final[2],
               "Alpine tundra" = cols_final[3],
               "Arctic tundra" = cols_final[4],
@@ -153,7 +154,7 @@ col_values<-c("Boreal forest" = cols_final[1],
 col_pal<-list(scale_color_manual(values = col_values),scale_fill_manual(values = col_values))
 
 #plot final PCA figure with siginifcance eigenvctors
-pdf("FinalPCA_121922.pdf", width = 10, height = 7, family = "Times")
+#pdf("FinalPCA_121922.pdf", width = 10, height = 7, family = "Times")
 
 pca_plot<-ggplot()+geom_segment(loadings, mapping=aes(x=0, y=0, xend=PC1*10, yend=PC2*10, lty=sig),size=0.6)+
   geom_segment(loadings, mapping=aes(x=0, y=0, xend=PC1*10, yend=PC2*10), 
@@ -167,9 +168,9 @@ pca_plot<-ggplot()+geom_segment(loadings, mapping=aes(x=0, y=0, xend=PC1*10, yen
   theme(text = element_text(size=20, family="Times New Roman"))
 
 
-dev.off()
+#dev.off()
 
 
-ggsave("PCATiff.tiff", pca_plot, width = 10, height = 7)
+ggsave("PCA_Aug2023_tiff.tiff", pca_plot, width = 10, height = 7)
 
 

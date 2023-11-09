@@ -21,7 +21,7 @@ require(googledrive)
 setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
 
 #link to monthly WRTDS data
-link<-"https://drive.google.com/file/d/1sBJXok0r9pG1fb6eROG2jsIw1MDi7kDa/view?usp=share_link"
+link<-"https://drive.google.com/file/d/1H_cMnp_6qiC7Ukttsrs17_VY5MiUH9uG/view?usp=drive_link"
 
 #get file
 file_get<-drive_get(as_id(link))
@@ -30,7 +30,7 @@ file_get<-drive_get(as_id(link))
 drive_download(file_get$drive_resource,  overwrite=T)
 
 #read in monthly results
-monthly_results<-read.csv("Full_Results_Monthly_GFN_WRTDS.csv")
+monthly_results<-read.csv("Full_Results_WRTDS_kalman_monthly.csv")
 
 #filter to only include DSi
 monthly_results<-subset(monthly_results, monthly_results$chemical=="DSi")
@@ -42,7 +42,9 @@ monthly_results<-monthly_results[!monthly_results$stream %in% remove_site,]
 
 monthly_results<-monthly_results[!monthly_results$LTER=="MCM",]
 
-unique(monthly_results$stream)
+unique(monthly_results$Stream_ID)
+
+monthly_results$Stream_ID<-paste0(monthly_results$LTER, "__", monthly_results$stream)
 
 #month_conc<-monthly_results[,c("stream", "Month", "Conc_mgL")]
 month_conc<-monthly_results[,c("stream", "Month", "FNConc_mgL")]
