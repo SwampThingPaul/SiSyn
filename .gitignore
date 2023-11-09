@@ -35,16 +35,12 @@ vignettes/*.pdf
 *.utf8.md
 *.knit.md
 
-#
+# Ignore certain folders
 /Data/
 /Export/
-/README.Rmd
-
 /DataInventory/Export/
 /DataInventory/README.RMD
-
 /HJA_WRTDS/README.RMD
-
 /DataInventory/src/0_ceramictoken.R
 
 # DS_Store
@@ -65,3 +61,4 @@ WRTDS Bootstrap Results/
 # Minimum Detection Limit folder
 MDL_Prep/
 
+*.csv

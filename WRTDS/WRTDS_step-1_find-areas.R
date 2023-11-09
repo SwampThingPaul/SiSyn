@@ -8,11 +8,11 @@
 ## Find area of drainage basins for sites where that is not known from expert sources
 
 ## ---------------------------------------------- ##
-                 # Housekeeping ----
+                  # Housekeeping ----
 ## ---------------------------------------------- ##
 # Read needed libraries
 # install.packages("librarian")
-librarian::shelf(tidyverse, googledrive, sf, terra, nngeo, NCEAS/scicomptools)
+librarian::shelf(tidyverse, googledrive, sf, terra, nngeo, scicomptools)
 
 # Clear environment
 rm(list = ls())
@@ -20,56 +20,76 @@ rm(list = ls())
 # Identify path to location of shared data
 (path <- scicomptools::wd_loc(local = F, remote_path = file.path('/', "home", "shares", "lter-si", "si-watershed-extract")))
 
-# Site coordinate retrieval and preparation --------------------
+## ---------------------------------------------- ##
+        # Site Coordinate Preparation ----
+## ---------------------------------------------- ##
 
 # If you've never used the `googledrive` R package, you'll need to "authorize" it
 ## 1) Run the below line with your Google email that has access to the needed folders
-# googledrive::drive_auth(email = "lyon.nceas.ucsb.edu")
+# googledrive::drive_auth(email = "...@gmail.com")
 ## 1B) Choose which Google account to proceed with
 ## 2) Check the "see, edit, create, and ..." box
 ## 3) Click "Continue" at the bottom
 ## 4) Copy the "authorization code"
 ## 5) Paste it into the field in the Console
 
-
 # Identify reference table Google ID
-ref_id <- googledrive::drive_ls(as_id("https://drive.google.com/drive/u/1/folders/1HQtpWYoq_YQwj_bDNNbv8D-0swi00o_s")) %>%
-  dplyr::filter(name == "WRTDS_Reference_Table")
+ref_id <- googledrive::drive_ls(as_id("https://drive.google.com/drive/u/0/folders/0AIPkWhVuXjqFUk9PVA")) %>%
+  dplyr::filter(name == "Site_Reference_Table")
 
 # Download ref table (overwriting previous downloads)
 googledrive::drive_download(file = as_id(ref_id),
-                            path = file.path(path, "WRTDS_Reference_Table.xlsx"),
+                            path = file.path(path, "Site_Reference_Table.xlsx"),
                             overwrite = T)
 
 # Read in reference table of all sites
-sites_v0 <- readxl::read_excel(path = file.path(path, "WRTDS_Reference_Table.xlsx"))
+sites_v0 <- readxl::read_excel(path = file.path(path, "Site_Reference_Table.xlsx"))
 
 # Do some pre-processing to pare down to only desired information
-sites <- sites_v0 %>%
+sites_v1 <- sites_v0 %>%
   # Filter out sites not used in WRTDS
-  dplyr::filter(Use_WRTDS != "No") %>%
+  dplyr::filter(tolower(Use_WRTDS) != "no") %>%
   # Drop the WRTDS column now that we've subsetted by it
   dplyr::select(-Use_WRTDS) %>%
   # Make a uniqueID column
   dplyr::mutate(uniqueID = paste0(LTER, "_", Stream_Name), 
-                .before = dplyr::everything())
+                .before = dplyr::everything()) %>%
+  # Make lat/long truly numeric
+  dplyr::mutate(Latitude = as.numeric(Latitude),
+                Longitude = as.numeric(Longitude))
 
 # Glimpse that
-dplyr::glimpse(sites)
+dplyr::glimpse(sites_v1)
 
-# Check for missing coordinates
-sites %>%
-  dplyr::filter(is.na(Latitude) | is.na(Longitude)) %>%
-  unique()
-## 0 rows means all is good!
+# Split off sites where drainage basin area is known
+known_area <- sites_v1 %>%
+  dplyr::filter(is.na(drainSqKm) == F)
 
-# Check for invalid coordinates
-## Bad longitudes
-dplyr::filter(sites, abs(Longitude) > 180)
-dplyr::filter(sites, abs(Latitude) > 90)
+# Split off where area is NOT known
+unk_area <- sites_v1 %>%
+  dplyr::filter(is.na(drainSqKm) == T)
+
+# Should be all of the data in either one or the other
+nrow(known_area) + nrow(unk_area)
+nrow(sites_v1)
+
+# If we don't know area, we need coordinates in lat / long!
+unk_area %>% 
+  dplyr::filter(is.na(Latitude) | is.na(Longitude) |
+                  abs(Latitude) > 90 | abs(Longitude) > 180) %>%
+  dplyr::pull(uniqueID)
+## Anything here needs to have areas OR coordinates added _in the reference table_
+## If MCM, needs area *directly*
+
+# Drop malformed coordinates
+unk_v2 <- unk_area %>%
+  dplyr::filter(abs(Latitude) <= 90 & abs(Longitude) <= 180)
+
+# What sites had bad coordinates?
+setdiff(unk_area$uniqueID, unk_v2$uniqueID)
 
 # Get an explicitly spatial version
-sites_spatial <- sf::st_as_sf(sites, coords = c("Longitude", "Latitude"), crs = 4326)
+sites_spatial <- sf::st_as_sf(unk_v2, coords = c("Longitude", "Latitude"), crs = 4326)
 
 # Check it out
 str(sites_spatial)
@@ -124,7 +144,7 @@ basin_simp <- all_basins %>%
 str(basin_simp)
 
 ## ---------------------------------------------- ##
-           # Identify Focal Polygon ----
+            # Identify Focal Polygon ----
 ## ---------------------------------------------- ##
 
 # Pre-emptively resolve an error with 'invalid spherical geometry'
@@ -136,7 +156,7 @@ sf::sf_use_s2(F)
 sites_actual <- sites_spatial %>%
   dplyr::mutate(
     # Find the interaction points as integers
-    ixn = as.integer(st_intersects(geometry, basin_simp)),
+    ixn = as.integer(sf::st_intersects(geometry, basin_simp)),
     # If a given interaction is not NA (meaning it does overlap)...
     HYBAS_ID = ifelse(test = !is.na(ixn),
                       # ...retain the HYBAS_ID of that interaction...
@@ -152,7 +172,8 @@ sites_actual <- sites_spatial %>%
 
 # And to make our lives easier, check out which continents we actually need
 sort(unique(stringr::str_sub(sites_actual$HYBAS_ID, 1, 1)))
-# 1 = Africa; 2 = Europe; 3 = Siberia; 4 = Asia; 5 = Australia; 6 = South America; 7 = North America; 8 = Arctic (North America); 9 = Greenland 
+## 1 = Africa; 2 = Europe; 3 = Siberia; 4 = Asia; 5 = Australia
+## 6 = South America; 7 = North America; 8 = Arctic (North America); 9 = Greenland 
 
 # The missing IDs are Antarctica streams
 sites_actual %>%
@@ -162,7 +183,7 @@ sites_actual %>%
   unique()
 
 # Prepare only needed HydroSheds 'continents'
-basin_needs <- rbind(europe, siberia, north_am, arctic)
+basin_needs <- rbind(africa, europe, oceania, north_am, arctic)
 
 # Get area for our focal polygons
 sites_actual$SUB_AREA <- basin_needs$SUB_AREA[match(sites_actual$HYBAS_ID, basin_needs$HYBAS_ID)]
@@ -172,8 +193,10 @@ dplyr::glimpse(sites_actual)
 ## This object has polygons defined at the finest possible level
 ## We may want to visualize aggregated basins so let's go that direction now
 
+# Drop the individual regional/continental objects
 # Clean up environment to have less data stored as we move forward
-rm(list = setdiff(ls(), c('path', 'sites', 'sites_actual', 'basin_needs')))
+rm(list = c("arctic", "asia", "oceania", "greenland", "north_am", 
+            "south_am", "siberia", "africa", "europe"))
 
 ## ---------------------------------------------- ##
       # Load Modified HydroSHEDS Functions ----
@@ -186,8 +209,7 @@ rm(list = setdiff(ls(), c('path', 'sites', 'sites_actual', 'basin_needs')))
 find_next_up <- function(HYBAS, HYBAS.ID, ignore.endorheic = F){
   
   # Process sf object into a regular dataframe
-  HYBAS_df <- HYBAS %>%
-    sf::st_drop_geometry()
+  HYBAS_df <- HYBAS
   
   # Find next upstream polygon(s) as character
   upstream.ab <- HYBAS_df[HYBAS_df$NEXT_DOWN == HYBAS.ID, c("HYBAS_ID", "ENDO")]
@@ -238,22 +260,16 @@ find_all_up <- function(HYBAS, HYBAS.ID, ignore.endorheic = F, split = F){
 # It makes sense to identify areas / polygons based on that focal polygon
 # rather than stream name to save on computation time
 
-# Let's not waste time on sites where we already know the drainage basin area
-known_area <- dplyr::filter(sites_actual, !is.na(drainSqKm))
-
-# Split off only sites where we don't know area
-unk_area <- sites_actual %>%
-  dplyr::filter(is.na(drainSqKm))
-
-# Check that we didn't somehow lose rows here
-nrow(known_area) + nrow(unk_area) == nrow(sites_actual)
+# Drop geometry information for HydroSHEDS basins
+basin_df <- basin_needs %>%
+  sf::st_drop_geometry()
 
 # Create an empty list
 id_list <- list()
 
 # Identify area for sites where we don't know it already
-for(focal_poly in unique(unk_area$HYBAS_ID)){
-# for(focal_poly in "7000073120"){
+for(focal_poly in unique(sites_actual$HYBAS_ID)){
+  # for(focal_poly in "7000073120"){
   
   # Create/identify name and path of file
   poly_file <- file.path(path, 'hydrosheds-basin-ids',
@@ -266,45 +282,46 @@ for(focal_poly in unique(unk_area$HYBAS_ID)){
     hydro_df <- read.csv(file = poly_file)
     
     # Add to the list
-    id_list[[focal_poly]] <- hydro_df
+    id_list[[as.character(focal_poly)]] <- hydro_df
     
     # Message outcome
     message("Upstream HydroSheds IDs for HYBAS ID '", focal_poly, "' already identified.")
     
     # If we *don't* have the polygon, continue!
   } else {
-  
-  # Print start-up message
-  message( "Processing for HYBAS ID '", focal_poly, "' begun at ", Sys.time())
-  
-  # Identify all upstream shapes
-  fxn_out <- find_all_up(HYBAS = basin_needs, HYBAS.ID = focal_poly)
-  
-  # Make a dataframe of this
-  hydro_df <- data.frame(focal_poly = rep(focal_poly, (length(fxn_out) + 1)),
-                         hybas_id = c(focal_poly, fxn_out))
-  
-  # Save this out
-  write.csv(x = hydro_df, file = poly_file, na = '', row.names = F)
-  
-  # And add it to the list
-  id_list[[focal_poly]] <- hydro_df
-  
-  # Print finishing message
-  message( "Processing for HYBAS ID '", focal_poly, "' finished at ", Sys.time())
-  
+    
+    # Print start-up message
+    message( "Processing for HYBAS ID '", focal_poly, "' begun at ", Sys.time())
+    
+    # Identify all upstream shapes
+    fxn_out <- find_all_up(HYBAS = basin_df, HYBAS.ID = focal_poly)
+    
+    # Make a dataframe of this
+    hydro_df <- data.frame(focal_poly = as.character(rep(focal_poly, (length(fxn_out) + 1))),
+                           hybas_id = c(focal_poly, fxn_out))
+    
+    # Save this out
+    write.csv(x = hydro_df, file = poly_file, na = '', row.names = F)
+    
+    # And add it to the list
+    id_list[[as.character(focal_poly)]] <- hydro_df
+    
+    # Print finishing message
+    message( "Processing for HYBAS ID '", focal_poly, "' finished at ", Sys.time())
+    
   } # Close `else` clause
 } # Close `loop`
 
 # Unlist the list
 hydro_out <- id_list %>%
-  purrr::map_dfr(dplyr::select, dplyr::everything())
+  purrr::list_rbind(x = .) %>%
+  dplyr::filter(!is.na(focal_poly))
 
 # Check the structure
 dplyr::glimpse(hydro_out)
 
 ## ---------------------------------------------- ##
-               # Wrangle Output -----
+                # Wrangle Output -----
 ## ---------------------------------------------- ##
 
 # Pre-emptively resolve an error with 'invalid spherical geometry'
@@ -327,18 +344,21 @@ hydro_poly_df <- hydro_out %>%
   # Then drop geometry
   sf::st_drop_geometry() %>%
   # Get a character version of the HYBAS ID and drop the old one
-  dplyr::mutate(HYBAS_ID = as.character(focal_poly), .before = dplyr::everything()) %>%
+  dplyr::mutate(HYBAS_ID = as.character(focal_poly), 
+                .before = dplyr::everything()) %>%
   dplyr::select(-focal_poly)
 
 # Check structure
 dplyr::glimpse(hydro_poly_df)
 
 # Combine polygon IDs with the unknown areas dataframe
-unk_actual <- unk_area %>%
+unk_actual <- sites_actual %>%
   # Drop old (and empty) drainage area column
   dplyr::select(-drainSqKm) %>%
   # Drop geometry
   sf::st_drop_geometry() %>%
+  # Make HYBAS ID into a character
+  dplyr::mutate(HYBAS_ID = as.character(HYBAS_ID)) %>%
   # Join on newly identified areas
   dplyr::left_join(y = hydro_poly_df, by = c("HYBAS_ID"))
 
@@ -363,14 +383,23 @@ nrow(filter(ref_table_actual, is.na(drainSqKm)))
 nrow(filter(ref_table_actual, nchar(drainSqKm) == 0))
 ## Both above should return "0"
 
+# Drop any that occur
+ref_table_final <- ref_table_actual %>%
+  dplyr::filter(!is.na(drainSqKm)) %>%
+  dplyr::filter(drainSqKm != 0)
+
+# How many areas do we gain by doing this operation?
+sites_v1 %>% dplyr::filter(is.na(drainSqKm)) %>% nrow()
+ref_table_final %>% dplyr::filter(is.na(drainSqKm)) %>% nrow()
+
 # Define name/path of this file
 out_name <- file.path(path, "WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv")
 
 # Save this locally
-write.csv(x = ref_table_actual, na = "", row.names = F, file = out_name)
+write.csv(x = ref_table_final, na = "", row.names = F, file = out_name)
 
 # Now upload this as well to the GoogleDrive
 googledrive::drive_upload(media = out_name, overwrite = T,
-                          path = as_id("https://drive.google.com/drive/u/1/folders/1HQtpWYoq_YQwj_bDNNbv8D-0swi00o_s"))
+                          path = as_id("https://drive.google.com/drive/u/0/folders/15FEoe2vu3OAqMQHqdQ9XKpFboR4DvS9M"))
 
 # End ----
