@@ -39,16 +39,7 @@ information <- read.csv(file.path(path, "WRTDS Inputs", "WRTDS-input_information
 ## ---------------------------------------------- ##
             # Diagnose Types of Sites ----
 ## ---------------------------------------------- ##
-
-# Rivers with warning that there are duplicated dates (should be impossible)
-duplicate_data <- c(
-  # Warning about "duplicated Daily dates" and "duplicated Sample dates"
-  ### "Error in seq.Date(surfaceStart, by = "1 year", length.out = nSeg) : 
-  ###'from' must be of length 1"
-  # "USGS__Wild River_DSi", "USGS__Wild River_NH4", "USGS__Wild River_NOx", 
-  # "USGS__Wild River_P"
-  )
-
+# Set period of absence rivers (NOT AN ERROR!)
 pa5_5 <- c(
   # EGRET::setPA(eList = egret_list[_out], paStart = 5, paLong = 5)
   "NWT__MARTINELLI_DSi", "NWT__MARTINELLI_NH4", 
@@ -66,24 +57,26 @@ odd_ones <- c(
   ## 'from' must be of length 1"
   "GRO__Kolyma_DSi", "GRO__Kolyma_NH4", "GRO__Kolyma_NOx",
   "GRO__Mackenzie_DSi", "GRO__Mackenzie_NH4", "GRO__Mackenzie_NOx",
-  
+  "USGS__Wild River_DSi", "USGS__Wild River_NH4", "USGS__Wild River_NOx",
   # `EGRET::tableResults` issue:
   ## "Error in seq.default(xFirst, xLast) : 'from' must be a finite number"
   ### Looks like this may be caused by "negative flow days"?
   ### Need to check range of values to see these problem values
   "UMR__AL02.3M_NOx", "UMR__AL02.3M_P", "UMR__BK14.2M_NOx", 
-  "UMR__BK14.2M_P", 
-  
+  "UMR__BK14.2M_P", "UMR__BM00.7S_DSi", "UMR__BM00.7S_NOx", 
   "UMR__CH00.1M_NOx", "UMR__CH00.1M_P", "UMR__CN00.1M_P",
   "UMR__CU11.6M_DSi", "UMR__CU11.6M_NOx", "UMR__CU11.6M_P",
-  "UMR__LM00.5M_NOx", "UMR__LM00.5M_P", "UMR__M078.0B_NOx",
+  "UMR__BM00.7S_P", "UMR__DC01.0M_NOx", "UMR__I007.0W_DSi",
+  "UMR__I007.0W_P", "UMR__LM00.5M_NOx", "UMR__LM00.5M_P",
+  "UMR__LX00.1M_NOx",  "UMR__LX00.1M_P", "UMR__M078.0B_NOx",
   "UMR__M241.4K_NOx", "UMR__M241.4K_P", "UMR__M556.4A_NOx",
   "UMR__M556.4A_P", "UMR__M701.1B_NOx", "UMR__M701.1B_P",
   "UMR__M764.3A_NOx", "UMR__M764.3A_P", "UMR__M786.2C_P",
-  "UMR__MQ02.1M_NOx", "UMR__MQ02.1M_P", "UMR__SG16.2C_NOx",
-  "UMR__SG16.2C_P", "UMR__WP02.6M_DSi", "UMR__WP02.6M_NOx", 
+  "UMR__MK04.4M_NOx", "UMR__MK04.4M_P", "UMR__MQ02.1M_NOx", 
+  "UMR__MQ02.1M_P", "UMR__SG16.2C_NOx", "UMR__S000.2K_DSi",
+  "UMR__S000.2K_NOx",  "UMR__S000.2K_P", "UMR__SG16.2C_P", 
+  "UMR__UI02.9M_P", "UMR__WP02.6M_DSi", "UMR__WP02.6M_NOx", 
   "UMR__WP02.6M_P", 
-  
   # `EGRET::tableResults` issue:
   ## "Error in if (good) { : missing value where TRUE/FALSE needed"
   "HYBAM__Manacapuru_DSi", "HYBAM__Manacapuru_NO3", 
@@ -162,7 +155,8 @@ few_data <- c(
   "NIVA__VAGEOTR_NH4", "NIVA__VAGEOTR_P", "NIVA__VESENUM_NH4", "NIVA__VESENUM_P",
   "NWT__ALBION_NOx", "NWT__ALBION_P", "NWT__MARTINELLI_P", 
   "NWT__SADDLE STREAM 007_NOx", "NWT__SADDLE STREAM 007_P", 
-  "Sagehen__Sagehen_NH4", 
+  "Sagehen__Sagehen_NH4", "USGS__SOUTH PLATTE_NH4", "USGS__SOUTH PLATTE_NOx",
+  "USGS__SOUTH PLATTE_P",
   
   # Error in `EGRET::runSeries`
   ## "Error in runSurvReg(estPtYear, estPtLogQ, DecLow, DecHigh, localSample,:
@@ -181,15 +175,18 @@ few_data <- c(
   "NIVA__AAGEVEG_DSi", "NIVA__FINEPAS_DSi", "NIVA__FINETAN_DSi", "NIVA__HOREVOS_DSi",
   "NIVA__MROEDRI_DSi", "NIVA__OSLEALN_DSi", "NIVA__ROGEBJE_DSi", "NIVA__ROGEVIK_DSi",
   "NIVA__SFJENAU_DSi", "NIVA__STRENID_DSi",
-  "UK__DERWENT AT SEATON MILL_DSi"
+  "UK__DERWENT AT SEATON MILL_DSi", "USGS__ANDREWS CREEK_NH4",
+  "USGS__ANDREWS CREEK_P"
   )
 
 # Rivers that crash R without a specific error message
 crash_rivers <- c(
   "Australia__EDWARD RIVER AT DENILIQUIN_NOx",
   "Australia__PEEL RIVER AT UPSTREAM PARADISE WEIR_NO3",
-  
   "USGS__GORE CREEK UPPER STATION_NH4", "USGS__GORE CREEK UPPER STATION_P",
+  "USGS__GREEN RIVER_P", "USGS__McDonalds Branch_P", "USGS__MERCED R_P",
+  "USGS__PINE CREEK_P", "USGS__SOPCHOPPY RIVER_NOx", "USGS__Wild River_P",
+  
   "USGS__YUKON RIVER_P"
   
 )
@@ -202,8 +199,7 @@ bad_rivers <- c(
 
 # Identify all rivers that aren't in the broken data vectors
 good_rivers <- setdiff(x = unique(chemistry$Stream_Element_ID),
-                       y = unique(c(few_data, duplicate_data, 
-                                    odd_ones, bad_rivers, crash_rivers)))
+                       y = unique(c(few_data, odd_ones, bad_rivers, crash_rivers)))
 ## Note this includes weird rivers that need special treatment and those that don't
 
 ## ---------------------------------------------- ##
