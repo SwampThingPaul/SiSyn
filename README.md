@@ -48,3 +48,4 @@ This working group has several repositories. All are linked and described (brief
 - [lsethna/**NCEAS_SiSyn_CQ**](https://github.com/lsethna/NCEAS_SiSyn_CQ) - Examples concentration (C) and discharge (Q) relationships for a wide range of solutes
 - [lter/**lterwg-silica-spatial**](https://github.com/lter/lterwg-silica-spatial) - Extracts spatial and climatic information from within watershed shapefiles
 - [njlyon0/**lter_silica-high-latitude**](https://github.com/njlyon0/lter_silica-high-latitude) - Performs analysis and visualization for the high latitude manuscript
+- [sidneyabush/**LTER-SiSyn-Spatial-Controls**](https://github.com/sidneyabush/LTER-SiSyn-Spatial-Controls) - Analysis for spatial controls manuscript
