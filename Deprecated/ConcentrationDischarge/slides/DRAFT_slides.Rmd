@@ -1,0 +1,68 @@
+---
+title: "SiSyn: C-Q"
+author: "Paul Julian"
+output:
+  xaringan::moon_reader:
+    css: ["default", "libs/custom.css"]
+    lib_dir: libs
+    nature:
+      slideNumberFormat: "%current%" 
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+    seal: false
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+
+options(htmltools.dir.version = FALSE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, echo=FALSE)
+
+##
+library(flextable)
+library(magrittr)
+library(plyr)
+library(reshape2)
+
+wd="C:/Julian_LaCie/_GitHub/EVER_FKNMS_WQTrend"
+
+plot.path="C:/Julian_LaCie/_GitHub/EVER_FKNMS_WQTrend/Plots/"
+export.path="C:/Julian_LaCie/_GitHub/EVER_FKNMS_WQTrend/Export/"
+
+
+
+```
+
+layout: true
+
+<div class="my-footer">
+<span> DRAFT </span>
+</div>
+
+---
+name: title
+class: left, middle
+
+### LTER: SiSyn
+
+**DRAFT** - `r paste(format(as.Date("2021-07-22"),"%B %d, %Y"))#,"<br>(Updated:", format(as.Date(Sys.Date()),"%B %d, %Y"),")")`
+
+
+<!-- this ends up being the title slide since seal = FALSE-->
+
+```{r xaringanExtra, include=FALSE, warnint=FALSE}
+# devtools::install_github("gadenbuie/xaringanExtra")
+# xaringanExtra::use_webcam()
+xaringanExtra::use_tile_view()
+# xaringanExtra::use_scribble()
+```
+.footnote[
+<!-- Paul Julian PhD [`r fontawesome::fa("fas fa-envelope")`](mailto: pjulian@sccf.org) .small[pjulian@sccf.org] -->
+
+.small[Use cursor keys for navigation, press .red["O"] for a slide .red[O]verview]
+]
+---
+name: CQFun
