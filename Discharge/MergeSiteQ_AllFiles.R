@@ -49,26 +49,21 @@ for (i in 1:length(csv_files$drive_resource)) {
 #loop through each downloaded csv file and add appropriate site name
 discharge_files = list.files(path="/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/All_Q", pattern = ".csv")
 
+#remove all "Master Q" files
 discharge_files<-discharge_files[!(discharge_files %like% "UpdatedAll_Q_master")]
-
 remove_these<-setdiff(discharge_files, csv_files$name)
-
 discharge_files<-discharge_files[!(discharge_files %in% remove_these)]
-
-##start here if Q files are already on computer##
-
-#discharge_files<-list.files(path = "/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/SiPrepWRTDS_Updated",
-                            #pattern = "Q_WRTDS.csv")
 
 setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
 
-ref_table_link<-"https://drive.google.com/file/d/1KXw3qQJ-z3UuE-ym3VO-gkPZ5SzrUY6U/view?usp=sharing"
+#read in reference table - you might need to change this link
+ref_table_link<-"https://docs.google.com/spreadsheets/d/11t9YYTzN_T12VAQhHuY5TpVjGS50ymNmKznJK4rKTIU/edit?usp=sharing"
 
 ref_table_folder = drive_get(as_id(ref_table_link))
 
 ref_table<-drive_download(ref_table_folder$drive_resource, overwrite = T)
 
-QLog<-read.csv(ref_table$name)
+QLog<-read_xlsx(ref_table$local_path)
 
 #get list of csv files from folder
 #csv_files = drive_ls(folder, type="csv")
@@ -82,12 +77,19 @@ setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/All_Q")
 
 #create list to store output from for loop
 data_list = list()
-#date_guess = list()
+
+#this is where you add different names for discharge and date columns
+#you will need to add more to incorporate new data
 DischargeList<-c("MEAN_Q", "Discharge", "InstantQ", "Q_m3sec", "discharge", "Q", "var", "Value")
 DateList<-c("Date", "dateTime", "dates", "date", "datetime")
 
+#i=4
+
+#loop through each discharge file
+#rename columns, convert units, keep only important columns
+
 for (i in 1:length(discharge_files)) {
-  LTER_name = substr(discharge_files[i],start=1,stop=3)
+  #LTER_name = substr(discharge_files[i],start=1,stop=3)
   file_name_nocsv<-substr(discharge_files[i],start=1,stop=nchar(discharge_files[i])-4)
   file_name = discharge_files[i]
   d = fread(file_name, sep=",")
@@ -98,7 +100,7 @@ for (i in 1:length(discharge_files)) {
   ref_site<-subset(QLog, QLog$Discharge_File_Name==file_name_nocsv)
   ref_site<-ref_site[1,]
   d$Units<-ref_site$Units
-  d$LTER = LTER_name
+  #d$LTER = LTER_name
   
   #convert all Q file units to CMS
   d$Qcms<-ifelse(d$Units=="cms", d$Q, 
@@ -106,15 +108,9 @@ for (i in 1:length(discharge_files)) {
                         ifelse(d$Units=="Ls", d$Q*0.001,
                                ifelse(d$Units=="cmd", d$Q*1.15741e-5, ""))))
   
-  d<-d[,c("Qcms", "Date", "LTER", "DischargeFileName")]
+  d<-d[,c("Qcms", "Date", "DischargeFileName")]
   
-  
-  # d$Date<-as.character(d$Date)
-  # 
-  # date_guess_unique<-date_format_guess(d,"Date", groups = TRUE, group_col = "LTER")
-  # 
-  # date_guess[[i]]<-unique(date_guess_unique$format_guess)
-  
+  #convert date to date format
   if(is.Date(d$Date)){
 
     d$Date<-d$Date
@@ -130,44 +126,37 @@ for (i in 1:length(discharge_files)) {
   data_list[[i]] = d
 }
 
-#use rbind to concatenate each new discharge file
+#use bind_rows to concatenate each new discharge file
 #should have 3 columns: date, site, discharge
 all_discharge = bind_rows(data_list)
 
-all_discharge<-all_discharge[,c("Qcms", "Date", "LTER", "DischargeFileName")]
+all_discharge<-all_discharge[,c("Qcms", "Date", "DischargeFileName")]
 
-# date_guess_list<-unlist(date_guess)
-# 
-# unique(date_guess_list)
-# 
-# sum(is.na(all_discharge$Date))
-# GRO<-subset(all_discharge, all_discharge$DischargeFileName=="GRO_Ob_Q")
-# unique(GRO$DischargeFileName)
-
+#change date to reflect new file creation
 write.csv(all_discharge, "UpdatedAll_Q_master_10272022.csv")
 
-allQ<-read.csv("UpdatedAll_Q_master_10262022.csv")
-
-
-GRO_min<-all_discharge %>%
-  filter(LTER=="GRO") %>%
-  dplyr::group_by(DischargeFileName) %>%
-  slice_min(Date)
-
-#which sites are included in master discharge file? Different from input files?
-discharge_sites = data.frame("site.name"=unique(all_discharge$site.name))
-WRTDS_sites = data.frame("site"=unique(WRTDS_discharge$site))
-
-#long term sites
-Data_years_streams_WRTDS = read_csv("L:/GitHub/SiSyn/Merge Site Discharge/Data_years_streams_WRTDS.csv") #download directly from "https://drive.google.com/drive/folders/1q92ee9nKct_nCJ3NVD2-tm8KCuRBfm2U"
-longterm_list = data.frame(LTER=Data_years_streams_WRTDS$LTER,
-                           site.name=Data_years_streams_WRTDS$Stream.Site)
-#are all sites in long term site list in all_discharge?
-longterm_check = merge(discharge_sites,longterm_list, by="site.name", all=T)
-
-#merge long-term list with all_discharge to add LTER name
-all_discharge_longterm = merge(all_discharge, longterm_list, all=T)
-
-#write master discharge file to .csv
-setwd("L:/GitHub/SiSyn/Merge Site Discharge")
-write.csv(all_discharge_longterm, file="WRTDS_discharge_allsites_11Aug21.csv")
+# allQ<-read.csv("UpdatedAll_Q_master_10262022.csv")
+# 
+# 
+# GRO_min<-all_discharge %>%
+#   filter(LTER=="GRO") %>%
+#   dplyr::group_by(DischargeFileName) %>%
+#   slice_min(Date)
+# 
+# #which sites are included in master discharge file? Different from input files?
+# discharge_sites = data.frame("site.name"=unique(all_discharge$site.name))
+# WRTDS_sites = data.frame("site"=unique(WRTDS_discharge$site))
+# 
+# #long term sites
+# Data_years_streams_WRTDS = read_csv("L:/GitHub/SiSyn/Merge Site Discharge/Data_years_streams_WRTDS.csv") #download directly from "https://drive.google.com/drive/folders/1q92ee9nKct_nCJ3NVD2-tm8KCuRBfm2U"
+# longterm_list = data.frame(LTER=Data_years_streams_WRTDS$LTER,
+#                            site.name=Data_years_streams_WRTDS$Stream.Site)
+# #are all sites in long term site list in all_discharge?
+# longterm_check = merge(discharge_sites,longterm_list, by="site.name", all=T)
+# 
+# #merge long-term list with all_discharge to add LTER name
+# all_discharge_longterm = merge(all_discharge, longterm_list, all=T)
+# 
+# #write master discharge file to .csv
+# setwd("L:/GitHub/SiSyn/Merge Site Discharge")
+# write.csv(all_discharge_longterm, file="WRTDS_discharge_allsites_11Aug21.csv")

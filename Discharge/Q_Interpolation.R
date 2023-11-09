@@ -1,6 +1,7 @@
 library(zoo)
 library(plyr)
 library(dplyr)
+library(ggplot2)
 
 #interpolate Q data##
 #setwd("G:/Shared drives/SCWRS/Sethna/SiSyn/Q interp files")
@@ -170,6 +171,15 @@ Q_interp_all = do.call(rbind, Q_interp)
 
 #### export as new Q.csv file ####
 write.csv(Q_interp_all,file="all_site_Qinterp.csv")
+setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/NewSites_Sept2022")
+
+interp<-read.csv("all_site_Qinterp.csv")
+
+df2<-interp %>% group_by(Site) %>%  
+  summarise(max=max(rle(indicate)$lengths[rle(indicate)$values=="interpolated"]))
+
+df2<-interp %>% group_by(Site) %>%  
+  filter(indicate=="interpolated")
 
 interp_sites<-Q_interp_all %>%
   group_by(Site) %>%
@@ -279,6 +289,25 @@ NWQA_interp<-read.csv("NWQA_Qinterp.csv")
 
 NWQA_interp_sites<-unique(NWQA_interp$Site)
 
+NWQA_interp$continuous<-ifelse(NWQA_interp$indicate)
+
+df<-NWQA_interp %>% group_by(Site) %>%  
+  summarise(max=max(rle(indicate)$lengths[rle(indicate)$values=="interpolated"]))
+
+NWQA_interp %>%
+  filter(Site=="PICEANCE CREEK AT WHITE RIVER") %>%
+  ggplot(aes(as.Date(Date), Q))+geom_line()
+
+df<-NWQA_interp %>% group_by(Site) %>%
+  filter(indicate=="interpolated")
+
+interp_final<-bind_rows(df, df2)
+
+interp_final$Month<-month(interp_final$Date)
+interp_final$Year<-year(interp_final$Date)
+
+write.csv(interp_final, "interp_final.csv")
+
 setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/NewSites_Sept2022/IndividualQFiles")
 
 NWQA_interp %>%
@@ -293,11 +322,38 @@ newSiteinterp %>%
   group_by(Site) %>%
   group_walk(~ write.csv(.x, paste0(gsub(" ","_", .y$Site), "_Q.csv")))
 
+setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/NewSites_Sept2022")
+interp<-read.csv("all_site_Qinterp.csv")
+
+setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
+
+NWQA_interp<-read.csv("NWQA_Qinterp.csv")
+
+interp_tot<-bind_rows(interp, NWQA_interp)
+
+monthly_interp<-read.csv("interp_monthly.csv")
+
+ggplot(monthly_interp)+geom_point(aes(as.Date(Date), Q))+
+  facet_wrap(~stream, scales = "free")+theme_bw()
+
+BP<-monthly_interp %>%
+  filter(stream=="BOGUE PHALIA")
 
 
+monthly_interp_summary<-read.csv("interp_monthly_summary.csv")
 
+interp_tot<-subset(interp_tot, interp_tot$Site %in% monthly_interp$stream)
 
+colnames(monthly_interp)[1]<-"Site"
 
+ggplot()+geom_point(interp_tot, mapping = aes(as.Date(Date), Q, col=indicate), size=0.2)+
+  facet_wrap(~Site, scales = "free")+theme_bw()
 
+yukon<-monthly_interp %>%
+  filter(stream == "YUKON RIVER")
+
+yukon<-monthly_interp %>%
+  group_by(stream) %>%
+  summarise(min_date=min(Date), max_date=max(Date))
 
 

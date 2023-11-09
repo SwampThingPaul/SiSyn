@@ -1,5 +1,6 @@
 install.packages("kgc")
 require(kgc)
+install.packages("readxl")
 require(readxl)
 require("Polychrome")
 require(googledrive)
@@ -36,6 +37,10 @@ setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
 KG_name<-read.csv("KG_Clim_Name.csv")
 
 data<-merge(data, KG_name, by="ClimateZ")
+
+data<-data[!duplicated(data$Stream_Name,fromLast=TRUE),]
+
+write.csv(data, "KGClass.csv")
 
 #write.csv(data, "Koeppen_Geiger.csv")
 
