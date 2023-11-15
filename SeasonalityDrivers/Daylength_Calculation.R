@@ -1,5 +1,6 @@
-install.packages("chillR")
+#install.packages("chillR")
 require("chillR")
+require(readxl)
 
 #read in reference table from google drive
 ref_table_url<-"https://docs.google.com/spreadsheets/d/11t9YYTzN_T12VAQhHuY5TpVjGS50ymNmKznJK4rKTIU/edit?usp=sharing"

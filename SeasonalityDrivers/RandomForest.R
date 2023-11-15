@@ -1,7 +1,9 @@
-require(caret)
-require(randomForest)
 #install.packages(c("DAAG", "party", "rpart", "rpart.plot", "mlbench", "pROC", "tree"))
 #install.packages("tree")
+install.packages("RRF")
+require(RRF)
+require(caret)
+require(randomForest)
 library(DAAG)
 library(party)
 library(rpart)
@@ -14,6 +16,7 @@ require(dplyr)
 require(plot.matrix)
 require(reshape2)
 
+#function to see variable importance by regime
 import_plot <- function(rf_model) {
   
   importance_df<-as.data.frame(rf_model$importance)
@@ -25,101 +28,15 @@ import_plot <- function(rf_model) {
   
 }
 
-setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
-
-drivers<-read.csv("AllDrivers_Harmonized.csv")
-
-drivers<-drivers[,-c(1, 3,20, 24, 26, 27,28)]
-drivers<-drivers[!duplicated(drivers$Stream_ID),]
-
-#read in cluster data for average cluster, modal cluster, number of clusters
-si_clust<-read.csv("ClusterAllMetadata.csv")
-
-#si_clust<-read.csv("AllSiteYearClusters.csv")
-#colnames(si_clust)[9]<-"Stream_Name"
-
-si_clust$Stream_ID<-paste0(si_clust$LTER, "__", si_clust$Site)
-
-si_clust<-si_clust[,c("Centroid_Name", "Stream_ID")]
-
-drivers<-merge(drivers, si_clust, by=c("Stream_ID"))
-
-lapply(drivers[,c(2:36)], summary)
-
-drivers<-dplyr::select(drivers, -c("cycle1"))
-
-drivers<-drivers[complete.cases(drivers$npp),]
-drivers<-drivers[complete.cases(drivers$drainSqKm),]
-
-drivers$Centroid_Name<-as.factor(drivers$Centroid_Name)
-
-#clust<-drivers %>% dplyr::filter(Centroid_Name=="Fall Peak")
-
-# #check multicolinearity
-# d2 <- drivers[,c(3,5,7,9,10,11,14:20,25)] %>% 
-#   as.matrix %>%
-#   cor %>%
-#   as.data.frame %>%
-#   rownames_to_column(var = 'var1') %>%
-#   gather(var2, value, -var1)
-# 
-# d3<-highcor %>% 
-#   count(var1)
-# 
-# colnames(d3)[1]<-"vars"
-# 
-# d4<-highcor %>%
-#   count(var2)
-# colnames(d4)[1]<-"vars"
-# 
-# vars_count<-merge(d3, d4, by="vars")
-# 
-# vars_count$sum<-vars_count$n.x+vars_count$n.y
-# 
-# highcor<-d2[which(abs(d2$value)>0.49),]
-# 
-# highcor<-subset(highcor, highcor$value < 1)
-# highcor<-highcor[!duplicated(highcor$value),]
-# 
-# nrow(subset(highcor, highcor$var1=="prop_area"|highcor$var2=="prop_area"))
-
-# ####set weights####
-# w<-1/table(drivers$Centroid_Name)
-# w<-w/sum(w)
-# 
-# weights <- rep(0, length(drivers$Centroid_Name))
-# weights[drivers$Centroid_Name == 1] <- w['1']
-# weights[drivers$Centroid_Name == 2] <- w['2']
-# weights[drivers$Centroid_Name == 3] <- w['3']
-# weights[drivers$Centroid_Name == 4] <- w['4']
-# weights[drivers$Centroid_Name == 5] <- w['5']
-# weights_table<-table(weights, drivers$clust)
-# 
-# w
-# 
-# weights_vect<-c("Fall Peak"=0.18768912,"Fall Trough"=0.08775076, "Spring Trough"=0.23299339, "Spring Trough, Fall Peak"=0.25025216, 
-#                 "Spring Trough, Variable Summer"=0.24131458)
-# 
-
-# #### test mtry ####
-# set.seed(123)
-# mtry <- tuneRF(drivers[c(5,7,9,11,12,13,20,23:32,33)],drivers$Centroid_Name, ntreeTry=100,
-#                stepFactor=1,improve=0.01, plot = FALSE)
-# best.m <- mtry[mtry[, 2] == min(mtry[, 2]), 1]
-# print(mtry)
-# print(best.m)
-
-####test ntree ####
+####function to test ntree - change the internal function to reflect the RF model that you are using
 test_numtree_average <- function(ntree_list) {
   
   OOB<-list()
   
   for (i in 1:length(ntree_list)) {
     
-    rf_model<-randomForest(Centroid_Name~med_si+CV_C+med_q+CV_Q+cvc_cvq+slope+num_days+precip+evapotrans+temp+npp+cycle0+elevation_mean_m+
-                             major_soil+major_rock+major_land+ClimateZ+prop_area+drainSqKm+Latitude, 
-                           data=drivers, importance=TRUE, proximity=TRUE, ntree=ntree_list[i], mtry=4, sampsize=c(26,26,26,26,26))
-    
+    rf_model<-randomForest(Centroid_Name~.,
+                           data=drivers_df, importance=TRUE, proximity=TRUE, ntree=ntree_list[[i]], mtry=4,sampsize=c(30,30,30,30,30))
     OOB[[i]]<-rf_model$err.rate[,1]
     
   }
@@ -128,6 +45,59 @@ test_numtree_average <- function(ntree_list) {
   
 }
 
+
+#read in drivers data
+setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
+
+drivers_url<-"https://drive.google.com/file/d/1ZmyKMiMNlHCxgrHWOa_B_6nSgOSgog0D/view?usp=drive_link"
+  
+file_get<-drive_get(as_id(drivers_url))
+
+drive_download(file_get$drive_resource, overwrite = T)
+
+drivers<-read.csv("AllDrivers_Harmonized_20231114.csv")
+
+#remove any duplicated rows
+drivers<-drivers[!duplicated(drivers$Stream_ID),]
+
+#read in cluster data for average cluster, modal cluster, number of clusters
+si_clust<-read.csv("ClusterAllMetadata.csv")
+
+#merge cluster and drivers data
+si_clust$Stream_ID<-paste0(si_clust$LTER, "__", si_clust$Site)
+
+si_clust<-si_clust[,c("Centroid_Name", "Stream_ID")]
+
+drivers<-merge(drivers, si_clust, by=c("Stream_ID"))
+
+#remove variables not interested in ever including
+drivers<-dplyr::select(drivers, -c("cycle1","X","X.1","ClimateZ","Latitude","Longitude","LTER","rndCoord.lat",
+                                   "rndCoord.lon","major_rock","major_land"))
+
+#look at distribution of NA across columns
+#sapply(drivers, function(x) sum(is.na(x)))
+
+#remove sites w NA
+drivers<-drivers[complete.cases(drivers$npp),]
+
+#turn centroid name to factor
+drivers$Centroid_Name<-as.factor(drivers$Centroid_Name)
+
+#select only features to be included in model
+drivers_df<-drivers[,c("Centroid_Name","CV_Q","precip","evapotrans","temp","npp","cycle0","q_95","q_5",
+                        "prop_area","N","P","Max_Daylength")]
+
+keep_these_too<-drivers[,colnames(drivers) %like% c("rock|land")]
+
+drivers_df<-bind_cols(drivers_df, keep_these_too)
+
+drivers_df[,c(14:27)]<-replace(drivers_df[,c(14:27)], is.na(drivers_df[,c(14:27)]), 0)
+
+#look at correlation between variables
+driver_cor<-cor(drivers_df[,c(2:9,12:15)])
+corrplot(driver_cor, type="lower", pch.col = "black", tl.col = "black", diag = F)
+
+#original model, all parameters
 set.seed(123)
 OOB_list<-test_numtree_average(c(100,200,300,400,500,600,700,800,900,1000))
 
@@ -148,121 +118,85 @@ OOB_df$tree_num<-unlist(OOB_num)
 OOB_mean<-OOB_df %>% group_by(tree_num) %>%
   summarise(mean_oob=mean(`unlist(OOB_list)`))
 
+#visualize and select number of trees that gives the minimum OOB error
 ggplot(OOB_mean, aes(tree_num, mean_oob))+geom_point()+geom_line()+
   theme_classic()+scale_x_continuous(breaks = seq(100,1000,100))+theme(text = element_text(size=20))
 
-
-#original model - all parameters
 set.seed(123)
-rf_model1<-randomForest(Centroid_Name~med_si+CV_C+med_q+CV_Q+cvc_cvq+slope+num_days+precip+evapotrans+temp+npp+cycle0+elevation_mean_m+
-                         major_soil+major_rock+major_land+ClimateZ+prop_area, 
-                       data=drivers, importance=TRUE, proximity=TRUE, ntree=700, mtry=4, sampsize=c(26,26,26,26,26))
+rf_model1<-randomForest(Centroid_Name~.,
+                        data=drivers_df, importance=TRUE, proximity=TRUE, ntree=900, mtry=4,sampsize=c(30,30,30,30,30))
 
 rf_model1
 
+randomForest::varImpPlot(rf_model1)
+
+#set control functions for recursive feature elimination on RF
+control <- rfeControl(functions = rfFuncs, # random forest
+                      method = "repeatedcv", # repeated cv
+                      repeats = 5, # number of repeats
+                      number = 10) # number of folds
+
+#divide data into predictor variables (y) and response variables (x)
+x<-drivers_df[,!(colnames(drivers_df)=="Centroid_Name")]
+
+y<-drivers_df$Centroid
+
+#split into testing and training data
+inTrain <- createDataPartition(y, p = .80, list = FALSE)[,1]
+
+x_train <- x[ inTrain, ]
+x_test  <- x[-inTrain, ]
+
+y_train <- y[ inTrain]
+y_test  <- y[-inTrain]
+
+#run RFE, this will take a bit
+#we are allowing the number of variables retained to range from 1 to all of them here
+#to change that changes input into the "sizes" variable
 set.seed(123)
-rf_model2<-randomForest(Centroid_Name~med_si+CV_C+med_q+CV_Q+cvc_cvq+slope+num_days+precip+evapotrans+temp+npp+cycle0+elevation_mean_m+
-                         major_soil+major_rock+major_land+ClimateZ+prop_area, 
-                       data=drivers, importance=TRUE, proximity=TRUE, ntree=700, mtry=4)
+result_rfe <- rfe(x = x_train, 
+                  y = y_train, 
+                  sizes = c(1:(ncol(drivers_df)-1)),
+                  rfeControl = control)
+
+
+#print rfe results
+result_rfe
+
+#Put selected features into variable
+new_rf_input<-paste(predictors(result_rfe), collapse = "+")
+
+#Format those features into a formula to put in the optimized random forest model
+rf_formula<-formula(paste("Centroid_Name~", new_rf_input))
+
+#run optimized random forest model, with same number of trees
+set.seed(123)
+rf_model2<-randomForest(rf_formula,
+                        data=drivers_df, importance=TRUE, proximity=TRUE, ntree=300, sampsize=c(30,30,30,30,30))
+
 
 rf_model2
 
-conf1<-as.data.frame(rf_model1$confusion)
-conf1$cluster<-rownames(conf1)
+randomForest::varImpPlot(rf_model2)
 
-conf2<-as.data.frame(rf_model2$confusion)
-conf2$cluster<-rownames(conf2)
+#plot confusion matrix
+df<-as.data.frame(rf_model2$confusion)
 
-conf<-merge(conf1, conf2, by="cluster")
-conf<-conf[,c(1,7,13)]
-colnames(conf)<-c("Centroid_Name", "Even_Sampling", "Normal_Sampling")
-conf_melt<-melt(conf, id.vars = "Centroid_Name")
-
-centroid_abb<-as.data.frame(c("Fall Peak"="FP", "Fall Trough"="FT", "Spring Trough"="ST", "Spring Trough, Fall Peak"="STFP", 
-                              "Spring Trough, Variable Summer"="STVS"))
-colnames(centroid_abb)<-"abb"
-centroid_abb$Centroid_Name<-rownames(centroid_abb)
-
-conf_melt<-merge(conf_melt, centroid_abb, by="Centroid_Name")
-
-ggplot(conf_melt, aes(x=abb, y=value, fill=variable))+geom_bar(stat = "identity", position = position_dodge())+theme_classic()+
-  labs(x="", y="Class Error")+theme(axis.text.x = element_text(angle = 45,hjust = 1), text = element_text(size=20))
-
-tab<-as.data.frame(table(drivers$Centroid_Name))
-
-ggplot(tab, aes(x=Var1, y=Freq))+geom_bar(stat = "identity", fill="black")+theme_classic()+
-  labs(x="", y="Count")+theme(axis.text.x = element_text(angle = 45,hjust = 1), text = element_text(size=20))
-
-set.seed(123)
-rf_model<-randomForest(Centroid_Name~med_si+CV_C+med_q+CV_Q+cvc_cvq+slope+num_days+precip+evapotrans+temp+npp+cycle0+elevation_mean_m+
-                          major_soil+major_rock+major_land+ClimateZ+prop_area+drainSqKm+Latitude, 
-                        data=drivers, importance=TRUE, proximity=TRUE, ntree=700, mtry=4, sampsize=c(26,26,26,26,26))
-
-rf_model
-varImpPlot(rf_model)
-
-colnames(drivers)<-c("Stream_ID", "mean_si", "Median_Si_Concentration", "sd_si", "CV_Si", "mean_q", "Median_Discharge", "sd_q",
-                     "CV_Discharge", "CVc_CVq", "CQ_Slope", "an_mean_si", "an_med_si", "an_sd_si", "an_mean_q","an_med_q", "an_sd_q",
-                     "Koppen_Geiger_Climate", "Stream_Name", "Latitude", "LTER", "Drainage_Area", "Max_Snow_Extent", "Watershed_Snow_Days",
-                     "Annual_Precipitation", "ET", "Annual_Temperature", "NPP", "major_rock", "Land_Cover", "major_soil",
-                     "elevation_median_m", "Mean_Elevation", "elevation_min_m", "elevation_max_m", "Green_Up_Day", "Centroid_Name")
-
-#altered model
-set.seed(123)
-rf_model<-randomForest(Centroid_Name~med_si+CV_C+med_q+CV_Q+cvc_cvq+slope+num_days+precip+evapotrans+temp+npp+cycle0+elevation_mean_m+
-                         major_land+ClimateZ+prop_area+Latitude, 
-                       data=drivers, importance=TRUE, proximity=TRUE, ntree=700, mtry=4, sampsize=c(26,26,26,26,26))
-
-set.seed(123)
-rf_model<-randomForest(Centroid_Name~Median_Si_Concentration+CV_Si+Median_Discharge+CV_Discharge+
-                         CVc_CVq+CQ_Slope+Watershed_Snow_Days+ET+Annual_Temperature+
-                         Green_Up_Day+Mean_Elevation+Koppen_Geiger_Climate+Max_Snow_Extent+
-                         Latitude+Drainage_Area, 
-                       data=drivers, importance=TRUE, proximity=TRUE, ntree=600, mtry=4, sampsize=c(26,26,26,26,26))
-
-rf_model
-
-pdf("VarImp.pdf", width = 13, height = 10, family = "Times", bg="white")
-
-varImpPlot(rf_model)
-
-dev.off()
-
-rf_model$votes
-
-set.seed(123)
-rf_model<-party::ctree(Centroid_Name~med_si+CV_C+med_q+CV_Q+cvc_cvq+slope+num_days+precip+evapotrans+temp+npp+cycle0+elevation_mean_m+
-                         major_soil+major_rock+major_land+ClimateZ+prop_area, 
-                       data=drivers)
-
-tree:::plot.tree(rf_model)
-
-rf_model$frame
-
-getTree(rf_model, k=2, labelVar = TRUE)
-
-varImpPlot(rf_model)
-
-import_plot(rf_model)
-
-df<-as.data.frame(rf_model$confusion)
-
-df_new<-t(apply(df[,c(1:5)],1, function(x) x/sum(x)))
+df_new<-data.frame(t(apply(df[,c(1:5)],1, function(x) x/sum(x))))
 colnames(df_new)<-c("FP", "FT", "ST", "STFP", "STVS")
 rownames(df_new)<-c("FP", "FT", "ST", "STFP", "STVS")
+df_new$cluster<-rownames(df_new)
 
-par(mar=c(3,3,3,5))
+df_new_melt<-melt(df_new, id.vars = "cluster")
+df_new_melt$same<-ifelse(df_new_melt$cluster==df_new_melt$variable, "yes","no")
 
-pdf("RFMatrix.pdf", width = 10, height = 8, family = "Times")
+#visualize matrix
+ggplot(df_new_melt, aes(cluster, variable))+geom_raster(aes(fill=same))+
+  scale_fill_manual(values=c("yes"="forestgreen", "no"="salmon"))+
+  geom_text(aes(label=round(value, 2)))+theme_bw()+labs(x="",y="",fill="")+
+  theme(legend.position = "null", text = element_text(size = 15))
 
-par(mar=c(4,4,3,6))
-
-plot(df_new, digits=2, col=c("lightpink", "hotpink", "violetred3", "deeppink4", "darkred", "forestgreen"), 
-     breaks=c(0,0.025,0.05,0.1,0.15,0.3,1), border=NA, cex=1.3, xlab="", ylab="", main="", cex.axis=1.3)
-
-
-dev.off()
-
+###plot most important variables across clusters
 centroid_abb<-as.data.frame(c("Fall Peak"="FP", "Fall Trough"="FT", "Spring Trough"="ST", "Spring Trough, Fall Peak"="STFP", 
                 "Spring Trough, Variable Summer"="STVS"))
 colnames(centroid_abb)<-"abb"
@@ -287,8 +221,5 @@ ggplot(import_factors_melt, aes(abb, value))+geom_boxplot(aes(fill=abb), alpha=0
   theme(axis.text.x = element_blank())+labs(fill="Cluster", color="Cluster")
 
 dev.off()
-
-drivers<-merge(centroid_abb, drivers, by="Centroid_Name")
-
 
 
