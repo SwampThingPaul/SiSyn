@@ -25,7 +25,8 @@ dir.create(path = file.path(path, "WRTDS Inputs"), showWarnings = F)
 file_names <- c("WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv", # No.1 Simplified ref table
                 "Site_Reference_Table", # No.2 Full ref table
                 "Discharge_master_10232023.csv", # No.3 Main discharge
-                "20231030_masterdata_chem.csv") # No.4 Main chemistry
+                "20231030_masterdata_chem.csv", # No.4 Main chemistry
+                "Data_Cropping_WRTDS") # No.5 Data cropping for chemistry 
 
 # Find those files' IDs
 ids <- googledrive::drive_ls(as_id("https://drive.google.com/drive/u/0/folders/15FEoe2vu3OAqMQHqdQ9XKpFboR4DvS9M")) %>%
@@ -51,6 +52,8 @@ ref_v0 <- readxl::read_excel(path = file.path(path, "WRTDS Source Files",
                                                paste0(file_names[2], ".xlsx"))) 
 disc_v0 <- read.csv(file = file.path(path, "WRTDS Source Files", file_names[3]))
 chem_v0 <- read.csv(file = file.path(path, "WRTDS Source Files", file_names[4]))
+chemcrop_v0 <- readxl::read_excel(path = file.path(path, "WRTDS Source Files", 
+                                                   paste0(file_names[5], ".xlsx")))
 
 ## ---------------------------------------------- ##
         # Process Raw Files (v0 -> v1) ----
@@ -272,6 +275,21 @@ supportR::diff_check(old = unique(chem_v1$Stream_Name),
 ## ---------------------------------------------- ##
 # Crop Chemistry dataset for QA (v2 -> v3) ----
 ## ---------------------------------------------- ##
+
+
+chemcrop <- chemcrop_v0 %>% 
+  # Generate a 'stream ID' column that combines LTER and chemistry stream name
+  dplyr::mutate(Stream_ID = paste0(LTER, "__", Site),
+                .before = dplyr::everything()) %>% 
+  # drop unwanted columns
+  dplyr::select(-dplyr::starts_with("BlankTime_"),-LTER,-Site) %>% 
+  # drop non-unique rows
+  dplyr::distinct() %>% 
+  # drop uncropped streams
+  dplyr::filter(!(Greater_Than == "NA" & Less_Than == "NA"))
+  
+
+dplyr::glimpse(chemcrop)
 
 chem_v3 <- chem_v2
 disc_v3 <- disc_v2
