@@ -276,6 +276,7 @@ supportR::diff_check(old = unique(chem_v1$Stream_Name),
 # Crop Chemistry dataset for QA (v2 -> v3) ----
 ## ---------------------------------------------- ##
 
+#### UNDER CONSTRUCTION ####
 
 chemcrop <- chemcrop_v0 %>% 
   # Generate a 'stream ID' column that combines LTER and chemistry stream name
@@ -286,9 +287,11 @@ chemcrop <- chemcrop_v0 %>%
   # drop non-unique rows
   dplyr::distinct() %>% 
   # drop uncropped streams
-  dplyr::filter(!(Greater_Than == "NA" & Less_Than == "NA"))
+  dplyr::filter(!(Greater_Than == "NA" & Less_Than == "NA")) %>% 
+  # make years numeric
+  dplyr::mutate(Greater_Than = as.numeric(Greater_Than), 
+                Less_Than = as.numeric(Less_Than))
   
-
 dplyr::glimpse(chemcrop)
 
 chem_v3 <- chem_v2
