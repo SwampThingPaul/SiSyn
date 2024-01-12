@@ -25,7 +25,7 @@ dir.create(path = file.path(path, "WRTDS Inputs"), showWarnings = F)
 file_names <- c("WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv", # No.1 Simplified ref table
                 "Site_Reference_Table", # No.2 Full ref table
                 "Discharge_master_10232023.csv", # No.3 Main discharge
-                "20231030_masterdata_chem.csv", # No.4 Main chemistry
+                "20231030_masterdata_chem.csv", # No.4 Main chemistry ## update this file with new chemistry!!
                 "Data_Cropping_WRTDS") # No.5 Data cropping for chemistry 
 
 # Find those files' IDs
@@ -276,8 +276,6 @@ supportR::diff_check(old = unique(chem_v1$Stream_Name),
 # Crop Chemistry dataset for QA (v2 -> v3) ----
 ## ---------------------------------------------- ##
 
-#### UNDER CONSTRUCTION ####
-
 chemcrop <- chemcrop_v0 %>% 
   # Generate a 'stream ID' column that combines LTER and chemistry stream name
   dplyr::mutate(Stream_ID = paste0(LTER, "__", Site),
@@ -288,14 +286,42 @@ chemcrop <- chemcrop_v0 %>%
   dplyr::distinct() %>% 
   # drop uncropped streams
   dplyr::filter(!(Greater_Than == "NA" & Less_Than == "NA")) %>% 
-  # make years numeric
-  dplyr::mutate(Greater_Than = as.numeric(Greater_Than), 
-                Less_Than = as.numeric(Less_Than))
+  # make years numeric; makes all "NAs" in original dataset into real NA
+  dplyr::mutate(Greater_Than = suppressWarnings(as.numeric(Greater_Than)), 
+                Less_Than = suppressWarnings(as.numeric(Less_Than)))
   
 dplyr::glimpse(chemcrop)
 
-chem_v3 <- chem_v2
-disc_v3 <- disc_v2
+chem_v3 <- chem_v2 %>% 
+  left_join(chemcrop,by=c("Stream_ID")) %>% 
+  mutate(year = as.numeric(str_sub(Date,start=1,end=4))) %>% 
+  filter(
+    # keep every river where there is no date cropping
+    (is.na(Greater_Than) & is.na(Less_Than)) |
+      # removes years before "Greater_Than" when there is no Less_Than condition
+      ((!is.na(Greater_Than) & is.na(Less_Than)) & year >= Greater_Than) |
+      # removes years after "Less_Than" when there is no Greater_Than condition
+      ((is.na(Greater_Than) & !is.na(Less_Than)) & year <= Less_Than) |
+      # removes years before Greater_Than and after Less_Than when years are between those
+      ((!is.na(Greater_Than) & !is.na(Less_Than)) & year <= Less_Than & year >= Greater_Than)) %>%
+  select(-year,-Less_Than,-Greater_Than)
+  
+glimpse(chem_v3)
+
+# do the same for discharge
+disc_v3 <- disc_v2 %>% 
+  left_join(chemcrop,by=c("Stream_ID")) %>% 
+  mutate(year = as.numeric(str_sub(Date,start=1,end=4))) %>% 
+  filter(
+    (is.na(Greater_Than) & is.na(Less_Than)) |
+      ((!is.na(Greater_Than) & is.na(Less_Than)) & year >= Greater_Than) |
+      ((is.na(Greater_Than) & !is.na(Less_Than)) & year <= Less_Than) |
+      ((!is.na(Greater_Than) & !is.na(Less_Than)) & year <= Less_Than & year >= Greater_Than)) %>%
+  select(-year,-Less_Than,-Greater_Than)
+
+
+# pick a river that should change and check that it did change accordingly
+# and vice versa
 
 ## ---------------------------------------------- ##
     # Crop Time Series for WRTDS (v3 -> v4) ----
