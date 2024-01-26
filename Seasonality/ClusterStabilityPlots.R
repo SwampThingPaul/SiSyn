@@ -72,6 +72,11 @@ tot$w_abb<-factor(tot$w_abb,
 #remove duplicates
 tot<-tot[-which(duplicated(tot$Site)),]
 
+tot<-tot[-c(tot$Site=="SOPCHOPPY RIVER"),]
+
+clim_table<-as.data.frame(table(tot$Name, tot$Centroid_Name))
+clim_table<-dcast(formula= Var1~Var2, data=clim_table)
+
 write.csv(tot, "ClusterAllMetadata.csv")
 
 #metadata_table<-tot[,c(2,16,17,21,22)]
@@ -113,13 +118,16 @@ ggplot(si_clust_melt, aes(variable, value))+geom_line(aes(group=Site, col=Name),
 
 dev.off()
 
-tiff("ClusterCentroids.tiff", width=7, height = 20, units = "in", res=500, family = "Times")
+pdf("ClusterCentroids.pdf", width=30, height = 6, family = "Times")
 
 #plot si seasonality curves, colored by climate
-ggplot(si_clust_melt, aes(variable, value))+theme_classic()+
-  geom_smooth(method = "loess", aes(group=Centroid_Name), col="black", size=1.3, se=TRUE, span=0.5, level=0.999)+
-  facet_wrap(~Centroid_Name, ncol = 1)+labs(x="Month", y="Normalized Si Concentration", col="Climate Zone")+
-  theme(text = element_text(size=20, family = "Times"))
+ggplot(si_clust_melt, aes(variable, value, col=Centroid_Name, fill=Centroid_Name))+theme_classic()+
+  geom_smooth(method = "loess", aes(group=Centroid_Name), 
+              size=1.3, se=TRUE, span=0.5, level=0.9999)+
+  facet_wrap(~Centroid_Name, ncol = 5)+labs(x="Month", y="Normalized Si Concentration")+
+  theme(text = element_text(size=33, family = "Times"), legend.position = "null")+
+  scale_color_manual(values = carto_pal(n=5, "Bold"))+
+  scale_fill_manual(values = carto_pal(n=5, "Bold"))
 
 dev.off()
 

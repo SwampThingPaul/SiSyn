@@ -1,6 +1,8 @@
 #install.packages(c("DAAG", "party", "rpart", "rpart.plot", "mlbench", "pROC", "tree"))
 #install.packages("tree")
-install.packages("RRF")
+#install.packages("RRF")
+#install.packages("arsenal")
+require(remotes)
 require(RRF)
 require(caret)
 require(randomForest)
@@ -15,6 +17,10 @@ library(tree)
 require(dplyr)
 require(plot.matrix)
 require(reshape2)
+require(rcartocolor)
+require(arsenal)
+require(googledrive)
+require(data.table)
 
 #function to see variable importance by regime
 import_plot <- function(rf_model) {
@@ -35,8 +41,9 @@ test_numtree_average <- function(ntree_list) {
   
   for (i in 1:length(ntree_list)) {
     
+    set.seed(123)
     rf_model<-randomForest(Centroid_Name~.,
-                           data=drivers_df, importance=TRUE, proximity=TRUE, ntree=ntree_list[[i]], mtry=4,sampsize=c(30,30,30,30,30))
+                           data=drivers_df, importance=TRUE, proximity=TRUE, ntree=ntree_list[[i]],sampsize=c(30,30,30,30,30))
     OOB[[i]]<-rf_model$err.rate[,1]
     
   }
@@ -49,13 +56,13 @@ test_numtree_average <- function(ntree_list) {
 #read in drivers data
 setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
 
-drivers_url<-"https://drive.google.com/file/d/1ZmyKMiMNlHCxgrHWOa_B_6nSgOSgog0D/view?usp=drive_link"
+drivers_url<-"https://drive.google.com/file/d/102LAmZFHOg64kMvorybxMiy9vCrFF1Cd/view?usp=drive_link"
   
 file_get<-drive_get(as_id(drivers_url))
 
 drive_download(file_get$drive_resource, overwrite = T)
 
-drivers<-read.csv("AllDrivers_Harmonized_20231114.csv")
+drivers<-read.csv("AllDrivers_Harmonized_20231129.csv")
 
 #remove any duplicated rows
 drivers<-drivers[!duplicated(drivers$Stream_ID),]
@@ -85,23 +92,23 @@ drivers$Centroid_Name<-as.factor(drivers$Centroid_Name)
 
 #select only features to be included in model
 drivers_df<-drivers[,c("Centroid_Name","CV_Q","precip","evapotrans","temp","npp","cycle0","q_95","q_5",
-                        "prop_area","N","P","Max_Daylength")]
+                        "prop_area","N","P","Max_Daylength","q_max_day","q_min_day")]
 
 keep_these_too<-drivers[,colnames(drivers) %like% c("rock|land")]
 
 drivers_df<-bind_cols(drivers_df, keep_these_too)
 
-drivers_df[,c(14:27)]<-replace(drivers_df[,c(14:27)], is.na(drivers_df[,c(14:27)]), 0)
+drivers_df[,c(16:29)]<-replace(drivers_df[,c(16:29)], is.na(drivers_df[,c(16:29)]), 0)
 
 #look at correlation between variables
-driver_cor<-cor(drivers_df[,c(2:9,12:15)])
-corrplot(driver_cor, type="lower", pch.col = "black", tl.col = "black", diag = F)
+#driver_cor<-cor(drivers_df[,c(2:9,12:15)])
+#corrplot(driver_cor, type="lower", pch.col = "black", tl.col = "black", diag = F)
 
 #original model, all parameters
-set.seed(123)
-OOB_list<-test_numtree_average(c(100,200,300,400,500,600,700,800,900,1000))
+#test number of trees 100-1000
+OOB_list<-test_numtree_average(c(100,200,300,400,500,600,700,800,900,1000,1100,1200,1300,1400,1500,1600,1700,1800,1900,2000))
 
-tre_list<-c(100,200,300,400,500,600,700,800,900,1000)
+tre_list<-c(100,200,300,400,500,600,700,800,900,1000,1100,1200,1300,1400,1500,1600,1700,1800,1900,2000)
 
 OOB_df<-as.data.frame(unlist(OOB_list))
 
@@ -120,21 +127,47 @@ OOB_mean<-OOB_df %>% group_by(tree_num) %>%
 
 #visualize and select number of trees that gives the minimum OOB error
 ggplot(OOB_mean, aes(tree_num, mean_oob))+geom_point()+geom_line()+
-  theme_classic()+scale_x_continuous(breaks = seq(100,1000,100))+theme(text = element_text(size=20))
+  theme_classic()+scale_x_continuous(breaks = seq(100,2000,100))+theme(text = element_text(size=20))
 
+#tune mtry based on optimized ntree
+set.seed(123)
+tuneRF(drivers_df[,c(2:29)], drivers_df[,1], ntreeTry = 100, stepFactor = 1, improve = 0.5, plot = FALSE)
+
+#run intial RF using tuned parameters
 set.seed(123)
 rf_model1<-randomForest(Centroid_Name~.,
-                        data=drivers_df, importance=TRUE, proximity=TRUE, ntree=900, mtry=4,sampsize=c(30,30,30,30,30))
+                        data=drivers_df, importance=TRUE, proximity=TRUE, ntree=100,mtry=5,sampsize=c(30,30,30,30,30))
 
+#visualize output
 rf_model1
 
+#visualize variable importance
 randomForest::varImpPlot(rf_model1)
+
+#set seeds for RFE
+size=ncol(drivers_df)-1
+#this is number of cross validation repeats and folds
+cv_repeats = 5
+cv_number = 5
+
+total_repeats<-(cv_repeats*cv_number)+1
+
+seeds <- vector(mode = "list", length = total_repeats)
+for (i in 1:25) {
+  
+  seeds[[i]]<-rep(123, size)
+  
+}
+
+seeds[[total_repeats]]<-123
 
 #set control functions for recursive feature elimination on RF
 control <- rfeControl(functions = rfFuncs, # random forest
                       method = "repeatedcv", # repeated cv
-                      repeats = 5, # number of repeats
-                      number = 10) # number of folds
+                      repeats = cv_repeats, # number of repeats
+                      number = cv_number,
+                      seeds = seeds,
+                      verbose = TRUE) # number of folds
 
 #divide data into predictor variables (y) and response variables (x)
 x<-drivers_df[,!(colnames(drivers_df)=="Centroid_Name")]
@@ -142,23 +175,22 @@ x<-drivers_df[,!(colnames(drivers_df)=="Centroid_Name")]
 y<-drivers_df$Centroid
 
 #split into testing and training data
-inTrain <- createDataPartition(y, p = .80, list = FALSE)[,1]
-
-x_train <- x[ inTrain, ]
-x_test  <- x[-inTrain, ]
-
-y_train <- y[ inTrain]
-y_test  <- y[-inTrain]
+# inTrain <- createDataPartition(y, p = .70, list = FALSE)[,1]
+# 
+# x_train <- x[ inTrain, ]
+# x_test  <- x[-inTrain, ]
+# 
+# y_train <- y[ inTrain]
+# y_test  <- y[-inTrain]
 
 #run RFE, this will take a bit
 #we are allowing the number of variables retained to range from 1 to all of them here
 #to change that changes input into the "sizes" variable
 set.seed(123)
-result_rfe <- rfe(x = x_train, 
-                  y = y_train, 
-                  sizes = c(1:(ncol(drivers_df)-1)),
+result_rfe <- rfe(x = x, 
+                  y = y, 
+                  sizes = c(1:size),
                   rfeControl = control)
-
 
 #print rfe results
 result_rfe
@@ -169,15 +201,64 @@ new_rf_input<-paste(predictors(result_rfe), collapse = "+")
 #Format those features into a formula to put in the optimized random forest model
 rf_formula<-formula(paste("Centroid_Name~", new_rf_input))
 
-#run optimized random forest model, with same number of trees
+#retune RF after RFE optimization
+test_numtree_optimized <- function(ntree_list) {
+  
+  OOB<-list()
+  
+  for (i in 1:length(ntree_list)) {
+    
+    set.seed(123)
+    rf_model<-randomForest(rf_formula,
+                           data=drivers_df, importance=TRUE, proximity=TRUE, ntree=ntree_list[[i]],sampsize=c(30,30,30,30,30))
+    OOB[[i]]<-rf_model$err.rate[,1]
+    
+  }
+  
+  return(OOB)
+  
+}
+
+OOB_list<-test_numtree_optimized(c(100,200,300,400,500,600,700,800,900,1000,1100,1200,1300,1400,1500,1600,1700,1800,1900,2000))
+
+tre_list<-c(100,200,300,400,500,600,700,800,900,1000,1100,1200,1300,1400,1500,1600,1700,1800,1900,2000)
+
+OOB_df<-as.data.frame(unlist(OOB_list))
+
+OOB_num<-list()
+
+for (i in 1:length(tre_list)) {
+  
+  OOB_num[[i]]<-rep(tre_list[i], tre_list[i])
+  
+}
+
+OOB_df$tree_num<-unlist(OOB_num)
+
+OOB_mean<-OOB_df %>% group_by(tree_num) %>%
+  summarise(mean_oob=mean(`unlist(OOB_list)`))
+
+#visualize and select number of trees that gives the minimum OOB error
+ggplot(OOB_mean, aes(tree_num, mean_oob))+geom_point()+geom_line()+
+  theme_classic()+scale_x_continuous(breaks = seq(100,2000,100))+theme(text = element_text(size=20))
+
+#retune mtry
+kept_drivers<-drivers_df[,c(colnames(drivers_df) %in% predictors(result_rfe))]
+
+set.seed(123)
+tuneRF(kept_drivers, drivers_df[,1], ntreeTry = 500, stepFactor = 1, improve = 0.5, plot = FALSE)
+
+#run optimized random forest model, with retuned ntree and mtry parameters
 set.seed(123)
 rf_model2<-randomForest(rf_formula,
-                        data=drivers_df, importance=TRUE, proximity=TRUE, ntree=300, sampsize=c(30,30,30,30,30))
+                        data=drivers_df, importance=TRUE, proximity=TRUE, ntree=500, mtry=4, sampsize=c(30,30,30,30,30))
 
 
 rf_model2
 
 randomForest::varImpPlot(rf_model2)
+
+setdiff(colnames(drivers_df), predictors(result_rfe))
 
 #plot confusion matrix
 df<-as.data.frame(rf_model2$confusion)
@@ -190,11 +271,42 @@ df_new$cluster<-rownames(df_new)
 df_new_melt<-melt(df_new, id.vars = "cluster")
 df_new_melt$same<-ifelse(df_new_melt$cluster==df_new_melt$variable, "yes","no")
 
+tiff("Average_Regime_Confusion_Matrix.tiff", width = 8, height = 7, units = "in", res = 300)
+
 #visualize matrix
-ggplot(df_new_melt, aes(cluster, variable))+geom_raster(aes(fill=same))+
+ggplot(df_new_melt, aes(variable, cluster))+geom_raster(aes(fill=same))+
   scale_fill_manual(values=c("yes"="forestgreen", "no"="salmon"))+
-  geom_text(aes(label=round(value, 2)))+theme_bw()+labs(x="",y="",fill="")+
-  theme(legend.position = "null", text = element_text(size = 15))
+  geom_text(aes(label=round(value, 2)), size=8, family="Times")+theme_bw()+labs(x="",y="",fill="")+
+  theme(legend.position = "null", text = element_text(size = 22, family = "Times"))+
+  ggtitle("Average Regime Predition Confusion Matrix")
+
+dev.off()
+
+importance_df<-data.frame(rf_model2$importance)
+importance_df$driver<-rownames(importance_df)
+
+vars_order<-importance_df %>%
+  dplyr::arrange(desc(MeanDecreaseAccuracy), driver) %>%
+  dplyr::select(driver)
+
+importance_melt<-melt(importance_df[,-7], id.vars = "driver")
+
+importance_melt$driver<-factor(importance_melt$driver, levels = vars_order$driver)
+
+driver_variable_list<-c("Maximum Snow Covered Area", "Maximum Daylength", "Temperature", "Green Up Day", "Evapotranspiration",
+                        "CV(Q)", "q(95)", "q(5)", "Metamorphic", "Evergreen Needleaf Forest",
+                        "Mixed Forest", "NPP", "Day of Minimum Q", "P Concentration", "Shrubland/Grassland",
+                        "N Concentration", "Precipitation", "Tundra", "Cropland", "Sedimentary", "Plutonic", "Urban")
+
+tiff("Average_Regime_Variable_Importance.tiff", width = 11, height = 10, units = "in", res = 300)
+
+ggplot(importance_melt, aes(variable, driver))+geom_raster(aes(fill=value))+
+  scale_fill_gradient(low="grey90", high="red")+theme_bw()+labs(x="", y="Variable",fill="Mean Decrease Accuracy")+
+  theme(text = element_text(size=15, family = "Times"))+scale_y_discrete(labels=rev(driver_variable_list), limits=rev)+
+  scale_x_discrete(labels=c("FP","FT","ST","STFP","STVS","Overall Model"))+
+  ggtitle("Average Regime Prediction Variable Importance")
+
+dev.off()
 
 ###plot most important variables across clusters
 centroid_abb<-as.data.frame(c("Fall Peak"="FP", "Fall Trough"="FT", "Spring Trough"="ST", "Spring Trough, Fall Peak"="STFP", 
@@ -202,14 +314,50 @@ centroid_abb<-as.data.frame(c("Fall Peak"="FP", "Fall Trough"="FT", "Spring Trou
 colnames(centroid_abb)<-"abb"
 centroid_abb$Centroid_Name<-rownames(centroid_abb)
 
-import_factors<-drivers[,c("Centroid_Name","Watershed_Snow_Days", "Green_Up_Day", "Latitude",
-                           "Annual_Temperature", "CV_Si", "CV_Discharge")]
+import_factors<-drivers_df[,c("Centroid_Name","prop_area", "Max_Daylength", "temp",
+                           "cycle0", "evapotrans","CV_Q")]
+#import_factors$q_95<-log(import_factors$q_95)
 #colnames(import_factors)<-c("Centroid_Name", "Max Snow Extent (proportion of WS)", "Watershed Snow Days (days)", "Latitude (degrees)",
  #                           "Temperature (C)", "Green Up Day (DOY)","CV Si")
 import_factors_melt<-melt(import_factors, id.vars = "Centroid_Name")
 import_factors_melt<-merge(import_factors_melt, centroid_abb, by="Centroid_Name")
 
-import_factors_melt<-import_factors_melt[-which(import_factors_melt$variable=='CV_Si'&import_factors_melt$value > 1),]
+colnames(import_factors_melt)[4]<-"Cluster"
+
+vars<-unique(import_factors_melt$variable)
+
+vars_ordered<-c(vars[1], vars[4], vars[5], vars[2], vars[6], vars[3])
+
+y_axis_labs<-c("proportion of watershed", "hours", "deg C", "day of year","kg/m2", "unitless")
+
+title<-c("Maximum Snow Covered Area", "Maximum Daylength", "Temperature", "Green Up Day", "Evapotranspiration", "CV(Q)")
+
+tag_val<-c("a","b","c","d","e","f")
+
+variable_plot_list<-list()
+
+for (i in 1:length(vars)) {
+  
+  one_var<-import_factors_melt[import_factors_melt$variable==vars_ordered[i],]
+  
+  variable_plot_list[[i]]<-
+    ggplot(one_var, aes(Cluster, value))+
+    geom_boxplot(aes(fill=Cluster), alpha=0.5, outlier.shape = NA)+
+    theme_bw()+
+    theme(text = element_text(size = 20), legend.position = "null", plot.title = element_text(size=18))+
+    geom_jitter(aes(col=Cluster))+
+    scale_fill_manual(values=carto_pal(n=5, "Bold"))+scale_color_manual(values=carto_pal(n=5, "Bold"))+
+    theme(axis.text.x = element_blank())+
+    labs(x="", y=y_axis_labs[i], tag = tag_val[i])+ggtitle(title[i])
+  
+}
+
+pdf("Average_Prediction_MostImportVars.pdf", width = 14, height = 9, family="Times")
+
+ggarrange(plotlist = variable_plot_list, common.legend = TRUE, legend = "right")
+
+dev.off()
+
 
 
 pdf("MostImportVars.pdf", width = 14, height = 9, family="Times")
@@ -221,5 +369,6 @@ ggplot(import_factors_melt, aes(abb, value))+geom_boxplot(aes(fill=abb), alpha=0
   theme(axis.text.x = element_blank())+labs(fill="Cluster", color="Cluster")
 
 dev.off()
+
 
 

@@ -864,7 +864,10 @@ dplyr::glimpse(tidy_v7b)
 ## -------------------------------------------- ##
 
 # Check out current dates
-sort(unique(tidy_v7b$date))
+#sort(unique(tidy_v7b$date))
+
+#see which sites are missing dates
+tidy_v7b[which(is.na(tidy_v7b$date)),]
 
 # Try to standardize date formatting a bit
 tidy_v8a <- tidy_v7b %>%
@@ -881,6 +884,9 @@ tidy_v8a <- tidy_v7b %>%
   # Rename original date column
   dplyr::rename(date_v1 = date)
 
+#check after first wrangling step
+tidy_v8a[which(is.na(tidy_v8a$date_v4)),]
+
 # Look at general date format per LTER
 tidy_v8a %>%
   dplyr::group_by(Raw_Filename) %>%
@@ -891,24 +897,28 @@ tidy_v8a %>%
 # Identify format for each file name based on **human eye/judgement**
 tidy_v8b <- tidy_v8a %>%
   dplyr::mutate(date_format = dplyr::case_when(
-    Raw_Filename == "20221030_masterdata_chem.csv" ~ "ymd",
+    Raw_Filename == "20221030_masterdata_chem_V2.csv" ~ "ymd",
     Raw_Filename == "Australia_MurrayBasin_PJulian_071723.csv" ~ "ymd",
     Raw_Filename == "CAMREX_filled_template.csv" ~ "mdy",
     Raw_Filename == "Canada_WQ_dat.csv" ~ "ymd",
     Raw_Filename == "Chem_Cameroon.csv" ~ "mdy",
     Raw_Filename == "Chem_HYBAM.csv" ~ "mdy",
-    Raw_Filename == "ElbeRiverChem.csv" ~ "mdy",
-    Raw_Filename == "Krycklan_NP.csv" ~ "ymd",
+    Raw_Filename == "ElbeRiverChem.csv" ~ "dmy",
+    Raw_Filename == "Krycklan_NP.csv" ~ "mdy",
     Raw_Filename == "MCM_Chem_clean.csv" ~ "mdy",
     Raw_Filename == "MurrayDarlingChem_Merged.csv" ~ "ymd",
     Raw_Filename == "NIVA_Water_chemistry.csv" ~ "mdy",
-    Raw_Filename == "NT_NSW_Chem_Cleaned.csv" ~ "mdy",
+    Raw_Filename == "NT_NSW_Chem_Cleaned.csv" ~ "dmy",
     Raw_Filename == "NigerRiver.csv" ~ "mdy",
     Raw_Filename == "SiSyn_DataTemplate_Sweden_102423.csv" ~ "mdy",
-    Raw_Filename == "UK_Si.csv" ~ "mdy",
-    Raw_Filename == "UMR_si_new_sites.csv" ~ "mdy",
-    Raw_Filename == "UMR_si_update_existing_sites.csv" ~ "mdy",
+    Raw_Filename == "UK_Si.csv" ~ "dmy",
+    Raw_Filename == "UMR_si_new_sites.csv" ~ "ymd",
+    Raw_Filename == "UMR_si_update_existing_sites.csv" ~ "ymd",
     Raw_Filename == "USGS_NWQA_Chemistry_MissRiverSites.csv" ~ "ymd",
+    Raw_Filename == "CAMELS_USGS_N_P.csv" ~ "ymd",
+    Raw_Filename == "CatalinaJemez_chemistry_2009-2019_V2.csv" ~ "mdy",
+    Raw_Filename == "WalkerBranch_Chem.csv" ~ "ymd",
+    Raw_Filename == "NEON_Chem.csv" ~ "ymd",
     # Raw_Filename == "" ~ "",
     T ~ "UNKNOWN"))
 
@@ -992,6 +1002,12 @@ tidy_v8f <- tidy_v8e %>%
 
 # Check structure
 dplyr::glimpse(tidy_v8f)
+
+date_check<-tidy_v8f[which(is.na(tidy_v8f$date)),]
+
+elbe<-tidy_v8f[tidy_v8f$Dataset=="Australia",]
+
+table(date_check$Raw_Filename)
 
 ## -------------------------------------------- ##
 # Export ----

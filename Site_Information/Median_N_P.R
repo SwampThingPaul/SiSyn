@@ -10,9 +10,11 @@ drive_download(file_get$drive_resource, overwrite = T)
 
 chem<-read.csv("20231109_masterdata_chem.csv")
 
-#one_site<-subset(chem, chem$LTER=="CZO-Catalina Jemez")
-
 chem_NP<-chem[chem$variable %in% c("SRP", "PO4", "NO3", "NOx"),]
+
+chem_NP<-subset(chem_NP, chem_NP$value > 0)
+
+#one_site<-subset(chem_NP, chem_NP$LTER=="CZO-Catalina Jemez")
 
 chem_NP_avg<-chem_NP %>%
   dplyr::group_by(Stream_Name, variable) %>%
