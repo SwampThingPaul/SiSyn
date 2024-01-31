@@ -9,7 +9,7 @@
 ## ---------------------------------------------- ##
 # Load libraries
 # install.packages("librarian")
-librarian::shelf(tidyverse, googledrive, lubridate, EGRET, EGRETci, supportR, scicomptools)
+librarian::shelf(tidyverse, googledrive, lubridate, EGRET, EGRETci, supportR, scicomptools,HERON)
 
 # Clear environment
 rm(list = ls())
@@ -24,8 +24,8 @@ dir.create(path = file.path(path, "WRTDS Inputs"), showWarnings = F)
 # Define the names of the Drive files we need
 file_names <- c("WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv", # No.1 Simplified ref table
                 "Site_Reference_Table", # No.2 Full ref table
-                "Discharge_master_10232023.csv", # No.3 Main discharge
-                "20231030_masterdata_chem.csv", # No.4 Main chemistry ## update this file with new chemistry!!
+                "20240130_masterdata_discharge.csv", # No.3 Main discharge
+                "20240130_masterdata_chem.csv", # No.4 Main chemistry ## update this file with new chemistry!!
                 "Data_Cropping_WRTDS") # No.5 Data cropping for chemistry 
 
 # Find those files' IDs
@@ -84,17 +84,18 @@ ref_table %>%
 dplyr::glimpse(ref_table)
 
 # Any *discharge* rivers not in reference table?
-setdiff(x = unique(ref_table$Discharge_File_Name), y = unique(disc_v0$DischargeFileName))
+setdiff(x = unique(ref_table$Discharge_File_Name), y = unique(disc_v0$Discharge_File_Name))
 
 # Wrangle discharge
 disc_v1 <- disc_v0 %>%
   # Rename site column as it appears in the reference table
-  dplyr::rename(Discharge_File_Name = DischargeFileName) %>%
+  dplyr::rename(Discharge_File_Name = Discharge_File_Name) %>%
   # Fix any broken names (special characters from Scandinavia)
   dplyr::mutate(Discharge_File_Name = gsub(pattern = "ØSTEGLO_Q", replacement = "OSTEGLO_Q",
                                            x = Discharge_File_Name)) %>%
-  # Attach the reference table object
-  dplyr::left_join(y = dplyr::select(ref_table, -drainSqKm),
+  # Attach the reference table object; 
+  # Master discharge file now has "Stream_Name" and "LTER" columns so removing before joining to avoid duplication
+  dplyr::left_join(y = dplyr::select(ref_table, -drainSqKm, -Stream_Name,-LTER),
                    by = c("Discharge_File_Name")) %>%
   # Drop any rivers we don't want to use in WRTDS
   dplyr::filter(Use_WRTDS == "yes") %>%
@@ -308,17 +309,19 @@ chem_v3 <- chem_v2 %>%
   
 glimpse(chem_v3)
 
-# do the same for discharge
-disc_v3 <- disc_v2 %>% 
-  left_join(chemcrop,by=c("Stream_ID")) %>% 
-  mutate(year = as.numeric(str_sub(Date,start=1,end=4))) %>% 
-  filter(
-    (is.na(Greater_Than) & is.na(Less_Than)) |
-      ((!is.na(Greater_Than) & is.na(Less_Than)) & year >= Greater_Than) |
-      ((is.na(Greater_Than) & !is.na(Less_Than)) & year <= Less_Than) |
-      ((!is.na(Greater_Than) & !is.na(Less_Than)) & year <= Less_Than & year >= Greater_Than)) %>%
-  select(-year,-Less_Than,-Greater_Than)
+# do the same for discharge - I don't think we want to crop this because we do below
+#disc_v3 <- disc_v2 %>% 
+ # left_join(chemcrop,by=c("Stream_ID")) %>% 
+  #mutate(year = as.numeric(str_sub(Date,start=1,end=4))) %>% 
+  #filter(
+   # (is.na(Greater_Than) & is.na(Less_Than)) |
+    #  ((!is.na(Greater_Than) & is.na(Less_Than)) & year >= Greater_Than) |
+     # ((is.na(Greater_Than) & !is.na(Less_Than)) & year <= Less_Than) |
+      #((!is.na(Greater_Than) & !is.na(Less_Than)) & year <= Less_Than & year >= Greater_Than)) %>%
+  #select(-year,-Less_Than,-Greater_Than)
 
+# adding this to avoid having to update all disc objects below in case I made wrong decision
+disc_v3 <- disc_v2
 
 # pick a river that should change and check that it did change accordingly
 # and vice versa
@@ -349,7 +352,7 @@ disc_lims <- chem_v3 %>%
 # Check that
 dplyr::glimpse(disc_lims)
 
-# Identify min/max of discharge data
+# Identify min/max of discharge data 
 chem_lims <- disc_v3 %>%
   # Group by stream and identify the first and last days of sampling
   dplyr::group_by(LTER, Stream_Name, Discharge_File_Name) %>%
