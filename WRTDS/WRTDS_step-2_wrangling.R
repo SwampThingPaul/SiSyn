@@ -9,7 +9,10 @@
 ## ---------------------------------------------- ##
 # Load libraries
 # install.packages("librarian")
-librarian::shelf(tidyverse, googledrive, lubridate, EGRET, EGRETci, supportR, scicomptools,HERON)
+librarian::shelf(tidyverse, googledrive, lubridate, EGRET, EGRETci, supportR, scicomptools)
+                
+# install HERON
+devtools::install_github("lter/HERON") 
 
 # Clear environment
 rm(list = ls())
@@ -352,7 +355,7 @@ disc_lims <- chem_v3 %>%
 # Check that
 dplyr::glimpse(disc_lims)
 
-# Identify min/max of discharge data 
+# Identify min/max of discharge data - got stopped here because of "HERON" not loading
 chem_lims <- disc_v3 %>%
   # Group by stream and identify the first and last days of sampling
   dplyr::group_by(LTER, Stream_Name, Discharge_File_Name) %>%
