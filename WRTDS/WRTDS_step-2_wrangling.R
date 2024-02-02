@@ -10,9 +10,9 @@
 # Load libraries
 # install.packages("librarian")
 librarian::shelf(tidyverse, googledrive, lubridate, EGRET, EGRETci, supportR, scicomptools)
-                
 # install HERON
-devtools::install_github("lter/HERON") 
+#devtools::install_github("lter/HERON") 
+
 
 # Clear environment
 rm(list = ls())
@@ -27,7 +27,7 @@ dir.create(path = file.path(path, "WRTDS Inputs"), showWarnings = F)
 # Define the names of the Drive files we need
 file_names <- c("WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv", # No.1 Simplified ref table
                 "Site_Reference_Table", # No.2 Full ref table
-                "20240130_masterdata_discharge.csv", # No.3 Main discharge
+                "20240201_masterdata_discharge.csv", # No.3 Main discharge
                 "20240130_masterdata_chem.csv", # No.4 Main chemistry ## update this file with new chemistry!!
                 "Data_Cropping_WRTDS") # No.5 Data cropping for chemistry 
 
@@ -267,7 +267,8 @@ chem_v2 <- chem_v1 %>%
   dplyr::mutate(variable_actual = ifelse(test = (variable == "SRP" | variable == "PO4"),
                                          yes = "P", no = variable), .after = variable) %>%
   dplyr::select(-variable, -variable_simp) %>%
-  dplyr::rename(variable = variable_actual)
+  dplyr::rename(variable = variable_actual) %>% 
+  dplyr::filter(value_mgL >=0)
   
 # Examine that as well
 dplyr::glimpse(chem_v2)
