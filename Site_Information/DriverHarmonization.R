@@ -55,6 +55,8 @@ chem_df<-subset(chem_df, chem_df$variable == "DSi")
 
 q_df<-subset(q_df, q_df$Stream_ID %in% si_clust$Stream_ID)
 
+q_df$Year<-format(as.Date(q_df$Date), "%Y")
+
 #unique(q_df$Stream_ID)
 
 si_stats<-chem_df %>%
@@ -65,6 +67,26 @@ q_stats<-q_df %>%
   dplyr::group_by(Stream_ID) %>%
   dplyr::summarise(mean_q = mean(Q), med_q=median(Q), sd_q=sd(Q), min_Q=min(Q), max_Q=max(Q),
                    q_95=quantile(Q, 0.95), q_5=quantile(Q, 0.05))
+
+q_min_stats<-q_df %>%
+  dplyr::group_by(Stream_ID, Year) %>%
+  dplyr::slice_min(Q)
+
+q_min_stats$doy<-format(as.Date(q_min_stats$Date),"%j")
+
+q_max_stats<-q_df %>%
+  dplyr::group_by(Stream_ID, Year) %>%
+  dplyr::slice_max(Q)
+
+q_max_stats$doy<-format(as.Date(q_max_stats$Date),"%j")
+
+min_day<-q_min_stats %>%
+  dplyr::group_by(Stream_ID) %>%
+  dplyr::summarise(q_min_day=round(median(as.numeric(doy)),0))
+
+max_day<-q_max_stats %>%
+  dplyr::group_by(Stream_ID) %>%
+  dplyr::summarise(q_max_day=round(median(as.numeric(doy)),0))
 
 # si_stats_annual<-chem_df %>%
 #   dplyr::group_by(Stream_ID, year(as.Date(Date))) %>%
@@ -80,6 +102,8 @@ q_stats$CV_Q<-q_stats$sd_q/q_stats$mean_q
 
 #merge them into one
 cv_tot<-merge(si_stats, q_stats, by="Stream_ID")
+cv_tot<-merge(cv_tot, max_day, by="Stream_ID")
+cv_tot<-merge(cv_tot, min_day, by="Stream_ID")
 
 #calculate CVC/CVQ
 cv_tot$cvc_cvq<-(cv_tot$CV_C)*(cv_tot$CV_Q)
@@ -310,5 +334,5 @@ tot<-merge(tot, daylen_range, by="Stream_Name")
 
 tot<-tot[!duplicated(tot$Stream_Name),]
 
-write.csv(tot, "AllDrivers_Harmonized_20231114.csv")
+write.csv(tot, "AllDrivers_Harmonized_20231129.csv")
 
