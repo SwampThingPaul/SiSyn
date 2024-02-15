@@ -90,6 +90,10 @@ dev.off()
 ## ---------------------------------------------- ##
 ## Look at average values across dataset
 ## ---------------------------------------------- ##
+USGS_dat %>%
+  filter(Stream_Name==sites[1]) %>%
+ggplot(aes(x=solutes,y=value))+
+  geom_boxplot()
 
 ## ---------------------------------------------- ##
 ## MDLs?
@@ -100,6 +104,8 @@ MDL <- USGS_dat %>% filter(remark=="<") %>%
   distinct() %>%
   group_by(Stream_Name,solutes) %>%
   summarize(MDL = min(value))
+
+write.csv(MDL,file="USGS_geogenic_MDLs.csv")
 
 ## ---------------------------------------------- ##
 ## 4x the standard deviation of the mean = outlier
