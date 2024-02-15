@@ -8,7 +8,7 @@
 
 # Load libraries needed for script
 # install.packages("librarian")
-librarian::shelf(tidyverse, googledrive, purrr, readxl, supportR,pracma)
+librarian::shelf(tidyverse, googledrive, purrr, readxl, supportR)
 
 # Clear environment
 rm(list = ls())
@@ -88,7 +88,37 @@ for (i in 1:length(sites)) {
 dev.off()
 
 ## ---------------------------------------------- ##
-## Use hampel filter to detect and remove outliers
+## Look at average values across dataset
 ## ---------------------------------------------- ##
 
-site_dat <- subset(USGS_dat)
+## ---------------------------------------------- ##
+## MDLs?
+## ---------------------------------------------- ##
+
+MDL <- USGS_dat %>% filter(remark=="<") %>%
+  select(Stream_Name,solutes,value) %>%
+  distinct() %>%
+  group_by(Stream_Name,solutes) %>%
+  summarize(MDL = min(value))
+
+## ---------------------------------------------- ##
+## 4x the standard deviation of the mean = outlier
+## ---------------------------------------------- ##
+
+solutes <- unique(USGS_dat$solutes)
+
+for (i in 1:length(sites)){
+  site_dat <- subset(USGS_dat, USGS_dat$Stream_Name==sites[i])
+  for (j in 1: length(solutes)){
+    solute_dat <- subset(site_dat,site_dat$solutes==solutes[j])
+    
+    lwr_bound <- quantile(solute_dat$value,0.005)
+    upr_bound <- quantile(solute_dat$value,0.995)
+    
+    outliers <- solute_dat[which(solute_dat$value>upr_bound|solute_dat$value<lwr_bound),]
+    
+    solute_dat_wo_outliers <- solute_dat[-which(solute_dat$value>upr_bound|solute_dat$value<lwr_bound),]
+  }
+  
+}
+

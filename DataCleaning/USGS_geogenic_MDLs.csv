@@ -1,0 +1,132 @@
+"","Stream_Name","solutes","MDL"
+"1","ALTAMAHA RIVER","SO4",2
+"2","ANDREWS CREEK","Cl",0.1
+"3","ANDREWS CREEK","SO4",1
+"4","APALACHICOLA RIVER","DOC",0.23
+"5","BOGUE PHALIA","SO4",0.02
+"6","Biscuit Brook","Cl",0.071
+"7","Biscuit Brook","DOC",0.49
+"8","Biscuit Brook","K",0.1
+"9","Biscuit Brook","Mg",0.02
+"10","Biscuit Brook","Na",0.2
+"11","Biscuit Brook","SO4",0.19
+"12","Brazos River near Rosharon","DOC",0.23
+"13","CANAJOHARIE CREEK","Ca",0.022
+"14","CANAJOHARIE CREEK","DOC",0.23
+"15","CANAJOHARIE CREEK","K",0.3
+"16","CANAJOHARIE CREEK","Mg",0.01
+"17","CANAJOHARIE CREEK","Na",0.4
+"18","CANAJOHARIE CREEK","SO4",0.02
+"19","CLINTON RIVER","SO4",0.1
+"20","COLUMBIA RIVER AT PORT WESTWARD","K",0.1
+"21","Cane Creek","Cl",0.06
+"22","Cane Creek","SO4",0.09
+"23","Choptank River","DOC",0.4
+"24","Corral Gulch","DOC",0.1
+"25","Dismal River","SO4",5
+"26","EDISTO RIVER","K",0.1
+"27","Elkhorn River","SO4",10
+"28","Frio River","K",0.03
+"29","GORE CREEK UPPER STATION","Cl",0.1
+"30","GORE CREEK UPPER STATION","K",0.3
+"31","GREEN RIVER","Cl",0.02
+"32","GREEN RIVER","SO4",0.02
+"33","Iowa River","K",0.1
+"34","LITTLE ARKANSAS NEAR SEDGWICK","Cl",5
+"35","LITTLE ARKANSAS NEAR SEDGWICK","DOC",0.23
+"36","LITTLE ARKANSAS NEAR SEDGWICK","SO4",5
+"37","LITTLE COTTONWOOD","Cl",0.02
+"38","LITTLE COTTONWOOD","DOC",8.05
+"39","LITTLE RIVER","DOC",0.49
+"40","MERCED R","Cl",0.1
+"41","MERCED R","K",0.1
+"42","MERCED R","Mg",0.1
+"43","MERCED R","Na",0.2
+"44","MERCED R","SO4",1
+"45","MISSISSIPPI RIVER LD2","Cl",0.12
+"46","MISSISSIPPI RIVER LD2","K",0.1
+"47","MISSISSIPPI RIVER LD2","SO4",0.18
+"48","Maple Creek","Cl",0.12
+"49","Maple Creek","SO4",0.18
+"50","Maumee River","Cl",10
+"51","Maumee River","K",0.1
+"52","McDonalds Branch","DOC",0.23
+"53","McDonalds Branch","K",0.04
+"54","McDonalds Branch","SO4",1
+"55","Merced River","Cl",0.1
+"56","Merced River","K",0.1
+"57","Merced River","Mg",0.1
+"58","Merced River","Na",0.2
+"59","Merced River","SO4",1
+"60","Mississippi River at Thebes","DOC",0.23
+"61","Missouri River at Omaha","DOC",0.3
+"62","Misssissippi River at Clinton","Cl",0.5
+"63","Misssissippi River at Clinton","SO4",5
+"64","North Slyamore Creek","K",0.1
+"65","North Slyamore Creek","SO4",5
+"66","North Sylamore","K",0.1
+"67","North Sylamore","SO4",5
+"68","OHIO RIVER AT CANNELTON DAM","DOC",0.1
+"69","PINE CREEK","Na",0.4
+"70","POPPLE RIVER","SO4",0.2
+"71","RED RIVER","Cl",0.1
+"72","RED RIVER","DOC",0.23
+"73","SACRAMENTO R","SO4",5
+"74","SAGEHEN C","Cl",0.1
+"75","SAGEHEN C","DOC",0.3
+"76","SAGEHEN C","Mg",0.01
+"77","SAGEHEN C","Na",0.4
+"78","SAGEHEN C","SO4",0.1
+"79","SANTA ANA","K",0.1
+"80","SHINGLE CREEK","K",0.1
+"81","SOPCHOPPY RIVER","Ca",0.022
+"82","SOPCHOPPY RIVER","Cl",0.02
+"83","SOPCHOPPY RIVER","DOC",0.23
+"84","SOPCHOPPY RIVER","K",0.06
+"85","SOPCHOPPY RIVER","Mg",0.011
+"86","SOPCHOPPY RIVER","Na",0.1
+"87","SOPCHOPPY RIVER","SO4",0.02
+"88","ST. LAWRENCE","Ca",0.02
+"89","ST. LAWRENCE","Cl",0.02
+"90","ST. LAWRENCE","DOC",0.23
+"91","ST. LAWRENCE","K",0.3
+"92","ST. LAWRENCE","Mg",0.01
+"93","ST. LAWRENCE","Na",0.4
+"94","ST. LAWRENCE","SO4",0.02
+"95","SUSQUEHANNA RIVER","Ca",0.02
+"96","SUSQUEHANNA RIVER","K",0.1
+"97","SUSQUEHANNA RIVER","Mg",0.01
+"98","SUSQUEHANNA RIVER","Na",0.2
+"99","SWIFT CREEK","Cl",0.12
+"100","SWIFT CREEK","SO4",0.18
+"101","Sopchoppy River","Ca",0.022
+"102","Sopchoppy River","Cl",0.02
+"103","Sopchoppy River","DOC",0.23
+"104","Sopchoppy River","K",0.06
+"105","Sopchoppy River","Mg",0.011
+"106","Sopchoppy River","Na",0.1
+"107","Sopchoppy River","SO4",0.02
+"108","South Fork Iowa River","DOC",0.23
+"109","South Fork Iowa River","SO4",0.31
+"110","Trinity River","DOC",0.23
+"111","VALLECITO CREEK","Cl",0.1
+"112","VALLECITO CREEK","DOC",0.3
+"113","VALLECITO CREEK","Na",0.1
+"114","VALLECITO CREEK","SO4",5
+"115","Vallecito Creek","Cl",0.1
+"116","Vallecito Creek","DOC",0.3
+"117","Vallecito Creek","Na",0.1
+"118","Vallecito Creek","SO4",5
+"119","WEST CLEAR","Cl",0.02
+"120","WEST CLEAR","SO4",0.02
+"121","WILLAMETTE RIVER","SO4",1
+"122","West Clear Creek","Cl",0.02
+"123","West Clear Creek","SO4",0.02
+"124","Wild River","Cl",0.1
+"125","Wild River","DOC",0.23
+"126","Wild River","K",0.004
+"127","Wild River","SO4",1
+"128","YAKIMA RIVER AT KIONA","SO4",5
+"129","YUKON RIVER","Cl",0.5
+"130","ZOLLNER CREEK","Cl",0.02
+"131","ZOLLNER CREEK","SO4",0.02
