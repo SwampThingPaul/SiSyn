@@ -21,8 +21,8 @@ rm(list = ls())
 (path <- scicomptools::wd_loc(local = FALSE, remote_path = file.path('/', "home", "shares", "lter-si", "WRTDS")))
 
 # Create folders for the raw downloaded files (i.e., sources) & WRTDS inputs (created by this script)
-dir.create(path = file.path(path, "WRTDS Source Files"), showWarnings = F)
-dir.create(path = file.path(path, "WRTDS Inputs"), showWarnings = F)
+dir.create(path = file.path(path, "WRTDS Source Files_Feb2024"), showWarnings = F)
+dir.create(path = file.path(path, "WRTDS Inputs_Feb2024"), showWarnings = F)
 
 # Define the names of the Drive files we need
 file_names <- c("WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv", # No.1 Simplified ref table
@@ -117,6 +117,7 @@ disc_v1 %>%
 dplyr::glimpse(disc_v1)
 
 # Any *chemistry* rivers not in reference table?
+# I adjusted the Finnish Stream names that differ between chem and ref table when creating chem_v1 below
 setdiff(x = unique(ref_table$Stream_Name), y = unique(chem_v0$Stream_Name))
 
 # Wrangle chemistry as well
@@ -131,9 +132,17 @@ chem_v1 <- chem_v0 %>%
   # Drop any rivers we don't want to use in WRTDS
   dplyr::filter(Use_WRTDS == "yes") %>%
   dplyr::select(-Use_WRTDS) %>% 
+  # rename some Finnish streams
+  mutate(Stream_Name = case_match(Stream_Name, 
+                              "N<e4>rpi<f6>njoki mts 6761" ~ "Narpionjoki mts 6761",
+                              "Pyh<e4>joki Hourunk 11400" ~ "Pyhajoki Hourunk 11400",
+                              "Koskenkyl<e4>njoki 6030" ~ "Koskenkylanjoki 6030",
+                              .default = Stream_Name)) %>% 
   # Generate a 'stream ID' column that combines LTER and chemistry stream name
   dplyr::mutate(Stream_ID = paste0(LTER, "__", Stream_Name),
                 .before = dplyr::everything())
+
+names <- as.data.frame(unique(chem_v1$Stream_Name))
 
 # Any rivers without a corresponding chemistry name?
 chem_v1 %>%
@@ -349,7 +358,7 @@ disc_lims <- chem_v3 %>%
   # Pare down columns (drop date now that we have `min_date`)
   dplyr::select(LTER, Stream_Name, Discharge_File_Name, min_date) %>%
   # Subtract 10 years to crop the discharge data to 10 yrs per chemistry data
-  dplyr::mutate(disc_start = (min_date - (10 * 365.25)) - 1) %>%
+  dplyr::mutate(disc_start = (min_date - (2 * 365.25)) - 1) %>% # changed this to 2 years from ten
   # Keep only unique rows
   dplyr::distinct()
 
