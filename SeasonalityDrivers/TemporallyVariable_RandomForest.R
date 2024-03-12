@@ -2,6 +2,8 @@
 #install.packages("desplot")
 require(desplot)
 require(rcartocolor)
+require(ggpubr)
+require(tidyr)
 
 setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
 
@@ -98,8 +100,6 @@ tot_10years_clust$Centroid_Name<-case_when(tot_10years_clust$Cluster== 1~"ST",
                                             tot_10years_clust$Cluster== 4~"STFP",
                                             tot_10years_clust$Cluster== 5~"STVS")
 
-table(tot_10years$Cluster)
-
 count_by_group<-tot_10years %>%
   group_by(Stream_Name) %>%
   count(Cluster)
@@ -122,34 +122,33 @@ num_clusters<-mat_df %>%
   group_by(Stream_Name) %>%
   tally()
 
-two_clusts<-subset(num_clusters, num_clusters$n==2)
-
-three_clusts<-subset(num_clusters, num_clusters$n==3)
-
-four_clusts<-subset(num_clusters, num_clusters$n==4)
-
-mat_df_two<-subset(mat_df, mat_df$Stream_Name %in% two_clusts$Stream_Name)
-
-mat_df_two_shorterm<-subset(mat_df_two, mat_df_two$cluster_prop < 0.25)
-
-mat_df_two_longterm<-subset(mat_df_two, !mat_df_two$Stream_Name %in% mat_df_two_shorterm$Stream_Name)
-
-tot_four_longterm<-subset(tot_10years_clust, tot_10years_clust$Stream_Name %in% four_clusts$Stream_Name)
-
-table(num_clusters$n)
-
-one_cluster<-subset(mat_df, mat_df$cluster_prop==1)
+# two_clusts<-subset(num_clusters, num_clusters$n==2)
+# 
+# three_clusts<-subset(num_clusters, num_clusters$n==3)
+# 
+# four_clusts<-subset(num_clusters, num_clusters$n==4)
+# 
+# mat_df_two<-subset(mat_df, mat_df$Stream_Name %in% two_clusts$Stream_Name)
+# 
+# mat_df_two_shorterm<-subset(mat_df_two, mat_df_two$cluster_prop < 0.25)
+# 
+# mat_df_two_longterm<-subset(mat_df_two, !mat_df_two$Stream_Name %in% mat_df_two_shorterm$Stream_Name)
+# 
+# tot_four_longterm<-subset(tot_10years_clust, tot_10years_clust$Stream_Name %in% four_clusts$Stream_Name)
+# 
+# table(num_clusters$n)
+# 
+# one_cluster<-subset(mat_df, mat_df$cluster_prop==1)
 
 modal_clust<-mat_df %>%
   group_by(Stream_Name) %>%
   slice_max(cluster_prop) %>%
   distinct(Stream_Name, .keep_all = TRUE)
 
-mat_df<-left_join(num_clusters, modal_clust[c(1,2)], by="Stream_Name")
+mat_df<-left_join(mat_df, modal_clust[c(1,2)], by="Stream_Name")
 
-colnames(mat_df)<-c("Stream_Name","cluster","modal_cluster")
 
-colnames(mat_df)<-c("Stream_Name","cluster","cluster_count","total_count","cluster_prop","modal_cluster")
+colnames(mat_df)<-c("Stream_Name", "cluster","cluster_count","total_count","cluster_prop","modal_cluster")
 
 mat_df$Centroid_Name<-case_when(mat_df$modal_cluster== 1~"ST",
                                 mat_df$modal_cluster== 2~"FT",
@@ -159,15 +158,16 @@ mat_df$Centroid_Name<-case_when(mat_df$modal_cluster== 1~"ST",
 
 tot_10years_clust<-left_join(tot_10years_clust, mat_df, by=c("Stream_Name"))
 
+mat_df$Centroid_Name<-factor(mat_df$Centroid_Name, levels = c("FP", "FT", "ST", "STFP", "STVS"))
+
 pdf("Membership_Shifting.pdf", width = 18, height = 12, family = "Times")
 
 #visualize cluster membership over time
-ggplot(tot_10years_clust, aes(x=year, y=Stream_Name))+
+p1<-ggplot(tot_10years_clust, aes(x=year, y=Stream_Name))+
   geom_tile(aes(fill=Centroid_Name.x))+
   scale_fill_manual(values = carto_pal(n=5, "Bold"))+
   scale_y_discrete(limits=unique(rev(mat_df$Stream_Name[order(mat_df$Centroid_Name)])))+
-  labs(x="Year", y="", fill="Cluster Membership")+
-  facet_wrap(~cluster, scales = "free_y", nrow = 1)+
+  labs(x="Year", y="", fill="Regime Membership")+
   theme_classic()+
   theme(axis.text.y = element_blank(), text = element_text(size=20), axis.ticks.y = element_blank())
 
@@ -176,15 +176,14 @@ dev.off()
 #visualize proportional cluster membership
 p2<-ggplot(mat_df, aes(x=as.character(cluster), y=Stream_Name))+
   geom_tile(aes(fill=cluster_prop))+
-  #geom_tileborder(aes(grp=as.factor(modal_clust), group=5))+
-  scale_fill_gradient(low="grey90", high="red")+
+  scale_fill_gradient(low="grey90", high="#3969AC")+
   scale_y_discrete(limits=unique(rev(mat_df$Stream_Name[order(mat_df$Centroid_Name)])))+
   scale_x_discrete(limits=c("3","2","1","4","5"), labels=c("FP","FT","ST","STFP","STVS"))+
   theme_classic()+
   theme(axis.text.y = element_blank(), text = element_text(size=20), axis.ticks.y = element_blank())+
-  labs(x="Cluster",y="", fill="Membership Proportion", tag = "a")
+  labs(x="Regime",y="", fill="Membership Proportion", tag = "a")
 
-pdf("Membership_Propotion_Timing.pdf", width = 15, height = 8, family = "Times")
+pdf("Membership_Propotion_Timing_UpdatedFeb2024.pdf", width = 15, height = 8, family = "Times")
 
 ggarrange(p2, p1)
 
@@ -399,9 +398,9 @@ tiff("Annual_Regime_Confusion_Matrix.tiff", width = 8, height = 7, units = "in",
 #visualize matrix
 ggplot(df_new_melt, aes(variable, cluster))+geom_raster(aes(fill=same))+
   scale_fill_manual(values=c("yes"="forestgreen", "no"="salmon"))+
-  geom_text(aes(label=round(value, 2)), size=8, family="Times")+theme_bw()+labs(x="",y="",fill="")+
+  geom_text(aes(label=round(value, 2)), size=8, family="Times")+theme_classic()+labs(x="",y="",fill="")+
   theme(legend.position = "null", text = element_text(size = 22, family = "Times"))+
-  ggtitle("Annual Regime Predition Confusion Matrix")
+  ggtitle("Annual Regime Prediction Confusion Matrix")
 
 dev.off()
 
@@ -422,7 +421,7 @@ vars_labels<-c("Temperature", "Evapotranspiration", "q(5)", "q(95)", "Maximum Sn
 tiff("Annual_Regime_Variable_Importance.tiff", width = 10, height = 10, units = "in", res = 300)
 
 ggplot(importance_melt, aes(variable, driver))+geom_raster(aes(fill=value))+
-  scale_fill_gradient(low="grey90", high="red")+theme_bw()+labs(x="", y="Variable",fill="Mean Decrease Accuracy")+
+  scale_fill_gradient(low="grey90", high="red")+theme_classic()+labs(x="", y="Variable",fill="Mean Decrease Accuracy")+
   theme(text = element_text(size=15, family = "Times"))+scale_y_discrete(limits=rev, labels=rev(vars_labels))+
   scale_x_discrete(labels=c("FP","FT","ST","STFP","STVS","Overall Model"))+
   ggtitle("Annual Regime Prediction Variable Importance")

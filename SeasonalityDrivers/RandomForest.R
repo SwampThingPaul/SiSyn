@@ -278,7 +278,7 @@ ggplot(df_new_melt, aes(variable, cluster))+geom_raster(aes(fill=same))+
   scale_fill_manual(values=c("yes"="forestgreen", "no"="salmon"))+
   geom_text(aes(label=round(value, 2)), size=8, family="Times")+theme_bw()+labs(x="",y="",fill="")+
   theme(legend.position = "null", text = element_text(size = 22, family = "Times"))+
-  ggtitle("Average Regime Predition Confusion Matrix")
+  ggtitle("Average Regime Prediction Confusion Matrix")
 
 dev.off()
 
@@ -301,7 +301,8 @@ driver_variable_list<-c("Maximum Snow Covered Area", "Maximum Daylength", "Tempe
 tiff("Average_Regime_Variable_Importance.tiff", width = 11, height = 10, units = "in", res = 300)
 
 ggplot(importance_melt, aes(variable, driver))+geom_raster(aes(fill=value))+
-  scale_fill_gradient(low="grey90", high="red")+theme_bw()+labs(x="", y="Variable",fill="Mean Decrease Accuracy")+
+  scale_fill_gradient(low="grey90", high="red")+labs(x="", y="Variable",fill="Mean Decrease Accuracy")+
+  theme_classic()+
   theme(text = element_text(size=15, family = "Times"))+scale_y_discrete(labels=rev(driver_variable_list), limits=rev)+
   scale_x_discrete(labels=c("FP","FT","ST","STFP","STVS","Overall Model"))+
   ggtitle("Average Regime Prediction Variable Importance")
@@ -340,15 +341,30 @@ for (i in 1:length(vars)) {
   
   one_var<-import_factors_melt[import_factors_melt$variable==vars_ordered[i],]
   
+  if(i > 3){
+    
+    variable_plot_list[[i]]<-
+      ggplot(one_var, aes(Cluster, value))+
+      geom_boxplot(aes(fill=Cluster), alpha=0.5, outlier.shape = NA)+
+      theme_classic()+
+      theme(text = element_text(size = 20), legend.position = "null", plot.title = element_text(size=18))+
+      geom_jitter(aes(col=Cluster))+
+      scale_fill_manual(values=carto_pal(n=5, "Bold"))+scale_color_manual(values=carto_pal(n=5, "Bold"))+
+      labs(x="", y=y_axis_labs[i], tag = tag_val[i])+ggtitle(title[i])
+    
+  } else{
+  
   variable_plot_list[[i]]<-
     ggplot(one_var, aes(Cluster, value))+
     geom_boxplot(aes(fill=Cluster), alpha=0.5, outlier.shape = NA)+
-    theme_bw()+
+    theme_classic()+
     theme(text = element_text(size = 20), legend.position = "null", plot.title = element_text(size=18))+
     geom_jitter(aes(col=Cluster))+
-    scale_fill_manual(values=carto_pal(n=5, "Bold"))+scale_color_manual(values=carto_pal(n=5, "Bold"))+
     theme(axis.text.x = element_blank())+
+    scale_fill_manual(values=carto_pal(n=5, "Bold"))+scale_color_manual(values=carto_pal(n=5, "Bold"))+
     labs(x="", y=y_axis_labs[i], tag = tag_val[i])+ggtitle(title[i])
+  
+  }
   
 }
 

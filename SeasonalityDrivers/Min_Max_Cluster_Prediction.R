@@ -4,6 +4,7 @@ require(pdp)
 require(data.table)
 require(caret)
 require(grid)
+require(randomForest)
 
 setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
 
@@ -403,14 +404,17 @@ vars_legend<-c("Temperature","Precipitation","Green Up Day","Evapotranspiration"
                "Barren", "Wetland", "Evergreen Broadleaf Forest")
 
 p1<-ggplot(pred_df, aes(Predicted, Actual))+geom_point()+geom_abline(intercept = 0, slope = 1, col="red")+
-  theme_bw()+facet_wrap(~Centroid_Name, nrow = 1)+theme(text = element_text(size=15))+
+  theme_classic()+facet_wrap(~Centroid_Name, nrow = 1)+theme(text = element_text(size=15))+
   labs(x="", y="Actual Si Concentration (mg/L)")+ggtitle("Minimum Si Concentration")+
   lims(x=c(0,10), y=c(0,10))
 
 p1
 
-k1<-ggplot(importance_df, aes(Centroid_Name, Variable))+geom_raster(aes(fill=Inc_MSE))+
-  scale_fill_gradient(low="grey90", high="red")+theme_bw()+labs(x="Cluster", y="Variable",fill="Increase MSE")+
+k1<-ggplot(importance_df, mapping=aes(Centroid_Name, Variable, fill=Inc_MSE))+
+  geom_tile()+
+  geom_tile(data=importance_df[importance_df$Inc_MSE < 0.05,], mapping=aes(Centroid_Name, Variable), fill="grey90")+
+  scale_fill_gradientn(colors = c("lightyellow","lightsalmon", "red"), breaks=c(0.05, 0.3, 0.6, 0.9, 1.2))+
+  theme_classic()+labs(x="Cluster", y="Variable",fill="Increase MSE")+
   theme(text = element_text(size=15, family = "Times"))+scale_x_discrete(labels=c("FP","FT","ST","STFP","STVS"))+
   scale_y_discrete(limits=rev, labels=rev(vars_legend))+
   labs(tag="a")+ggtitle("Minimum Si Prediction")
@@ -619,18 +623,27 @@ pred_df<-do.call(bind_rows, pred_list_centroid)
 colnames(pred_df)<-c("Predicted","Actual","Centroid_Name")
 
 p2<-ggplot(pred_df, aes(Predicted, Actual))+geom_point()+geom_abline(intercept = 0, slope = 1, col="red")+
-  theme_bw()+facet_wrap(~Centroid_Name, nrow = 1)+theme(text = element_text(size=15))+
+  theme_classic()+facet_wrap(~Centroid_Name, nrow = 1)+theme(text = element_text(size=15))+
   labs(x="Predicted Si Concentration (mg/L)", y="Actual Si Concentration (mg/L)")+ggtitle("Maximum Si Concentration")+
   lims(x=c(0,14), y=c(0,14))
 
 p2
 
-k2<-ggplot(importance_df, aes(Centroid_Name, Variable))+geom_raster(aes(fill=Inc_MSE))+
-  scale_fill_gradient(low="grey90", high="red")+theme_bw()+labs(x="Cluster", y="Variable",fill="Increase MSE")+
+k2<-ggplot(importance_df, mapping=aes(Centroid_Name, Variable, fill=Inc_MSE))+
+  geom_tile()+
+  geom_tile(data=importance_df[importance_df$Inc_MSE < 0.05,], mapping=aes(Centroid_Name, Variable), fill="grey90")+
+  scale_fill_gradientn(colors = c("lightyellow","lightsalmon", "red"), breaks=c(0.05, 0.5, 1, 1.5, 2))+
+  theme_classic()+labs(x="Cluster", y="Variable",fill="Increase MSE")+
   theme(text = element_text(size=15, family = "Times"))+scale_x_discrete(labels=c("FP","FT","ST","STFP","STVS"))+
   scale_y_discrete(limits=rev, labels=rev(vars_legend))+
-  labs(tag="b", y="")+ggtitle("Maximum Si Prediction")
+  labs(tag="b")+ggtitle("Maximum Si Prediction")
+
 k2
+
+importance_df %>%
+  group_by(Variable) %>%
+  summarise(mean(Inc_MSE))
+
 
 pdf("Actual_Predicted_MinMax_SiConc.pdf", width = 18, height = 8)
 
@@ -638,7 +651,7 @@ ggarrange(p1, p2, nrow = 2, align = "v")
 
 dev.off()
 
-tiff("VariablesRetained_MinMax_SiConc.tiff", width = 16, height = 10, units="in", res = 300)
+tiff("VariablesRetained_MinMax_SiConc_March2024.tiff", width = 16, height = 10, units="in", res = 300)
 
 ggarrange(k1, k2, nrow = 1, align = "h")
 
@@ -683,7 +696,7 @@ for (i in 1:length(vars)) {
   one_pdp<-pdps_cropped[pdps_cropped$variable==vars[i],]
   
   plot_list_pdp[[i]]<-ggplot(one_pdp, aes(response, yhat))+
-    geom_line(aes(col=Cluster, lty=`Prediction Model`),lwd=1)+theme_bw()+
+    geom_line(aes(col=Cluster, lty=`Prediction Model`),lwd=1)+theme_classic()+
     scale_color_manual(values = cols)+
     theme(text = element_text(size = 15), legend.position = "null", plot.title = element_text(size=15))+
     labs(y="", x=x_axis_labs[i], tag = tag_val[i])+ggtitle(title[i])
