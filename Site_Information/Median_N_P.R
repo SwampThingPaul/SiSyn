@@ -1,4 +1,6 @@
 #find N and P for the 200 sites in harmonized DB
+require(googledrive)
+require(ggplot2)
 
 setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
 
@@ -13,6 +15,26 @@ chem<-read.csv("20231109_masterdata_chem.csv")
 chem_NP<-chem[chem$variable %in% c("SRP", "PO4", "NO3", "NOx"),]
 
 chem_NP<-subset(chem_NP, chem_NP$value > 0)
+
+# #range(chem_NP$value[chem_NP$variable=="PO4"], na.rm=T)
+# 
+# ggplot(chem_NP[chem_NP$variable=="PO4",], aes(value))+geom_histogram(bins=100)
+# 
+# table(chem_NP$units)
+# 
+# chem_NP_uM<-subset(chem_NP, chem_NP$units=="uM")
+# 
+# chem_SRP<-subset(chem_NP, chem_NP$units=="uM"&chem_NP$variable=="SRP")
+# 
+# chem_PO4<-subset(chem_NP, chem_NP$units=="uM"&chem_NP$variable=="PO4")
+# 
+# chem_LMP<-subset(chem_NP, chem_NP$LTER=="LMP(Wymore)"&chem_NP$variable=="PO4")
+# 
+# write.csv(chem_LMP, "LMP_PO4.csv")
+# 
+# range(chem_NP_uM$value[chem_NP_uM$variable=="SRP"], na.rm=T)
+# 
+# unique(chem_NP_mgL$LTER)
 
 #one_site<-subset(chem_NP, chem_NP$LTER=="CZO-Catalina Jemez")
 

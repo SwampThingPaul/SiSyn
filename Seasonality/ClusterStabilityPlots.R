@@ -118,6 +118,15 @@ ggplot(si_clust_melt, aes(variable, value))+geom_line(aes(group=Site, col=Name),
 
 dev.off()
 
+tiff("AvgSiClusters_NoCol_DriversPaper.tiff", width=12, height = 8, units = "in", res=300, family = "Times")
+
+#plot si seasonality curves, colored by climate
+ggplot(si_clust_melt, aes(variable, value))+geom_line(aes(group=Site), size=1, alpha=0.5)+theme_classic()+
+  facet_wrap(~w_abb)+labs(x="Month", y="Normalized Si Concentration")+
+  scale_color_manual(values = carto_pal(n=8, "Bold"))+theme(text = element_text(size = 19, family = "Times"))
+
+dev.off()
+
 pdf("ClusterCentroids.pdf", width=30, height = 6, family = "Times")
 
 #plot si seasonality curves, colored by climate
