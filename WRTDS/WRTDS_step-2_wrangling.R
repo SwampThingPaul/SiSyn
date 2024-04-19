@@ -9,7 +9,7 @@
 ## ---------------------------------------------- ##
 # Load libraries
 # install.packages("librarian")
-librarian::shelf(tidyverse, googledrive, lubridate, EGRET, EGRETci, supportR, scicomptools)
+librarian::shelf(tidyverse, googledrive, lubridate, EGRET, EGRETci, supportR, scicomptools,zoo)
 # install HERON
 #devtools::install_github("lter/HERON") 
 
@@ -126,23 +126,25 @@ chem_v1 <- chem_v0 %>%
   dplyr::filter(variable %in% c("SRP", "PO4", "DSi", "NO3", "NOx", "NH4")) %>%
   # Drop old LTER column
   dplyr::select(-LTER) %>% 
+  # rename some Finnish streams before joining
+  dplyr::mutate(Stream_Name = dplyr::case_match(Stream_Name, 
+                                  "N<e4>rpi<f6>njoki mts 6761" ~  "Narpionjoki mts 6761",
+                                  "Pyh<e4>joki Hourunk 11400" ~ "Pyhajoki Hourunk 11400",
+                                  "Koskenkyl<e4>njoki 6030" ~ "Koskenkylanjoki 6030",
+                                  .default = Stream_Name)) %>% 
+  # another option for renaming Finnish streams
+  #dplyr::mutate(Stream_Name = gsub(pattern = "[<]e4[>]", replacement = "a", x = Stream_Name)) %>%
+  #dplyr::mutate(Stream_Name = gsub(pattern = "[<]f6[>]", replacement = "o", x = Stream_Name)) %>%
   # Attach reference table information
   dplyr::left_join(y = dplyr::select(ref_table, -drainSqKm),
                    by = c("Stream_Name")) %>% 
   # Drop any rivers we don't want to use in WRTDS
   dplyr::filter(Use_WRTDS == "yes") %>%
   dplyr::select(-Use_WRTDS) %>% 
-  # rename some Finnish streams
-  mutate(Stream_Name = case_match(Stream_Name, 
-                              "N<e4>rpi<f6>njoki mts 6761" ~ "Narpionjoki mts 6761",
-                              "Pyh<e4>joki Hourunk 11400" ~ "Pyhajoki Hourunk 11400",
-                              "Koskenkyl<e4>njoki 6030" ~ "Koskenkylanjoki 6030",
-                              .default = Stream_Name)) %>% 
   # Generate a 'stream ID' column that combines LTER and chemistry stream name
   dplyr::mutate(Stream_ID = paste0(LTER, "__", Stream_Name),
                 .before = dplyr::everything())
 
-names <- as.data.frame(unique(chem_v1$Stream_Name))
 
 # Any rivers without a corresponding chemistry name?
 chem_v1 %>%
@@ -358,14 +360,14 @@ disc_lims <- chem_v3 %>%
   # Pare down columns (drop date now that we have `min_date`)
   dplyr::select(LTER, Stream_Name, Discharge_File_Name, min_date) %>%
   # Subtract 10 years to crop the discharge data to 10 yrs per chemistry data
-  dplyr::mutate(disc_start = (min_date - (2 * 365.25)) - 1) %>% # changed this to 2 years from ten
+  dplyr::mutate(disc_start = (min_date - (1 * 365.25)) - 1) %>% # changed this to 2 years from ten
   # Keep only unique rows
   dplyr::distinct()
 
 # Check that
 dplyr::glimpse(disc_lims)
 
-# Identify min/max of discharge data - got stopped here because of "HERON" not loading
+# Identify min/max of discharge data 
 chem_lims <- disc_v3 %>%
   # Group by stream and identify the first and last days of sampling
   dplyr::group_by(LTER, Stream_Name, Discharge_File_Name) %>%
@@ -396,8 +398,8 @@ disc_v4 <- disc_v3 %>%
 dplyr::glimpse(disc_v4)
 
 # Check for gained/lost streams
-supportR::diff_check(old = unique(disc_v2$Discharge_File_Name),
-                     new = unique(disc_v3$Discharge_File_Name))
+supportR::diff_check(old = unique(disc_v3$Discharge_File_Name),
+                     new = unique(disc_v4$Discharge_File_Name))
 
 # Check for unintentionally lost columns
 supportR::diff_check(old = names(disc_v3), new = names(disc_v4))
@@ -426,14 +428,82 @@ supportR::diff_check(old = names(chem_v3), new = names(chem_v4))
 ## Should only gain Stream ID and lose nothing
 
 ## ---------------------------------------------- ##
+# Gap Fill Discharge Data ---- UNDER CONSTRUCTION
+## ---------------------------------------------- ##
+
+#read in WRTDS input file here
+disc_v5 <-disc_v4
+
+site_names = unique(disc_v5$Stream_ID)
+#date_list = list()
+Q_interp = list()
+
+i=i
+
+for (i in 1:length(site_names)){
+  
+  print(i)
+  
+  #pull out one site
+  Q_site = subset(disc_v5, disc_v5$Stream_ID==site_names[i])
+  
+  #Q_site<-Q_site[,c("Stream_ID","Date","Q")]
+  
+  #remove all NA from Q
+  Q_site<-Q_site[complete.cases(Q_site$Q),]
+  
+  Q_site$Date<-as.Date(Q_site$Date)
+  
+  #determine if missing data by comparing complete 
+  #date range from min to max date to all dates in date columns
+  date_range <- seq(from=min(Q_site$Date), to=max(Q_site$Date), by = 1) 
+  num_missing_days<-length(date_range[!date_range %in% Q_site$Date])
+  
+  #if no missing dates, skip rest of loop
+  if(num_missing_days==0){
+    
+    Q_site$indicate<-"measured"
+    
+    Q_interp[[i]] = Q_site 
+    
+  } else{
+    
+    print(site_names[i])
+    
+    #create new dataframe with date range as dates
+    alldates<-as.data.frame(date_range)
+    colnames(alldates)<-"Date"
+    alldates<-merge(alldates, Q_site, by="Date", all.x=TRUE)
+    alldates$indicate<-ifelse(is.na(alldates$Q), "interpolated", "measured")
+    
+    alldates$Stream_ID<-site_names[i]
+    
+    #### fill new data frame NA values using na.approx ####
+    Q_site_interp = alldates
+    Q_site_interp$Q<-na.approx(Q_site_interp$Q) #if Q column ends in NA, they will remain NA; rule=2 carries the last measured Q value if the values end in NA
+    
+    Q_interp[[i]] = Q_site_interp 
+    
+  }
+  
+}
+
+#Q_interp_summary = ldply(date_list)
+disc_v6 = do.call(rbind, Q_interp)
+
+#### export as new Q.csv file ####
+#write.csv(Q_interp_all,file="WRTDS-input_discharge_filled.csv")
+
+
+## ---------------------------------------------- ##
           # Final Processing & Export ----
 ## ---------------------------------------------- ##
 # Identify streams in all three datasets (information, chemistry, and discharge)
-incl_streams <- intersect(x = intersect(x = disc_v4$Stream_ID, y = chem_v4$Stream_ID),
+incl_streams <- intersect(x = intersect(x = disc_v6$Stream_ID, y = chem_v4$Stream_ID),
                           y = wrtds_info$Stream_ID)
 
 # Filter to only those streams & drop unneeded name columns
-discharge <- disc_v4 %>%
+discharge <- disc_v6 %>%
   dplyr::filter(Stream_ID %in% incl_streams) %>%
   dplyr::select(-LTER, -Discharge_File_Name, -Stream_Name)
 
@@ -441,7 +511,7 @@ discharge <- disc_v4 %>%
 dplyr::glimpse(discharge)
 
 # Check for gained/lost streams
-supportR::diff_check(old = unique(disc_v4$Stream_ID), new = unique(discharge$Stream_ID))
+supportR::diff_check(old = unique(disc_v6$Stream_ID), new = unique(discharge$Stream_ID))
 
 # Do the same for chemistry
 chemistry <- chem_v4 %>%
@@ -471,13 +541,13 @@ supportR::diff_check(old = unique(wrtds_info$Stream_ID), new = unique(informatio
 
 # Write these final products out for posterity
 write.csv(x = discharge, row.names = F, na = "",
-          file = file.path(path, "WRTDS Inputs",
+          file = file.path(path, "WRTDS Inputs_Feb2024",
                            "WRTDS-input_discharge.csv"))
 write.csv(x = chemistry, row.names = F, na = "",
-          file = file.path(path, "WRTDS Inputs",
+          file = file.path(path, "WRTDS Inputs_Feb2024",
                            "WRTDS-input_chemistry.csv"))
 write.csv(x = information, row.names = F, na = "",
-          file = file.path(path, "WRTDS Inputs",
+          file = file.path(path, "WRTDS Inputs_Feb2024",
                            "WRTDS-input_information.csv"))
 
 # Export them to Google Drive to in case anyone has other uses for them

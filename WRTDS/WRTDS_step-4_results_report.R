@@ -18,8 +18,8 @@ rm(list = ls())
 (path <- scicomptools::wd_loc(local = FALSE, remote_path = file.path('/', "home", "shares", "lter-si", "WRTDS")))
 
 # Create a new folder for saving temporary results
-dir.create(path = file.path(path, "WRTDS Results"), showWarnings = F)
-dir.create(path = file.path(path, "WRTDS Bootstrap Results"), showWarnings = F)
+dir.create(path = file.path(path, "WRTDS Results_Feb2024"), showWarnings = F)
+dir.create(path = file.path(path, "WRTDS Bootstrap Results_Feb2024"), showWarnings = F)
 
 # Download the reference table object
 googledrive::drive_ls(googledrive::as_id("https://drive.google.com/drive/u/0/folders/15FEoe2vu3OAqMQHqdQ9XKpFboR4DvS9M"), pattern = "WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv") %>%
@@ -43,7 +43,7 @@ dest_url <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/1V5Eq
 googledrive::drive_ls(path = dest_url)
 
 # Identify complete rivers for typical workflow
-done_rivers <- data.frame("file" = dir(path = file.path(path, "WRTDS Loop Diagnostic"))) %>%
+done_rivers <- data.frame("file" = dir(path = file.path(path, "WRTDS Loop Diagnostic_Feb2024"))) %>%
   # Drop the file suffix part of the file name 
   dplyr::mutate(river = gsub(pattern = "\\_Loop\\_Diagnostic.csv", replacement = "", x = file)) %>%
   # Pull out just that column
@@ -59,7 +59,7 @@ done_boots <- data.frame("file" = dir(path = file.path(path, "WRTDS Bootstrap Di
 ## ---------------------------------------------- ##
 
 # List all files in "WRTDS Outputs"
-wrtds_outs_v0 <- dir(path = file.path(path, "WRTDS Outputs"))
+wrtds_outs_v0 <- dir(path = file.path(path, "WRTDS Outputs_Feb2024"))
 
 # Do some useful processing of that object
 wrtds_outs <- data.frame("file_name" = wrtds_outs_v0) %>%
@@ -108,7 +108,7 @@ for(type in out_types){
   for(file in file_set){
    
     # Read in CSV and add it to the list
-    datum <- read.csv(file = file.path(path, "WRTDS Outputs", file))
+    datum <- read.csv(file = file.path(path, "WRTDS Outputs_Feb2024", file))
     
     # Add it to the list
     sub_list[[paste0(type, "_", k)]] <- datum %>%
@@ -196,7 +196,7 @@ flux_stats <- out_list[["FluxBias_WRTDS.csv"]]
 dplyr::glimpse(flux_stats)
 
 ## ---------------------------------------------- ##
-        # Process WRTDS - GFN & Kalman ----
+        # Process WRTDS - Daily WRTDS & Kalman ----
 ## ---------------------------------------------- ##
 
 # GFN output
@@ -205,7 +205,8 @@ gfn <- out_list[["GFN_WRTDS.csv"]] %>%
   dplyr::left_join(y = ref_table, by = c("LTER", "stream")) %>%
   # Calculate some additional columns
   dplyr::mutate(Yield = FluxDay / drainSqKm,
-                FNYield = FNFlux / drainSqKm)
+                FNYield = FNFlux / drainSqKm) %>% 
+  dplyr::rename(Stream_Name = stream)
 
 # Glimpse
 dplyr::glimpse(gfn)
@@ -216,7 +217,9 @@ kalm_main <- out_list[["Kalman_WRTDS.csv"]] %>%
   dplyr::left_join(y = ref_table, by = c("LTER", "stream")) %>%
   # Calculate some additional columns
   dplyr::mutate(Yield = FluxDay / drainSqKm,
-                FNYield = FNFlux / drainSqKm)
+                FNYield = FNFlux / drainSqKm)%>% 
+  dplyr::rename(Stream_Name = stream)
+
 
 # Glimpse it
 dplyr::glimpse(kalm_main)
@@ -321,7 +324,8 @@ monthly <- out_list[["Monthly_GFN_WRTDS.csv"]] %>%
   dplyr::mutate(Yield = Flux_10_6kg_yr / drainSqKm,
                 FNYield = FNFlux_10_6kg_yr / drainSqKm,
                 Yield_10_6kmol_yr_km2 = Flux_10_6kmol_yr / drainSqKm,
-                FNYield_10_6kmol_yr_km2 = FNFlux_10_6kmol_yr / drainSqKm)
+                FNYield_10_6kmol_yr_km2 = FNFlux_10_6kmol_yr / drainSqKm)%>% 
+  dplyr::rename(Stream_Name = stream)
 
 # Check it out
 dplyr::glimpse(monthly)
@@ -416,7 +420,8 @@ kalman_monthly <- out_list[["Monthly_Kalman_WRTDS.csv"]] %>%
   dplyr::mutate(Yield = Flux_10_6kg_yr / drainSqKm,
                 FNYield = FNFlux_10_6kg_yr / drainSqKm,
                 Yield_10_6kmol_yr_km2 = Flux_10_6kmol_yr / drainSqKm,
-                FNYield_10_6kmol_yr_km2 = FNFlux_10_6kmol_yr / drainSqKm)
+                FNYield_10_6kmol_yr_km2 = FNFlux_10_6kmol_yr / drainSqKm)%>% 
+  dplyr::rename(Stream_Name = stream)
 
 # Check it out
 dplyr::glimpse(kalman_monthly)
@@ -499,7 +504,8 @@ results_table <- out_list[["ResultsTable_GFN_WRTDS.csv"]] %>%
   dplyr::mutate(Yield = Flux_10_6kg_yr / drainSqKm,
                 FNYield = FNFlux_10_6kg_yr / drainSqKm,
                 Yield_10_6kmol_yr_km2 = Flux_10_6kmol_yr / drainSqKm,
-                FNYield_10_6kmol_yr_km2 = FNFlux_10_6kmol_yr / drainSqKm)
+                FNYield_10_6kmol_yr_km2 = FNFlux_10_6kmol_yr / drainSqKm)%>% 
+  dplyr::rename(Stream_Name = stream)
   
 # Glimpse this as well
 dplyr::glimpse(results_table)
@@ -511,10 +517,72 @@ dplyr::glimpse(results_table)
 # Results table
 kalman_annual <- out_list[["ResultsTable_Kalman_WRTDS.csv"]] %>%
   # Attach basin area
-  dplyr::left_join(y = ref_table, by = c("LTER", "stream"))
+  dplyr::left_join(y = ref_table, by = c("LTER", "stream"))%>% 
+  dplyr::rename(Stream_Name = stream)
 
 # Glimpse this as well
 dplyr::glimpse(kalman_annual)
+
+## ---------------------------------------------- ##
+# Crop WRTDS Outputs ----
+## ---------------------------------------------- ##
+
+## temporary step to accommodate for leading discharge data ## 
+
+## Daily Data
+daily_wrtds_v1 <- gfn %>%
+  # Left join on the start date from the chemistry data
+  dplyr::left_join(y = disc_lims, by = c("LTER", "Stream_Name")) %>%
+  # Drop any years before the one year buffer suggested by WRTDS
+  dplyr::filter(Date > disc_start) %>% 
+  # Reorder columns / rename Q column / implicitly drop unwanted columns
+  dplyr::select(-Discharge_File_Name,-min_date,-disc_start)
+
+daily_kalman_v1 <- kalm_main %>%
+  # Left join on the start date from the chemistry data
+  dplyr::left_join(y = disc_lims, by = c("LTER", "Stream_Name")) %>%
+  # Drop any years before the one year buffer suggested by WRTDS
+  dplyr::filter(Date > disc_start) %>% 
+  # Reorder columns / rename Q column / implicitly drop unwanted columns
+  dplyr::select(-Discharge_File_Name,-min_date,-disc_start)
+
+
+## Monthly Data
+monthly_v1 <- monthly %>%
+  # Left join on the start date from the chemistry data
+  dplyr::left_join(y = disc_lims, by = c("LTER","Stream_Name")) %>%
+  # Drop any years before the one year buffer suggested by WRTDS
+  dplyr::filter(Year > year(disc_start)) %>% 
+  # Reorder columns / rename Q column / implicitly drop unwanted columns
+  dplyr::select(-Discharge_File_Name,-min_date,-disc_start)
+
+monthly_kalman_v1 <- kalman_monthly %>%
+  # Left join on the start date from the chemistry data
+  dplyr::left_join(y = disc_lims, by = c("LTER", "Stream_Name")) %>%
+  # Drop any years before the one year buffer suggested by WRTDS
+  dplyr::filter(Year > year(disc_start)) %>% 
+  # Reorder columns / rename Q column / implicitly drop unwanted columns
+  dplyr::select(-Discharge_File_Name,-min_date,-disc_start)
+
+## Annual Data ##
+
+annual_wrtds_v1 <- results_table %>% 
+  # Left join on the start date from the chemistry data
+  dplyr::left_join(y = disc_lims, by = c("LTER", "Stream_Name")) %>%
+  # Drop any years before the one year buffer suggested by WRTDS
+  dplyr::filter(Year > year(disc_start)) %>% 
+  # Reorder columns / rename Q column / implicitly drop unwanted columns
+  dplyr::select(-Discharge_File_Name,-min_date,-disc_start)
+
+annual_kalman_v1 <- kalman_annual %>% 
+  # Left join on the start date from the chemistry data
+  dplyr::left_join(y = disc_lims, by = c("LTER", "Stream_Name")) %>%
+  # Drop any years before the one year buffer suggested by WRTDS
+  dplyr::filter(DecYear > year(disc_start)) %>% 
+  # Reorder columns / rename Q column / implicitly drop unwanted columns
+  dplyr::select(-Discharge_File_Name,-min_date,-disc_start)
+
+
 
 ## ---------------------------------------------- ##
             # Export WRTDS Outputs ----
@@ -525,14 +593,14 @@ export_list <- list("WRTDS_trends.csv" = trends_table,
                     "WRTDS_flux_bias.csv" = flux_stats,
                     "WRTDS_error_stats.csv" = error_stats,
                     ## Daily
-                    "WRTDS_daily.csv" = gfn,
-                    "WRTDS_kalman_daily.csv" = kalm_main,
+                    "WRTDS_daily.csv" = daily_wrtds_v1,
+                    "WRTDS_kalman_daily.csv" = daily_kalman_v1,
                     ## Monthly
-                    "WRTDS_monthly.csv" = monthly,
-                    "WRTDS_kalman_monthly.csv" = kalman_monthly,
+                    "WRTDS_monthly.csv" = monthly_v1,
+                    "WRTDS_kalman_monthly.csv" = monthly_kalman_v1,
                     ## Yearly
-                    "WRTDS_annual.csv" = results_table,
-                    "WRTDS_kalman_annual.csv" = kalman_annual)
+                    "WRTDS_annual.csv" = annual_wrtds_v1,
+                    "WRTDS_kalman_annual.csv" = annual_kalman_v1)
 
 # Loop across the list to export locally and to GoogleDrive
 ## Note that the "GFN_WRTDS.csv" file is *huge* so it takes a few seconds to upload
@@ -542,7 +610,7 @@ for(name in names(export_list)){
   datum <- export_list[[name]]
   
   # Define name for this file
-  report_file <- file.path(path, "WRTDS Results", paste0("Full_Results_", name))
+  report_file <- file.path(path, "WRTDS Results_Feb2024", paste0("Full_Results_", name))
   
   # Write this CSV out
   write.csv(x = datum, na = "", row.names = F, file = report_file)
@@ -580,7 +648,7 @@ dplyr::glimpse(pdf_outs)
 
 # Identify PDF folder
 ## Standard output destination
-pdf_url <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/1w3htnlw4s4EhRFQ4s0RRkLJJ9JiZJJlY")
+pdf_url <- googledrive::as_id("https://drive.google.com/drive/folders/1sqgNj0OPrquEe2_IyKn8Bplb_VFoPg7X")
 
 # Identify PDFs already in GoogleDrive
 drive_pdfs <- googledrive::drive_ls(path = pdf_url)
@@ -589,13 +657,13 @@ drive_pdfs <- googledrive::drive_ls(path = pdf_url)
 new_pdfs <- setdiff(pdf_outs$file_name, drive_pdfs$name)
 
 # Loop across these PDFs and put them into GoogleDrive
-# for(report in unique(pdf_outs$file_name)){
+for(report in unique(pdf_outs$file_name)){
 ## (^^^) Upload *all* PDFs regardless of whether they're in the Drive
 ## (vvv) Upload only *new* PDFs
-for(report in new_pdfs){
+#for(report in new_pdfs){
 
   # Send that report to a GoogleDrive folder
-  googledrive::drive_upload(media = file.path(path, "WRTDS Outputs", report),
+  googledrive::drive_upload(media = file.path(path, "WRTDS Outputs_Feb2024", report),
                             overwrite = T, path = pdf_url) }
 
 # Clear environment of everything but the filepath, destination URL, and ref_table
