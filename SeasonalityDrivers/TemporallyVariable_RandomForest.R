@@ -4,6 +4,7 @@ require(desplot)
 require(rcartocolor)
 require(ggpubr)
 require(tidyr)
+require(dplyr)
 
 setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
 
@@ -94,6 +95,12 @@ tot_10years<-tot[tot$Stream_Name %in% keep_these$Stream_Name,]
 
 tot_10years_clust<-tot_10years
 
+df <- apply(tot_10years_clust,2,as.character)
+
+setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/USGS_DataReview_SeasonalityDrivers")
+
+write.csv(df, "SeasonalityDrivers_USGS_AnnualDrivers.csv")
+
 tot_10years_clust$Centroid_Name<-case_when(tot_10years_clust$Cluster== 1~"ST",
                                             tot_10years_clust$Cluster== 2~"FT",
                                             tot_10years_clust$Cluster== 3~"FP",
@@ -104,7 +111,7 @@ count_by_group<-tot_10years %>%
   group_by(Stream_Name) %>%
   count(Cluster)
 
-count_by_group<- count_by_group %>% 
+count_by_group<-count_by_group %>% 
   mutate_all(~replace(., is.na(.), 0))
   
 num_years<-tot_10years %>%

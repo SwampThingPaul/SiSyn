@@ -86,6 +86,9 @@ drivers<-dplyr::select(drivers, -c("cycle1","X","X.1","ClimateZ","Latitude","Lon
 
 #remove sites w NA
 drivers<-drivers[complete.cases(drivers$npp),]
+setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/USGS_DataReview_SeasonalityDrivers")
+
+write.csv(drivers[,c(3,26,24,25)], "Site_Information.csv")
 
 #turn centroid name to factor
 drivers$Centroid_Name<-as.factor(drivers$Centroid_Name)
@@ -99,6 +102,10 @@ keep_these_too<-drivers[,colnames(drivers) %like% c("rock|land")]
 drivers_df<-bind_cols(drivers_df, keep_these_too)
 
 drivers_df[,c(16:29)]<-replace(drivers_df[,c(16:29)], is.na(drivers_df[,c(16:29)]), 0)
+
+#setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/USGS_DataReview_SeasonalityDrivers")
+
+#write.csv(drivers_df, "SeasonalityDrivers_USGS_AvgDrivers.csv")
 
 #look at correlation between variables
 #driver_cor<-cor(drivers_df[,c(2:9,12:15)])
