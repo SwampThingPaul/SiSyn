@@ -11,13 +11,13 @@ si_clust<-read.csv("MonthClustersNov2022.csv")
 
 si_clust$Stream_ID<-paste0(si_clust$LTER, "__", si_clust$Site)
 
-chem_url<-"https://drive.google.com/file/d/1MGJaytUOfg0oO7csvaqCfvHmek8vpAeR/view?usp=drive_link"
+chem_url<-"https://drive.google.com/file/d/1hNgUmhmKMsfhvf7sj7LtFGMVQd68caH5/view?usp=drive_link"
 
 file_get<-drive_get(as_id(chem_url))
 
 drive_download(file_get$drive_resource, overwrite = T)
 
-Q_url<-"https://drive.google.com/file/d/16wHi1jmUPyvIoUutrdheV0195YWvUTXT/view?usp=drive_link"
+Q_url<-"https://drive.google.com/file/d/1qHTpSSpmAcEv_Icis7-NdyJKhAK2YZAm/view?usp=drive_link"
 
 file_get<-drive_get(as_id(Q_url))
 
@@ -27,9 +27,29 @@ drive_download(file_get$drive_resource, overwrite = T)
 chem_df<-read.csv("WRTDS-input_chemistry.csv")
 chem_df$Date<-as.Date(chem_df$Date)
 
+chem_df<-chem_df %>%
+  mutate(Stream_ID = case_when(
+    Stream_ID=="Catalina Jemez__MG_WEIR"~"Catalina Jemez__Marshall Gulch",
+    Stream_ID=="Catalina Jemez__OR_low"~"Catalina Jemez__Oracle Ridge",
+    Stream_ID=="NWT__COMO"~"NWT__Como Creek",
+    Stream_ID=="Walker Branch__East Fork"~"Walker Branch__east fork",
+    Stream_ID=="Walker Branch__West Fork"~"Walker Branch__west fork",
+    .default = Stream_ID
+  ))
+
 #read in Q input file  
 q_df<-read.csv("WRTDS-input_discharge.csv")
 q_df$Date<-as.Date(q_df$Date)
+
+q_df<-q_df %>%
+  mutate(Stream_ID = case_when(
+    Stream_ID=="Catalina Jemez__MG_WEIR"~"Catalina Jemez__Marshall Gulch",
+    Stream_ID=="Catalina Jemez__OR_low"~"Catalina Jemez__Oracle Ridge",
+    Stream_ID=="NWT__COMO"~"NWT__Como Creek",
+    Stream_ID=="Walker Branch__East Fork"~"Walker Branch__east fork",
+    Stream_ID=="Walker Branch__West Fork"~"Walker Branch__west fork",
+    .default = Stream_ID
+  ))
 
 finn<-read.csv("FinnishSites.csv")
 finn$Stream_ID<-paste0("Finnish Environmental Institute__", finn$Site.ID)
@@ -180,8 +200,14 @@ ref_table<-readxl::read_xlsx("Site_Reference_Table.xlsx")
 ref_table$Stream_ID<-paste0(ref_table$LTER, "__", ref_table$Stream_Name)
 area<-ref_table[,c("drainSqKm", "Stream_ID")]
 
-renamed_sites<-c("Catalina Jemez__MG_WEIR", "Catalina Jemez__OR_low", "NWT__COMO", "Walker Branch__East Fork", "Walker Branch__West Fork")
-old_name<-c("Catalina Jemez__Marshall Gulch", "Catalina Jemez__Oracle Ridge", "NWT__Como Creek", "Walker Branch__east fork", "Walker Branch__west fork")
+renamed_sites<-c("Catalina Jemez__MG_WEIR", "Catalina Jemez__OR_low", "NWT__COMO", "Walker Branch__East Fork", "Walker Branch__West Fork",
+                 "Finnish Environmental Institute__Kiiminkij 13010 4tien s", "Finnish Environmental Institute__Lestijoki 10800 8tien s", "Finnish Environmental Institute__Mustijoki 42  6010",
+                 "Finnish Environmental Institute__Mustionjoki 49  15500", "Finnish Environmental Institute__Porvoonjoki 115  6022","Finnish Environmental Institute__SIMOJOKI AS 13500",
+                 "Finnish Environmental Institute__Vantaa 42  6040")
+old_name<-c("Catalina Jemez__Marshall Gulch", "Catalina Jemez__Oracle Ridge", "NWT__Como Creek", "Walker Branch__east fork", "Walker Branch__west fork",
+            "Finnish Environmental Institute__Kiiminkij 13010 4-tien s", "Finnish Environmental Institute__Lestijoki 10800 8-tien s", "Finnish Environmental Institute__Mustijoki 4,2  6010",
+            "Finnish Environmental Institute__Mustionjoki 4,9  15500", "Finnish Environmental Institute__Porvoonjoki 11,5  6022","Finnish Environmental Institute__SIMOJOKI AS. 13500",
+            "Finnish Environmental Institute__Vantaa 4,2  6040")
 
 name_conversion<-data.frame(renamed_sites, old_name)
 
@@ -210,7 +236,7 @@ drivers<-drive_download(drivers_folder$drive_resource, overwrite = T)
 spatial_drivers<-read.csv("all-data_si-extract.csv")
 spatial_drivers$Stream_ID<-paste0(spatial_drivers$LTER, "__", spatial_drivers$Stream_Name)
 
-months_abb<-c("jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec")
+months_abb<-c("jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec_")
 
 monthly_drivers<-spatial_drivers[,c(344,which(colnames(spatial_drivers) %like% months_abb))]
 
@@ -228,7 +254,6 @@ cat_vars<-spatial_drivers[,c(major_cat_vars, elevation)]
 
 cat_vars$Stream_ID<-spatial_drivers$Stream_ID
 
-
 drivers_list_quant<-c("num_days", "prop_area", "precip", "evapotrans", "temp", "npp")
 
 greenup<-c("cycle0", "cycle1")
@@ -239,7 +264,7 @@ for (i in 1:length(drivers_list_quant)) {
   
   drive_cols<-grep(drivers_list_quant[i], colnames(spatial_drivers))
   
-  one_driver<-spatial_drivers[,c(282, drive_cols)]
+  one_driver<-spatial_drivers[,c(284, drive_cols)]
   
   site_mean[[i]]<-rowMeans(one_driver[,c(2:length(one_driver))], na.rm = TRUE)
   
@@ -251,14 +276,13 @@ colnames(mean_df)<-drivers_list_quant
 
 mean_df$Stream_ID<-spatial_drivers$Stream_ID
 
-
 greenup_mean<-list()
 
 for (i in 1:length(greenup)) {
   
   drive_cols<-grep(greenup[i], colnames(spatial_drivers))
   
-  one_driver<-spatial_drivers[,c(282, drive_cols)]
+  one_driver<-spatial_drivers[,c(284, drive_cols)]
   one_driver<-one_driver[!duplicated(one_driver$Stream_ID),]
   
   driver_melt<-melt(one_driver, id.vars="Stream_ID")
@@ -284,24 +308,24 @@ tot<-merge(tot, mean_df, by="Stream_ID")
 #unique(tot$Stream_ID)
 
 ###add in N and P
-N_P_link<-"https://drive.google.com/file/d/1Ucvv9quIjnkgK6YOP1TTAfH-CAVlwj63/view?usp=drive_link"
+# N_P_link<-"https://drive.google.com/file/d/1Ucvv9quIjnkgK6YOP1TTAfH-CAVlwj63/view?usp=drive_link"
+# 
+# file_get<-drive_get(as_id(N_P_link))
+# 
+# drive_download(file_get$drive_resource, overwrite = T)
 
-file_get<-drive_get(as_id(N_P_link))
+N_P<-read.csv("Median_N_P_200_06212024.csv")
 
-drive_download(file_get$drive_resource, overwrite = T)
-
-N_P<-read.csv("Median_N_P_200.csv")
-
-N_P_cast<-dcast(N_P, Stream_Name~solute_simplified, value.var = "mean_val", fun.aggregate = mean)
+N_P_cast<-dcast(N_P, Stream_Name~solute_simplified, value.var = "mean_val")
 
 tot<-merge(tot, N_P_cast, by="Stream_Name")
 
-##add in daylength
-daylength_url<-"https://drive.google.com/file/d/1jpmsjnZBwLHlvF1rwV_JTYPliTAQ27uU/view?usp=drive_link"
-  
-file_get<-drive_get(as_id(daylength_url))
-
-drive_download(file_get$drive_resource, overwrite = T)
+# ##add in daylength
+# daylength_url<-"https://drive.google.com/file/d/1jpmsjnZBwLHlvF1rwV_JTYPliTAQ27uU/view?usp=drive_link"
+#   
+# file_get<-drive_get(as_id(daylength_url))
+# 
+# drive_download(file_get$drive_resource, overwrite = T)
 
 daylen<-read.csv("Monthly_Daylength.csv")
 
@@ -334,5 +358,5 @@ tot<-merge(tot, daylen_range, by="Stream_Name")
 
 tot<-tot[!duplicated(tot$Stream_Name),]
 
-write.csv(tot, "AllDrivers_Harmonized_20231129.csv")
+write.csv(tot, "AllDrivers_Harmonized_20240621.csv")
 

@@ -4,13 +4,13 @@ require(ggplot2)
 
 setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
 
-chem_url<-"https://drive.google.com/file/d/1wQQCZYmtgma46MTPavoGeZzMJdZSR3F6/view?usp=drive_link"
+chem_url<-"https://drive.google.com/file/d/16eqKvjQj14wrxy6B4ncvPFjmlrQXC7k2/view?usp=drive_link"
 
 file_get<-drive_get(as_id(chem_url))
 
 drive_download(file_get$drive_resource, overwrite = T)
 
-chem<-read.csv("20231109_masterdata_chem.csv")
+chem<-read.csv("20240621_masterdata_chem.csv")
 
 chem_NP<-chem[chem$variable %in% c("SRP", "PO4", "NO3", "NOx"),]
 
@@ -52,15 +52,11 @@ chem_NP_avg<-merge(chem_NP_avg, chem_units, by=c("Stream_Name", "variable"))
 
 chem_NP_avg<-chem_NP_avg[,c(1:4)]
 
-harmonized_drivers<-read.csv("AllDrivers_Harmonized.csv")
+si_clust<-read.csv("MonthClustersNov2022.csv")
 
-harmonized_drivers<-harmonized_drivers[!duplicated(harmonized_drivers$Stream_ID),]
+chem_NP_avg_200<-chem_NP_avg[chem_NP_avg$Stream_Name %in% si_clust$Site,]
 
-harmonized_drivers$site<-word(harmonized_drivers$Stream_ID, 2, sep = "__")
-
-chem_NP_avg_200<-chem_NP_avg[chem_NP_avg$Stream_Name %in% harmonized_drivers$site,]
-
-missing_files<-setdiff(harmonized_drivers$site, chem_NP_avg_200$Stream_Name)
+missing_files<-setdiff(si_clust$Site, chem_NP_avg_200$Stream_Name)
 
 missing_files
 
@@ -83,12 +79,12 @@ unique(missing_sites$Stream_Name)
 
 chem_NP_avg_200_updated<-bind_rows(missing_sites, chem_NP_avg_200)
 
-missing_files<-setdiff(harmonized_drivers$site, chem_NP_avg_200_updated$Stream_Name)
+missing_files<-setdiff(si_clust$Site, chem_NP_avg_200_updated$Stream_Name)
 
 chem_NP_avg_200_updated$solute_simplified<-ifelse(chem_NP_avg_200_updated$variable %in% c("NOx", "NO3"),
-                                                  "N", "P")
+                                                 "N", "P")
 
-write.csv(chem_NP_avg_200_updated, "Median_N_P_200.csv")
+write.csv(chem_NP_avg_200_updated, "Median_N_P_200_06212024.csv")
 
 
 
