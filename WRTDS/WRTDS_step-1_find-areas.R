@@ -184,6 +184,7 @@ sites_actual %>%
 
 # Prepare only needed HydroSheds 'continents'
 basin_needs <- rbind(africa, europe, oceania, north_am, arctic)
+basin_needs$HYBAS_ID <- as.character(basin_needs$HYBAS_ID)
 
 # Get area for our focal polygons
 sites_actual$SUB_AREA <- basin_needs$SUB_AREA[match(sites_actual$HYBAS_ID, basin_needs$HYBAS_ID)]
@@ -327,7 +328,7 @@ dplyr::glimpse(hydro_out)
 # Pre-emptively resolve an error with 'invalid spherical geometry'
 sf::sf_use_s2(F)
 
-# Strip the polygons that correspond to those IDs
+# Strip the polygons that correspond to those IDs - STOPPED HERE!
 hydro_poly_df <- hydro_out %>%
   # Make the HydroBasins ID column have an identical name between the df and sf objects
   dplyr::rename(HYBAS_ID = hybas_id) %>%
