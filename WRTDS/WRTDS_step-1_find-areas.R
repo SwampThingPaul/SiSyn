@@ -328,6 +328,9 @@ dplyr::glimpse(hydro_out)
 # Pre-emptively resolve an error with 'invalid spherical geometry'
 sf::sf_use_s2(F)
 
+# change value to numeric to match across datasets
+basin_needs$HYBAS_ID <- as.numeric(basin_needs$HYBAS_ID)
+
 # Strip the polygons that correspond to those IDs - STOPPED HERE!
 hydro_poly_df <- hydro_out %>%
   # Make the HydroBasins ID column have an identical name between the df and sf objects
