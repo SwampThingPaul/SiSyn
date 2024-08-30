@@ -523,65 +523,6 @@ kalman_annual <- out_list[["ResultsTable_Kalman_WRTDS.csv"]] %>%
 # Glimpse this as well
 dplyr::glimpse(kalman_annual)
 
-## ---------------------------------------------- ##
-# Crop WRTDS Outputs ----
-## ---------------------------------------------- ##
-
-## temporary step to accommodate for leading discharge data ## 
-
-## Daily Data
-daily_wrtds_v1 <- gfn %>%
-  # Left join on the start date from the chemistry data
-  dplyr::left_join(y = disc_lims, by = c("LTER", "Stream_Name")) %>%
-  # Drop any years before the one year buffer suggested by WRTDS
-  dplyr::filter(Date > disc_start) %>% 
-  # Reorder columns / rename Q column / implicitly drop unwanted columns
-  dplyr::select(-Discharge_File_Name,-min_date,-disc_start)
-
-daily_kalman_v1 <- kalm_main %>%
-  # Left join on the start date from the chemistry data
-  dplyr::left_join(y = disc_lims, by = c("LTER", "Stream_Name")) %>%
-  # Drop any years before the one year buffer suggested by WRTDS
-  dplyr::filter(Date > disc_start) %>% 
-  # Reorder columns / rename Q column / implicitly drop unwanted columns
-  dplyr::select(-Discharge_File_Name,-min_date,-disc_start)
-
-
-## Monthly Data
-monthly_v1 <- monthly %>%
-  # Left join on the start date from the chemistry data
-  dplyr::left_join(y = disc_lims, by = c("LTER","Stream_Name")) %>%
-  # Drop any years before the one year buffer suggested by WRTDS
-  dplyr::filter(Year > year(disc_start)) %>% 
-  # Reorder columns / rename Q column / implicitly drop unwanted columns
-  dplyr::select(-Discharge_File_Name,-min_date,-disc_start)
-
-monthly_kalman_v1 <- kalman_monthly %>%
-  # Left join on the start date from the chemistry data
-  dplyr::left_join(y = disc_lims, by = c("LTER", "Stream_Name")) %>%
-  # Drop any years before the one year buffer suggested by WRTDS
-  dplyr::filter(Year > year(disc_start)) %>% 
-  # Reorder columns / rename Q column / implicitly drop unwanted columns
-  dplyr::select(-Discharge_File_Name,-min_date,-disc_start)
-
-## Annual Data ##
-
-annual_wrtds_v1 <- results_table %>% 
-  # Left join on the start date from the chemistry data
-  dplyr::left_join(y = disc_lims, by = c("LTER", "Stream_Name")) %>%
-  # Drop any years before the one year buffer suggested by WRTDS
-  dplyr::filter(Year > year(disc_start)) %>% 
-  # Reorder columns / rename Q column / implicitly drop unwanted columns
-  dplyr::select(-Discharge_File_Name,-min_date,-disc_start)
-
-annual_kalman_v1 <- kalman_annual %>% 
-  # Left join on the start date from the chemistry data
-  dplyr::left_join(y = disc_lims, by = c("LTER", "Stream_Name")) %>%
-  # Drop any years before the one year buffer suggested by WRTDS
-  dplyr::filter(DecYear > year(disc_start)) %>% 
-  # Reorder columns / rename Q column / implicitly drop unwanted columns
-  dplyr::select(-Discharge_File_Name,-min_date,-disc_start)
-
 
 
 ## ---------------------------------------------- ##
@@ -593,14 +534,14 @@ export_list <- list("WRTDS_trends.csv" = trends_table,
                     "WRTDS_flux_bias.csv" = flux_stats,
                     "WRTDS_error_stats.csv" = error_stats,
                     ## Daily
-                    "WRTDS_daily.csv" = daily_wrtds_v1,
-                    "WRTDS_kalman_daily.csv" = daily_kalman_v1,
+                    "WRTDS_daily.csv" = gfn,
+                    "WRTDS_kalman_daily.csv" = kalm_main,
                     ## Monthly
-                    "WRTDS_monthly.csv" = monthly_v1,
-                    "WRTDS_kalman_monthly.csv" = monthly_kalman_v1,
+                    "WRTDS_monthly.csv" = monthly,
+                    "WRTDS_kalman_monthly.csv" = kalman_monthly,
                     ## Yearly
-                    "WRTDS_annual.csv" = annual_wrtds_v1,
-                    "WRTDS_kalman_annual.csv" = annual_kalman_v1)
+                    "WRTDS_annual.csv" = results_table,
+                    "WRTDS_kalman_annual.csv" = kalman_annual)
 
 # Loop across the list to export locally and to GoogleDrive
 ## Note that the "GFN_WRTDS.csv" file is *huge* so it takes a few seconds to upload
@@ -805,3 +746,64 @@ for(name in names(boot_export_list)){
   googledrive::drive_upload(media = boot_report_file, overwrite = T, path = dest_url) }
 
 # End ----
+
+## ---------------------------------------------- ##
+# Crop WRTDS Outputs ----
+## ---------------------------------------------- ##
+
+## temporary step to accommodate for leading discharge data ## 
+
+## Daily Data
+daily_wrtds_v1 <- gfn %>%
+  # Left join on the start date from the chemistry data
+  dplyr::left_join(y = disc_lims, by = c("LTER", "Stream_Name")) %>%
+  # Drop any years before the one year buffer suggested by WRTDS
+  dplyr::filter(Date > disc_start) %>% 
+  # Reorder columns / rename Q column / implicitly drop unwanted columns
+  dplyr::select(-Discharge_File_Name,-min_date,-disc_start)
+
+daily_kalman_v1 <- kalm_main %>%
+  # Left join on the start date from the chemistry data
+  dplyr::left_join(y = disc_lims, by = c("LTER", "Stream_Name")) %>%
+  # Drop any years before the one year buffer suggested by WRTDS
+  dplyr::filter(Date > disc_start) %>% 
+  # Reorder columns / rename Q column / implicitly drop unwanted columns
+  dplyr::select(-Discharge_File_Name,-min_date,-disc_start)
+
+
+## Monthly Data
+monthly_v1 <- monthly %>%
+  # Left join on the start date from the chemistry data
+  dplyr::left_join(y = disc_lims, by = c("LTER","Stream_Name")) %>%
+  # Drop any years before the one year buffer suggested by WRTDS
+  dplyr::filter(Year > year(disc_start)) %>% 
+  # Reorder columns / rename Q column / implicitly drop unwanted columns
+  dplyr::select(-Discharge_File_Name,-min_date,-disc_start)
+
+monthly_kalman_v1 <- kalman_monthly %>%
+  # Left join on the start date from the chemistry data
+  dplyr::left_join(y = disc_lims, by = c("LTER", "Stream_Name")) %>%
+  # Drop any years before the one year buffer suggested by WRTDS
+  dplyr::filter(Year > year(disc_start)) %>% 
+  # Reorder columns / rename Q column / implicitly drop unwanted columns
+  dplyr::select(-Discharge_File_Name,-min_date,-disc_start)
+
+## Annual Data ##
+
+annual_wrtds_v1 <- results_table %>% 
+  # Left join on the start date from the chemistry data
+  dplyr::left_join(y = disc_lims, by = c("LTER", "Stream_Name")) %>%
+  # Drop any years before the one year buffer suggested by WRTDS
+  dplyr::filter(Year > year(disc_start)) %>% 
+  # Reorder columns / rename Q column / implicitly drop unwanted columns
+  dplyr::select(-Discharge_File_Name,-min_date,-disc_start)
+
+annual_kalman_v1 <- kalman_annual %>% 
+  # Left join on the start date from the chemistry data
+  dplyr::left_join(y = disc_lims, by = c("LTER", "Stream_Name")) %>%
+  # Drop any years before the one year buffer suggested by WRTDS
+  dplyr::filter(DecYear > year(disc_start)) %>% 
+  # Reorder columns / rename Q column / implicitly drop unwanted columns
+  dplyr::select(-Discharge_File_Name,-min_date,-disc_start)
+
+
