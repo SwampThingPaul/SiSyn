@@ -23,13 +23,14 @@ rm(list = ls())
 # Create folders for the raw downloaded files (i.e., sources) & WRTDS inputs (created by this script)
 dir.create(path = file.path(path, "WRTDS Source Files_Feb2024"), showWarnings = F)
 dir.create(path = file.path(path, "WRTDS Inputs_Feb2024"), showWarnings = F)
+dir.create(path = file.path(path, "WRTDS Inputs_data paper"), showWarnings=F)
 
 # Define the names of the Drive files we need
 file_names <- c("WRTDS_Reference_Table_with_Areas_DO_NOT_EDIT.csv", # No.1 Simplified ref table
                 "Site_Reference_Table", # No.2 Full ref table
-                "20240201_masterdata_discharge.csv", # No.3 Main discharge
-                "20240130_masterdata_chem.csv", # No.4 Main chemistry ## update this file with new chemistry!!
-                "Data_Cropping_WRTDS") # No.5 Data cropping for chemistry 
+                "20240801_masterdata_discharge.csv", # No.3 Main discharge ## update this file with new discharge!!
+                "20240624_masterdata_chem.csv", # No.4 Main chemistry ## update this file with new chemistry!!
+                "Data_Cropping_WRTDS") # No.5 Data cropping for chemistry (Si) 
 
 # Find those files' IDs
 ids <- googledrive::drive_ls(as_id("https://drive.google.com/drive/u/0/folders/15FEoe2vu3OAqMQHqdQ9XKpFboR4DvS9M")) %>%
@@ -96,6 +97,9 @@ disc_v1 <- disc_v0 %>%
   # Fix any broken names (special characters from Scandinavia)
   dplyr::mutate(Discharge_File_Name = gsub(pattern = "ØSTEGLO_Q", replacement = "OSTEGLO_Q",
                                            x = Discharge_File_Name)) %>%
+  #dplyr::mutate(Stream_Name = dplyr::case_match(Stream_Name, 
+   #                                             "Kiiminkij 13010 4-tien s"~"Kiiminkij 13010 4tien s",
+    #                                            .default = Stream_Name))
   # Attach the reference table object; 
   # Master discharge file now has "Stream_Name" and "LTER" columns so removing before joining to avoid duplication
   dplyr::left_join(y = dplyr::select(ref_table, -drainSqKm, -Stream_Name,-LTER),
@@ -117,7 +121,7 @@ disc_v1 %>%
 dplyr::glimpse(disc_v1)
 
 # Any *chemistry* rivers not in reference table?
-# I adjusted the Finnish Stream names that differ between chem and ref table when creating chem_v1 below
+# FYI -- Finnish Names don't read into R well, they say they are missing, but they are not, I adjusted the Finnish Stream names that # differ between chem and ref table when creating chem_v1 below
 setdiff(x = unique(ref_table$Stream_Name), y = unique(chem_v0$Stream_Name))
 
 # Wrangle chemistry as well
@@ -128,10 +132,16 @@ chem_v1 <- chem_v0 %>%
   dplyr::select(-LTER) %>% 
   # rename some Finnish streams before joining
   dplyr::mutate(Stream_Name = dplyr::case_match(Stream_Name, 
-                                  "N<e4>rpi<f6>njoki mts 6761" ~  "Narpionjoki mts 6761",
-                                  "Pyh<e4>joki Hourunk 11400" ~ "Pyhajoki Hourunk 11400",
-                                  "Koskenkyl<e4>njoki 6030" ~ "Koskenkylanjoki 6030",
-                                  .default = Stream_Name)) %>% 
+                                                "N<e4>rpi<f6>njoki mts 6761" ~  "Narpionjoki mts 6761",
+                                                "Pyh<e4>joki Hourunk 11400" ~ "Pyhajoki Hourunk 11400",
+                                                "Koskenkyl<e4>njoki 6030" ~ "Koskenkylanjoki 6030",
+                                                #"SIMOJOKI AS. 13500" ~ "SIMOJOKI AS 13500",
+                                                #"Lestijoki 10800 8-tien s" ~ "Lestijoki 10800 8tien s",
+                                                #"Porvoonjoki 11,5  6022" ~ "Porvoonjoki 115  6022",
+                                                #"Mustionjoki 4,9  15500"~"Mustionjoki 49  15500",
+                                                #"Mustijoki 4,2  6010"~"Mustijoki 42  6010",
+                                                #"Vantaa 4,2  6040"~"Vantaa 42  6040",
+                                                .default = Stream_Name)) %>% 
   # another option for renaming Finnish streams
   #dplyr::mutate(Stream_Name = gsub(pattern = "[<]e4[>]", replacement = "a", x = Stream_Name)) %>%
   #dplyr::mutate(Stream_Name = gsub(pattern = "[<]f6[>]", replacement = "o", x = Stream_Name)) %>%
@@ -145,6 +155,9 @@ chem_v1 <- chem_v0 %>%
   dplyr::mutate(Stream_ID = paste0(LTER, "__", Stream_Name),
                 .before = dplyr::everything())
 
+
+# check to see if all names included in chemistry and ref table again after updating Finnish names
+setdiff(x = unique(ref_table$Stream_Name), y = unique(chem_v1$Stream_Name))
 
 # Any rivers without a corresponding chemistry name?
 chem_v1 %>%
@@ -309,7 +322,7 @@ chemcrop <- chemcrop_v0 %>%
 dplyr::glimpse(chemcrop)
 
 chem_v3 <- chem_v2 %>% 
-  left_join(chemcrop,by=c("Stream_ID")) %>% 
+  left_join(chemcrop,by=c("Stream_ID","variable")) %>% 
   mutate(year = as.numeric(str_sub(Date,start=1,end=4))) %>% 
   filter(
     # keep every river where there is no date cropping
@@ -344,12 +357,14 @@ disc_v3 <- disc_v2
 ## ---------------------------------------------- ##
     # Crop Time Series for WRTDS (v3 -> v4) ----
 ## ---------------------------------------------- ##
-# WRTDS runs best when there are 10 years of discharge data *before* the first chemistry datapoint
+# WRTDS runs best when there is discharge data *before* the first chemistry datapoint
+# recommendations vary between "standard" (a few months) WRTDS and "generalized flow normalization" (half the window width), so went with a couple of years
 # Similarly, we can't have more chemistry data than we have discharge data.
 # So we need to identify the min/max dates of discharge and chemistry (separately)...
 # ...to be able to use them to crop the actual data as WRTDS requires
 
-# Identify earliest chemical data at each site
+# Identify earliest chemical data at each site -
+## need to add MAX DATE!
 disc_lims <- chem_v3 %>%
   # Make a new column of earliest days per stream (note we don't care which solute this applies to)
   dplyr::group_by(LTER, Stream_Name, Discharge_File_Name) %>%
@@ -359,8 +374,8 @@ disc_lims <- chem_v3 %>%
   dplyr::filter(Date == min_date) %>%
   # Pare down columns (drop date now that we have `min_date`)
   dplyr::select(LTER, Stream_Name, Discharge_File_Name, min_date) %>%
-  # Subtract 10 years to crop the discharge data to 10 yrs per chemistry data
-  dplyr::mutate(disc_start = (min_date - (1 * 365.25)) - 1) %>% # changed this to 2 years from ten
+  # Subtract 1 years to crop the discharge data to 1 yrs per chemistry data
+  dplyr::mutate(disc_start = (min_date - (1 * 365.25)) - 1) %>% # changed this to 2 years
   # Keep only unique rows
   dplyr::distinct()
 
@@ -428,7 +443,7 @@ supportR::diff_check(old = names(chem_v3), new = names(chem_v4))
 ## Should only gain Stream ID and lose nothing
 
 ## ---------------------------------------------- ##
-# Gap Fill Discharge Data ---- UNDER CONSTRUCTION
+# Gap Fill Discharge Data ---- 
 ## ---------------------------------------------- ##
 
 #read in WRTDS input file here
@@ -488,11 +503,11 @@ for (i in 1:length(site_names)){
   
 }
 
-#Q_interp_summary = ldply(date_list)
+# Q_interp_summary = ldply(date_list)
 disc_v6 = do.call(rbind, Q_interp)
 
-#### export as new Q.csv file ####
-#write.csv(Q_interp_all,file="WRTDS-input_discharge_filled.csv")
+glimpse(disc_v6)
+
 
 
 ## ---------------------------------------------- ##
@@ -555,13 +570,13 @@ write.csv(x = information, row.names = F, na = "",
 tidy_dest <- googledrive::as_id("https://drive.google.com/drive/u/0/folders/1QEofxLdbWWLwkOTzNRhI6aorg7-2S3JE")
 ## Export to it
 googledrive::drive_upload(path = tidy_dest, overwrite = T,
-                          media = file.path(path, "WRTDS Inputs",
+                          media = file.path(path, "WRTDS Inputs_Feb2024",
                                             "WRTDS-input_discharge.csv"))
 googledrive::drive_upload(path = tidy_dest, overwrite = T,
-                          media = file.path(path, "WRTDS Inputs",
+                          media = file.path(path, "WRTDS Inputs_Feb2024",
                                             "WRTDS-input_chemistry.csv"))
 googledrive::drive_upload(path = tidy_dest, overwrite = T,
-                          media = file.path(path, "WRTDS Inputs",
+                          media = file.path(path, "WRTDS Inputs_Feb2024",
                                             "WRTDS-input_information.csv"))
 
 ## ---------------------------------------------- ##

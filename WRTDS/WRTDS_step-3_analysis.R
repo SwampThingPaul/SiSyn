@@ -36,6 +36,25 @@ purrr::walk2(.x = input_ids$name, .y = input_ids$id,
 discharge <- read.csv(file.path(path, "WRTDS Inputs_Feb2024", "WRTDS-input_discharge.csv"))
 chemistry <- read.csv(file.path(path, "WRTDS Inputs_Feb2024", "WRTDS-input_chemistry.csv"))
 information <- read.csv(file.path(path, "WRTDS Inputs_Feb2024", "WRTDS-input_information.csv"))
+crop <- read.csv(file.path(path,"WRTDS Inputs_Feb2024","WRTDS-data_cropping.csv"))
+
+# format cropping object to modify blankTime columns for running WRTDS
+crop_v1 <- crop |> 
+  dplyr::mutate(Stream_ID = paste0(LTER, "__", Site),
+                .before = dplyr::everything()) |> 
+  # drop unwanted columns
+  dplyr::select(-dplyr::ends_with("_Than"),starts_with("X."),-LTER,-Site) %>% 
+  dplyr::select(Stream_ID,variable,BlankTime_Start,BlankTime_End) |> 
+  # drop non-unique rows
+  dplyr::distinct() %>% 
+  # drop uncropped streams
+  dplyr::filter(!(BlankTime_Start == "NA" & BlankTime_End == "NA")) %>% 
+  # make years numeric; makes all "NAs" in original dataset into real NA
+  dplyr::mutate(BlankTime_Start = suppressWarnings(as.numeric(BlankTime_Start)), 
+                BlankTime_End = suppressWarnings(as.numeric(BlankTime_End))) |> 
+  # make the value into a date
+  dplyr::mutate(BlankTime_Start_Date = as.Date(paste0(BlankTime_Start,"-01","-01")),
+                BlankTime_End_Date = as.Date(paste0(BlankTime_End,"-01","-01")))
 
 ## ---------------------------------------------- ##
             # Diagnose Types of Sites ----
@@ -145,18 +164,36 @@ good_rivers <- setdiff(x = unique(chemistry$Stream_Element_ID),
 # Vector for storing problem rivers identified in latest run of WRTDS
 new_bads <- c()
               
-skipped <- c(aus_names)
+skipped <- c()
 
 # Set of rivers we've already run the workflow for
 done_rivers <- data.frame("file" = dir(path = file.path(path, "WRTDS Loop Diagnostic_Feb2024"))) %>%
   # Drop the file suffix part of the file name 
   dplyr::mutate(river = gsub(pattern = "\\_Loop\\_Diagnostic.csv", replacement = "", x = file))
 
-# Identify rivers to run
-#rivers_all <- unique(chemistry$Stream_Element_ID)
+# Identify particular subset to run
+rivers_swed_dat <- chemistry %>% 
+  separate_wider_delim(cols=Stream_ID,names=c("LTER","Stream_Name"),delim ="__",
+                       too_many="debug") %>% 
+  select(LTER,Stream_Element_ID) %>% 
+  filter(LTER == "Swedish Goverment")
 
-rivers_to_do <- sort(setdiff(x = unique(good_rivers), 
-                             y = c(unique(done_rivers$river), new_bads,skipped)))
+rivers_swed <- unique(rivers_swed_dat$Stream_Element_ID)
+
+#
+rivers_aus_dat <- chemistry %>% 
+  separate_wider_delim(cols=Stream_ID,names=c("LTER","Stream_Name"),delim ="__",
+                       too_many="debug") %>% 
+  select(LTER,Stream_Element_ID) %>% 
+  filter(LTER == "Australia")
+
+rivers_aus <- unique(rivers_aus_dat$Stream_Element_ID)
+
+## Final list of rivers to run
+rivers_to_do <- rivers_aus
+
+#rivers_to_do <- sort(setdiff(x = unique(good_rivers), 
+  #                           y = c(unique(done_rivers$river), new_bads,skipped)))
 
 # What are the next few that will be processed and how many total left?
 rivers_to_do[1:5]; length(rivers_to_do)
@@ -245,12 +282,19 @@ for(river in rivers_to_do){ # actual loop
                                      verbose = F, windowS = 0.5)
   
   # Handle rivers that have blank time periods
-  if(stream_id == "USGS__Mississippi River at Grafton"){
-    egret_list_out <- EGRET::blankTime(eList = egret_list_out, startBlank = "1981-10-01", 
+if(stream_id %in% crop_v1$Stream_ID){
+  egret_list_out <- EGRET::blankTime(eList=egret_list_out, 
+                                     startBlank=unique(crop_v1[which(crop_v1$Stream_ID == stream_id),]$BlankTime_Start_Date), 
+                                     endBlank = unique(crop_v1[which(crop_v1$Stream_ID == stream_id),]$BlankTime_End_Date)) }
+  
+  
+## OLD ##
+if(stream_id == "USGS__Mississippi River at Grafton"){
+egret_list_out <- EGRET::blankTime(eList = egret_list_out, startBlank = "1981-10-01", 
                                        endBlank = "1982-09-29") }
   if(stream_id == "USGS__PICEANCE CREEK RYAN GULCH"){
     egret_list_out <- EGRET::blankTime(eList = egret_list_out, startBlank = "1998-10-01",
-                                       endBlank = "1999-09-30") }
+                                      endBlank = "1999-09-30") }
   if(stream_id == "USGS__YAMPA RIVER AT DEERLODGE PARK"){
     egret_list_out <- EGRET::blankTime(eList = egret_list_out, startBlank = "1994-10-01",
                                        endBlank = "1996-09-30") }
@@ -377,121 +421,6 @@ for(river in rivers_to_do){ # actual loop
 
 
 ### BASEMENT 
-
-# Bad ones from run in Feb 2024
-new_bads <- c('AND__GSWS06_NOx', 'AND__GSWS07_NOx',
-              'Australia__BARWON RIVER AT DANGAR BRIDGE WALGETT_NOx',
-              'Australia__BARWON RIVER AT DANGAR BRIDGE WALGETT_P', 
-              "Australia__BARWON RIVER AT MUNGINDI_DSi", # missing Q, zero concentration
-              "Australia__BARWON RIVER AT MUNGINDI_NH4",
-              "Australia__BARWON RIVER AT MUNGINDI_NO3", 
-              "Australia__BARWON RIVER AT MUNGINDI_NOx",
-              "Australia__BARWON RIVER AT MUNGINDI_P",
-              "Australia__BILLABONG CREEK AT DARLOT_DSi",
-              "Australia__BILLABONG CREEK AT DARLOT_NO3",
-              "Australia__BILLABONG CREEK AT DARLOT_NOx",
-              "Australia__BILLABONG CREEK AT DARLOT_P",
-              'Australia__DARLING RIVER AT BOURKE TOWN_DSi',
-              'Australia__DARLING RIVER AT BOURKE TOWN_NH4',
-              'Australia__DARLING RIVER AT BOURKE TOWN_NO3',
-              'Australia__DARLING RIVER AT BOURKE TOWN_NOx',
-              'Australia__DARLING RIVER AT BOURKE TOWN_P',
-              "Australia__DARLING RIVER AT BURTUNDY_DSi",
-              "Australia__DARLING RIVER AT BURTUNDY_NH4",
-              "Australia__DARLING RIVER AT BURTUNDY_NO3",
-              "Australia__DARLING RIVER AT BURTUNDY_NOx",
-              "Australia__DARLING RIVER AT BURTUNDY_P",
-              "Australia__DARLING RIVER AT MENINDEE UPSTREAM WEIR 32_DSi",
-              "Australia__DARLING RIVER AT MENINDEE UPSTREAM WEIR 32_NH4",
-              "Australia__DARLING RIVER AT MENINDEE UPSTREAM WEIR 32_NO3",
-              "Australia__DARLING RIVER AT MENINDEE UPSTREAM WEIR 32_NOx",
-              "Australia__DARLING RIVER AT MENINDEE UPSTREAM WEIR 32_P",
-              "Australia__DARLING RIVER AT WILCANNIA MAIN CHANNEL_DSi",
-              "Australia__DARLING RIVER AT WILCANNIA MAIN CHANNEL_NH4",
-              "Australia__DARLING RIVER AT WILCANNIA MAIN CHANNEL_NO3",
-              "Australia__DARLING RIVER AT WILCANNIA MAIN CHANNEL_NOx",
-              "Australia__DARLING RIVER AT WILCANNIA MAIN CHANNEL_P",
-              "Australia__EDWARD RIVER AT DENILIQUIN_DSi",
-              "Australia__EDWARD RIVER AT DENILIQUIN_NH4",
-              "Australia__EDWARD RIVER AT DENILIQUIN_NO3",
-              "Australia__EDWARD RIVER AT DENILIQUIN_NOx",
-              "Australia__EDWARD RIVER AT DENILIQUIN_P",
-              "Australia__EDWARD RIVER AT MOULAMEIN_DSi",
-              "Australia__EDWARD RIVER AT MOULAMEIN_NOx",
-              "Australia__EDWARD RIVER AT MOULAMEIN_P",
-              "Australia__MURRAY RIVER DOWNSTREAM YARRAWONGA WEIR_DSi",
-              "Australia__MURRAY RIVER DOWNSTREAM YARRAWONGA WEIR_NH4",
-              "Australia__MURRAY RIVER DOWNSTREAM YARRAWONGA WEIR_NO3",
-              "Australia__MURRAY RIVER DOWNSTREAM YARRAWONGA WEIR_NOx",
-              "Australia__MURRAY RIVER DOWNSTREAM YARRAWONGA WEIR_P",
-              "Cameroon__Mbalmayo_DSi","Cameroon__Mbalmayo_NO3",
-              'Cameroon__Messam_DSi', 'Cameroon__Messam_NO3',
-              'Cameroon__Nsimi_outlet_DSi','Cameroon__Nsimi_outlet_NO3',
-              'Cameroon__Olama_DSi','Cameroon__Olama_NO3',
-              "Cameroon__Pont_So'o_DSi","Cameroon__Pont_So'o_NO3",
-              'Canada__BEAVER RIVER ABOVE HIGHWAY 1 IN GLACIER NATIONAL PARK_NH4',
-              'Canada__KICKING HORSE RIVER AT FIELD IN YOHO NATIONAL PARK_DSi',
-              'Canada__KICKING HORSE RIVER AT FIELD IN YOHO NATIONAL PARK_NH4',
-              'Canada__KICKING HORSE RIVER AT FIELD IN YOHO NATIONAL PARK_NO3',
-              "Catalina Jemez__MG_WEIR_NH4","Catalina Jemez__OR_low_NH4",
-              'GRO__Kolyma_P','GRO__Lena_P','GRO__Mackenzie_P','GRO__Yukon_P',
-              'HBR__ws1_P','HBR__ws2_P','HBR__ws3_P','HBR__ws4_P',
-              'HBR__ws5_P','HBR__ws6_P','HBR__ws7_P','HBR__ws8_P',
-              'HBR__ws9_P', # WS8 and WS9 I just added w/o running since everything else wouldn't run 
-              "HYBAM__Atalaya Aval_DSi", "HYBAM__Atalaya Aval_NO3",
-              "HYBAM__Borja_DSi","HYBAM__Borja_NO3",
-              'HYBAM__Caracarai_DSi','HYBAM__Caracarai_NO3',
-              'HYBAM__Ciudad Bolivar_DSi','HYBAM__Ciudad Bolivar_NO3',
-              "HYBAM__Itaituba_DSi","HYBAM__Itaituba_NO3",
-              'HYBAM__Langa Tabiki_DSi','HYBAM__Langa Tabiki_NO3',
-              'HYBAM__Manacapuru_DSi','HYBAM__Manacapuru_NO3',
-              'HYBAM__Manacapuru_NOx','HYBAM__Manacapuru_P',
-              'HYBAM__Nazareth_DSi','HYBAM__Nazareth_NO3',
-              "HYBAM__Obidos_DSi", "HYBAM__Obidos_NO3",
-              "HYBAM__Porto Velho_DSi","HYBAM__Porto Velho_NO3",
-              'HYBAM__Rurrenabaque_DSi','HYBAM__Rurrenabaque_NO3',
-              "HYBAM__Saut Maripa_DSi","HYBAM__Saut Maripa_NO3",# 2 samples?!
-              'Krycklan__Site 1_NO3','Krycklan__Site 10_NO3', 'Krycklan__Site 13_NO3',
-              'Krycklan__Site 14_NO3', 'Krycklan__Site 16_NO3','Krycklan__Site 4_NO3',
-              'Krycklan__Site 5_NO3','Krycklan__Site 6_NO3',
-              'Krycklan__Site _7_NO3','Krycklan__Site 9_NO3',
-              "LUQ__RI_DSi", "LUQ__RI_NH4","LUQ__RI_NOx","LUQ__RI_P",
-              "MCM__Canada Stream at F1_P", 'MCM__Onyx River at Lake Vanda Weir_NH4',
-              'MCM__Onyx River at Lake Vanda Weir_P', 'MCM__Onyx River at Lower Wright Weir_P',
-              'MCM__Priscu Stream at B1_NH4', 'MCM__Von Guerard Stream at F6_NH4',
-              "MD__Barham_DSi", "MD__Barham_NOx","MD__Barham_P",
-              "MD__Barr Creek_DSi", 'MD__Barr Creek_NOx', 'MD__Barr Creek_P',
-              "MD__Broken Creek_DSi","MD__Broken Creek_NOx", "MD__Broken Creek_P",
-              "MD__Gunbower Creek_DSi","MD__Gunbower Creek_NOx","MD__Gunbower Creek_P",
-              'NIVA__BUSEDRA_NH4','NIVA__BUSEDRA_P','NIVA__FINEALT_NH4', 'NIVA__FINEALT_P','NIVA__NOREVEF_NH4',
-              "NIVA__NOREVEF_P", 'NIVA__STREORK_NH4', 'NIVA__STREORK_P','NIVA__TELESKI_NH4', 'NIVA__TELESKI_P', 
-              'NIVA__VAGEOTR_NH4', 'NIVA__VAGEOTR_P',  'NIVA__VESENUM_NH4', 'NIVA__VESENUM_P', 'NWT__MARTINELLI_P',
-              'NWT__SADDLE STREAM 007_P', 'Sagehen__Sagehen_NH4', "UK__ARUN AT PALLINGHAM_DSi",
-              "UMR__CU11.6M_DSi","UMR__CU11.6M_NH4", "UMR__CU11.6M_NOx", "UMR__CU11.6M_P",
-              "UMR__DC01.0M_DSi","UMR__DC01.0M_NH4","UMR__DC01.0M_NOx","UMR__DC01.0M_P",
-              'USGS__ANDREWS CREEK_NH4','USGS__ANDREWS CREEK_P',"USGS__APALACHICOLA RIVER_P",
-              'USGS__Arkansas River at Murray Dam_NH4','USGS__Biscuit Brook_NOx',
-              'USGS__Biscuit Brook_P','USGS__CANAJOHARIE CREEK_P','USGS__Dismal River_NH4',
-              'USGS__EAGLE RIVER AT AVON_NH4','USGS__EAGLE RIVER AT RED CLIFF_NH4',
-              'USGS__EAGLE RIVER AT RED CLIFF_P','USGS__EAGLE RIVER NEAR MINTURN_NH4',
-              'USGS__EAGLE RIVER NEAR MINTURN_P','USGS__Flat Brook_P', 'USGS__Frio River_P',
-              'USGS__GORE CREEK UPPER STATION_NH4','USGS__GORE CREEK UPPER STATION_P',
-              'USGS__GREEN RIVER_NH4','USGS__GREEN RIVER_P','USGS__HILLABAHATCHEE CREEK_NH4',
-              'USGS__HILLABAHATCHEE CREEK_P',"USGS__ILLINOIS RIVER AT FLORENCE_DSi",
-              "USGS__ILLINOIS RIVER AT FLORENCE_NH4","USGS__ILLINOIS RIVER AT FLORENCE_NOx", 
-              "USGS__ILLINOIS RIVER AT FLORENCE_P",'USGS__LITTLE RIVER_NH4','USGS__LITTLE RIVER_P',
-              'USGS__McDonalds Branch_P','USGS__MERCED R_P','USGS__Merced River_P',
-              'USGS__PINE CREEK_NH4','USGS__PINE CREEK_P','USGS__POPPLE RIVER_P',
-              'USGS__ROARING FORK_P','USGS__SOPCHOPPY RIVER_NOx',
-              'USGS__SOPE CREEK_P','USGS__SOUTH PLATTE_NH4','USGS__SOUTH PLATTE_NOx',
-              'USGS__SOUTH PLATTE_P','USGS__ST. LAWRENCE_P','USGS__Vallecito Creek_P',
-              'USGS__Wild River_DSi','USGS__Wild River_NH4',
-              'USGS__Wild River_NO3','USGS__Wild River_NOx','USGS__Wild River_P',
-              'USGS__YAMPA RIVER AT STEAMBOAT SPRINGS_NH4','USGS__YUKON RIVER_P',
-              "Walker Branch__WALK_DSi","Walker Branch__WALK_NH4",
-              "Walker Branch__WALK_NOx", "Walker Branch__WALK_P" ) 
-
-
 
 
 
