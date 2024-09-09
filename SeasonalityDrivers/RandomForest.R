@@ -21,6 +21,7 @@ require(rcartocolor)
 require(arsenal)
 require(googledrive)
 require(data.table)
+require(corrplot)
 
 #function to see variable importance by regime
 import_plot <- function(rf_model) {
@@ -43,7 +44,7 @@ test_numtree_average <- function(ntree_list) {
     
     set.seed(123)
     rf_model<-randomForest(Centroid_Name~.,
-                           data=drivers_df, importance=TRUE, proximity=TRUE, ntree=ntree_list[[i]],sampsize=c(30,30,30,30,30))
+                           data=drivers_df, importance=TRUE, proximity=TRUE, ntree=ntree_list[[i]],sampsize=c(29,29,29,29,29))
     OOB[[i]]<-rf_model$err.rate[,1]
     
   }
@@ -55,14 +56,14 @@ test_numtree_average <- function(ntree_list) {
 
 #read in drivers data
 setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
+# 
+# drivers_url<-"https://drive.google.com/file/d/102LAmZFHOg64kMvorybxMiy9vCrFF1Cd/view?usp=drive_link"
+#   
+# file_get<-drive_get(as_id(drivers_url))
+# 
+# drive_download(file_get$drive_resource, overwrite = T)
 
-drivers_url<-"https://drive.google.com/file/d/102LAmZFHOg64kMvorybxMiy9vCrFF1Cd/view?usp=drive_link"
-  
-file_get<-drive_get(as_id(drivers_url))
-
-drive_download(file_get$drive_resource, overwrite = T)
-
-drivers<-read.csv("AllDrivers_Harmonized_20231129.csv")
+drivers<-read.csv("AllDrivers_Harmonized_20240621.csv")
 
 #remove any duplicated rows
 drivers<-drivers[!duplicated(drivers$Stream_ID),]
@@ -73,6 +74,18 @@ si_clust<-read.csv("ClusterAllMetadata.csv")
 #merge cluster and drivers data
 si_clust$Stream_ID<-paste0(si_clust$LTER, "__", si_clust$Site)
 
+# plot_si_clust<-merge(si_clust, drivers, by="Stream_ID")
+# 
+# plot_si_clust_melt<-melt(plot_si_clust[,c(4:16, 24)], id.vars=c("Centroid_Name.x", "Site"))
+
+# pdf("Sites_Clusters_190.pdf", width = 12, height = 8)
+# 
+# ggplot(plot_si_clust_melt, aes(variable, value))+geom_line(aes(group=Site))+facet_wrap(~Centroid_Name.x)+
+#   theme(text = element_text(size = 20))+scale_x_discrete(labels=seq(1,12,1))+labs(x="Month", y="Normalized DSi Concentration")+
+#   theme_classic()
+# 
+# dev.off()
+
 si_clust<-si_clust[,c("Centroid_Name", "Stream_ID")]
 
 drivers<-merge(drivers, si_clust, by=c("Stream_ID"))
@@ -81,14 +94,17 @@ drivers<-merge(drivers, si_clust, by=c("Stream_ID"))
 drivers<-dplyr::select(drivers, -c("cycle1","X","X.1","ClimateZ","Latitude","Longitude","LTER","rndCoord.lat",
                                    "rndCoord.lon","major_rock","major_land"))
 
+# ggplot(drivers, aes(log(drainSqKm), log(med_q)))+geom_point()+theme_classic()+labs(x="Log(Drainage Area)", y="Log(Median Q)")+
+#   theme(text = element_text(size = 20))
+
 #look at distribution of NA across columns
 #sapply(drivers, function(x) sum(is.na(x)))
 
 #remove sites w NA
 drivers<-drivers[complete.cases(drivers$npp),]
-setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/USGS_DataReview_SeasonalityDrivers")
+#setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/USGS_DataReview_SeasonalityDrivers")
 
-write.csv(drivers[,c(3,26,24,25)], "Site_Information.csv")
+#write.csv(drivers[,c(3,26,24,25)], "Site_Information.csv")
 
 #turn centroid name to factor
 drivers$Centroid_Name<-as.factor(drivers$Centroid_Name)
@@ -101,15 +117,19 @@ keep_these_too<-drivers[,colnames(drivers) %like% c("rock|land")]
 
 drivers_df<-bind_cols(drivers_df, keep_these_too)
 
-drivers_df[,c(16:29)]<-replace(drivers_df[,c(16:29)], is.na(drivers_df[,c(16:29)]), 0)
-
-#setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/USGS_DataReview_SeasonalityDrivers")
-
-#write.csv(drivers_df, "SeasonalityDrivers_USGS_AvgDrivers.csv")
+drivers_df[,c(16:31)]<-replace(drivers_df[,c(16:31)], is.na(drivers_df[,c(16:31)]), 0)
+# 
+# setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/USGS_DataReview_SeasonalityDrivers")
+# 
+# write.csv(drivers_df, "SeasonalityDrivers_USGS_AvgDrivers_06232024.csv")
 
 #look at correlation between variables
-#driver_cor<-cor(drivers_df[,c(2:9,12:15)])
-#corrplot(driver_cor, type="lower", pch.col = "black", tl.col = "black", diag = F)
+pdf("CorPlot_20240621.pdf", width = 10, height = 10)
+
+driver_cor<-cor(drivers_df[,c(2:31)])
+corrplot(driver_cor, type="lower", pch.col = "black", tl.col = "black", diag = F)
+
+dev.off()
 
 #original model, all parameters
 #test number of trees 100-1000
@@ -138,12 +158,12 @@ ggplot(OOB_mean, aes(tree_num, mean_oob))+geom_point()+geom_line()+
 
 #tune mtry based on optimized ntree
 set.seed(123)
-tuneRF(drivers_df[,c(2:29)], drivers_df[,1], ntreeTry = 100, stepFactor = 1, improve = 0.5, plot = FALSE)
+tuneRF(drivers_df[,c(2:31)], drivers_df[,1], ntreeTry = 500, stepFactor = 1, improve = 0.5, plot = FALSE)
 
 #run intial RF using tuned parameters
 set.seed(123)
 rf_model1<-randomForest(Centroid_Name~.,
-                        data=drivers_df, importance=TRUE, proximity=TRUE, ntree=100,mtry=5,sampsize=c(30,30,30,30,30))
+                        data=drivers_df, importance=TRUE, proximity=TRUE, ntree=500,mtry=5,sampsize=c(29,29,29,29,29))
 
 #visualize output
 rf_model1
@@ -181,15 +201,6 @@ x<-drivers_df[,!(colnames(drivers_df)=="Centroid_Name")]
 
 y<-drivers_df$Centroid
 
-#split into testing and training data
-# inTrain <- createDataPartition(y, p = .70, list = FALSE)[,1]
-# 
-# x_train <- x[ inTrain, ]
-# x_test  <- x[-inTrain, ]
-# 
-# y_train <- y[ inTrain]
-# y_test  <- y[-inTrain]
-
 #run RFE, this will take a bit
 #we are allowing the number of variables retained to range from 1 to all of them here
 #to change that changes input into the "sizes" variable
@@ -217,7 +228,7 @@ test_numtree_optimized <- function(ntree_list) {
     
     set.seed(123)
     rf_model<-randomForest(rf_formula,
-                           data=drivers_df, importance=TRUE, proximity=TRUE, ntree=ntree_list[[i]],sampsize=c(30,30,30,30,30))
+                           data=drivers_df, importance=TRUE, proximity=TRUE, ntree=ntree_list[[i]],sampsize=c(29,29,29,29,29))
     OOB[[i]]<-rf_model$err.rate[,1]
     
   }
@@ -253,12 +264,12 @@ ggplot(OOB_mean, aes(tree_num, mean_oob))+geom_point()+geom_line()+
 kept_drivers<-drivers_df[,c(colnames(drivers_df) %in% predictors(result_rfe))]
 
 set.seed(123)
-tuneRF(kept_drivers, drivers_df[,1], ntreeTry = 500, stepFactor = 1, improve = 0.5, plot = FALSE)
+tuneRF(kept_drivers, drivers_df[,1], ntreeTry = 200, stepFactor = 1, improve = 0.5, plot = FALSE)
 
 #run optimized random forest model, with retuned ntree and mtry parameters
 set.seed(123)
 rf_model2<-randomForest(rf_formula,
-                        data=drivers_df, importance=TRUE, proximity=TRUE, ntree=500, mtry=4, sampsize=c(30,30,30,30,30))
+                        data=drivers_df, importance=TRUE, proximity=TRUE, ntree=200, mtry=5, sampsize=c(29,29,29,29,29))
 
 
 rf_model2
@@ -278,7 +289,7 @@ df_new$cluster<-rownames(df_new)
 df_new_melt<-melt(df_new, id.vars = "cluster")
 df_new_melt$same<-ifelse(df_new_melt$cluster==df_new_melt$variable, "yes","no")
 
-tiff("Average_Regime_Confusion_Matrix.tiff", width = 8, height = 7, units = "in", res = 300)
+tiff("Average_Regime_Confusion_Matrix_06212024.tiff", width = 8, height = 7, units = "in", res = 300)
 
 #visualize matrix
 ggplot(df_new_melt, aes(variable, cluster))+geom_raster(aes(fill=same))+
@@ -300,17 +311,21 @@ importance_melt<-melt(importance_df[,-7], id.vars = "driver")
 
 importance_melt$driver<-factor(importance_melt$driver, levels = vars_order$driver)
 
-driver_variable_list<-c("Maximum Snow Covered Area", "Maximum Daylength", "Temperature", "Green Up Day", "Evapotranspiration",
-                        "CV(Q)", "q(95)", "q(5)", "Metamorphic", "Evergreen Needleaf Forest",
-                        "Mixed Forest", "NPP", "Day of Minimum Q", "P Concentration", "Shrubland/Grassland",
-                        "N Concentration", "Precipitation", "Tundra", "Cropland", "Sedimentary", "Plutonic", "Urban")
+vars_order
 
-tiff("Average_Regime_Variable_Importance.tiff", width = 11, height = 10, units = "in", res = 300)
+driver_variable_list<-c("Maximum Snow Covered Area", "Maximum Daylength", "Green Up Day", "Temperature", "CV(Q)", "Evapotranspiration",
+                        "q(5)", "q(95)", "Metamorphic", "Evergreen Needleaf Forest", "NPP", "Day of Minimum Q",
+                        "Mixed Forest", "N Concentration", "P Concentration", "Cropland", "Precipitation", "Deciduous Needleleaf Forest",
+                        "Urban", "Day of Maximum Q", "Shrubland/Grassland", "Deciduous Broadleaf Forest", "Sedimentary",
+                        "Tundra", "Plutonic", "Carbonate/Evaporite", "Volcanic", "Barren", "Wetland", "Evergreen Broadleaf Forest")
+
+tiff("Average_Regime_Variable_Importance_06212024.tiff", width = 11, height = 10, units = "in", res = 300)
 
 ggplot(importance_melt, aes(variable, driver))+geom_raster(aes(fill=value))+
   scale_fill_gradient(low="grey90", high="red")+labs(x="", y="Variable",fill="Mean Decrease Accuracy")+
   theme_classic()+
-  theme(text = element_text(size=15, family = "Times"))+scale_y_discrete(labels=rev(driver_variable_list), limits=rev)+
+  theme(text = element_text(size=15, family = "Times"))+
+  scale_y_discrete(labels=rev(driver_variable_list), limits=rev)+
   scale_x_discrete(labels=c("FP","FT","ST","STFP","STVS","Overall Model"))+
   ggtitle("Average Regime Prediction Variable Importance")
 
@@ -322,8 +337,8 @@ centroid_abb<-as.data.frame(c("Fall Peak"="FP", "Fall Trough"="FT", "Spring Trou
 colnames(centroid_abb)<-"abb"
 centroid_abb$Centroid_Name<-rownames(centroid_abb)
 
-import_factors<-drivers_df[,c("Centroid_Name","prop_area", "Max_Daylength", "temp",
-                           "cycle0", "evapotrans","CV_Q")]
+import_factors<-drivers_df[,c("Centroid_Name","prop_area", "Max_Daylength", "cycle0", "temp",
+                              "CV_Q", "evapotrans")]
 #import_factors$q_95<-log(import_factors$q_95)
 #colnames(import_factors)<-c("Centroid_Name", "Max Snow Extent (proportion of WS)", "Watershed Snow Days (days)", "Latitude (degrees)",
  #                           "Temperature (C)", "Green Up Day (DOY)","CV Si")
@@ -336,9 +351,9 @@ vars<-unique(import_factors_melt$variable)
 
 vars_ordered<-c(vars[1], vars[4], vars[5], vars[2], vars[6], vars[3])
 
-y_axis_labs<-c("proportion of watershed", "hours", "deg C", "day of year","kg/m2", "unitless")
+y_axis_labs<-c("proportion of watershed", "hours", "day of year", "deg C","unitless","kg/m2")
 
-title<-c("Maximum Snow Covered Area", "Maximum Daylength", "Temperature", "Green Up Day", "Evapotranspiration", "CV(Q)")
+title<-c("Maximum Snow Covered Area", "Maximum Daylength", "Green Up Day", "Temperature", "CV(Q)", "Evapotranspiration")
 
 tag_val<-c("a","b","c","d","e","f")
 
@@ -375,23 +390,8 @@ for (i in 1:length(vars)) {
   
 }
 
-pdf("Average_Prediction_MostImportVars.pdf", width = 14, height = 9, family="Times")
+pdf("Average_Prediction_MostImportVars_06212024.pdf", width = 14, height = 9, family="Times")
 
 ggarrange(plotlist = variable_plot_list, common.legend = TRUE, legend = "right")
 
 dev.off()
-
-
-
-pdf("MostImportVars.pdf", width = 14, height = 9, family="Times")
-
-ggplot(import_factors_melt, aes(abb, value))+geom_boxplot(aes(fill=abb), alpha=0.5, outlier.shape = NA)+facet_wrap(~variable, scales = "free")+theme_bw()+
-  theme(text = element_text(size = 20))+labs(x="", y="Driver Value")+
-  geom_jitter(aes(col=abb))+
-  scale_fill_manual(values=carto_pal(n=5, "Bold"))+scale_color_manual(values=carto_pal(n=5, "Bold"))+
-  theme(axis.text.x = element_blank())+labs(fill="Cluster", color="Cluster")
-
-dev.off()
-
-
-

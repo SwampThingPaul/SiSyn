@@ -24,7 +24,7 @@ drivers_cast<-drivers_cropped %>%
   dplyr::select(!c(units_annual,X)) %>%
   tidyr::pivot_wider(names_from = driver, values_from=value)
 
-# Q_url<-"https://drive.google.com/file/d/16wHi1jmUPyvIoUutrdheV0195YWvUTXT/view?usp=drive_link"
+# Q_url<-"https://drive.google.com/file/d/1qHTpSSpmAcEv_Icis7-NdyJKhAK2YZAm/view?usp=drive_link"
 # 
 # file_get<-drive_get(as_id(Q_url))
 # 
@@ -65,7 +65,7 @@ q_stats_all<-left_join(q_stats, q_min_stats, by=c("Stream_ID", "year"))
 
 q_stats_all<-left_join(q_stats_all, q_max_stats, by=c("Stream_ID", "year"))
 
-q_stats_all<-q_stats_all[!colnames(q_stats_all) %in% c("Date.x","Q.x","Date.y","Q.y")]
+q_stats_all<-q_stats_all[!colnames(q_stats_all) %in% c("Date.x","Q.x","Date.y","Q.y", "indicate.x", "indicate.y")]
 
 q_stats_all$Stream_Name<-sub("^[^_]*__", "", q_stats_all$Stream_ID)
 
@@ -97,10 +97,6 @@ tot_10years_clust<-tot_10years
 
 df <- apply(tot_10years_clust,2,as.character)
 
-setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/USGS_DataReview_SeasonalityDrivers")
-
-write.csv(df, "SeasonalityDrivers_USGS_AnnualDrivers.csv")
-
 tot_10years_clust$Centroid_Name<-case_when(tot_10years_clust$Cluster== 1~"ST",
                                             tot_10years_clust$Cluster== 2~"FT",
                                             tot_10years_clust$Cluster== 3~"FP",
@@ -108,15 +104,15 @@ tot_10years_clust$Centroid_Name<-case_when(tot_10years_clust$Cluster== 1~"ST",
                                             tot_10years_clust$Cluster== 5~"STVS")
 
 count_by_group<-tot_10years %>%
-  group_by(Stream_Name) %>%
-  count(Cluster)
+  dplyr::group_by(Stream_Name) %>%
+  dplyr::count(Cluster)
 
 count_by_group<-count_by_group %>% 
-  mutate_all(~replace(., is.na(.), 0))
+  dplyr::mutate_all(~replace(., is.na(.), 0))
   
 num_years<-tot_10years %>%
-  group_by(Stream_Name) %>%
-  tally()
+  dplyr::group_by(Stream_Name) %>%
+  dplyr::tally()
 
 mat_df<-count_by_group %>%
   left_join(num_years, by="Stream_Name")
@@ -126,8 +122,8 @@ colnames(mat_df)<-c("Stream_Name","cluster", "cluster_count", "total_count")
 mat_df$cluster_prop<-mat_df$cluster_count/mat_df$total_count
 
 num_clusters<-mat_df %>%
-  group_by(Stream_Name) %>%
-  tally()
+  dplyr::group_by(Stream_Name) %>%
+  dplyr::tally()
 
 # two_clusts<-subset(num_clusters, num_clusters$n==2)
 # 
@@ -148,12 +144,11 @@ num_clusters<-mat_df %>%
 # one_cluster<-subset(mat_df, mat_df$cluster_prop==1)
 
 modal_clust<-mat_df %>%
-  group_by(Stream_Name) %>%
-  slice_max(cluster_prop) %>%
-  distinct(Stream_Name, .keep_all = TRUE)
+  dplyr::group_by(Stream_Name) %>%
+  dplyr::slice_max(cluster_prop) %>%
+  dplyr::distinct(Stream_Name, .keep_all = TRUE)
 
 mat_df<-left_join(mat_df, modal_clust[c(1,2)], by="Stream_Name")
-
 
 colnames(mat_df)<-c("Stream_Name", "cluster","cluster_count","total_count","cluster_prop","modal_cluster")
 
@@ -165,20 +160,39 @@ mat_df$Centroid_Name<-case_when(mat_df$modal_cluster== 1~"ST",
 
 tot_10years_clust<-left_join(tot_10years_clust, mat_df, by=c("Stream_Name"))
 
+tot_10years_clust<-subset(tot_10years_clust, tot_10years_clust$Stream_Name %in% tot_10years_clean$Stream_Name)
+
+#tot_10years_clust<-left_join(tot_10years_clust, num_clusters, by=c("Stream_Name"))
+
+num_clusters<-subset(num_clusters, num_clusters$Stream_Name %in% tot_10years_clean$Stream_Name)
+
+#table(num_clusters$n)
+
+# pdf("Shifting_Split_CLusterMemberships_06212024.pdf", width = 14, height = 8, family = "Times")
+# 
+# ggplot(tot_10years_clust, aes(x=year, y=Stream_Name))+
+#   geom_tile(aes(fill=as.character(Cluster)))+
+#   scale_fill_manual(values = carto_pal(n=5, "Bold"))+
+#   scale_y_discrete(limits=unique(rev(mat_df$Stream_Name[order(mat_df$Centroid_Name)])))+
+#   labs(x="Year", y="", fill="Regime Membership")+
+#   theme_classic()+
+#   theme(axis.text.y = element_blank(), text = element_text(size=20), axis.ticks.y = element_blank())+
+#   facet_wrap(~n, nrow=1)
+# 
+# dev.off()
+
 mat_df$Centroid_Name<-factor(mat_df$Centroid_Name, levels = c("FP", "FT", "ST", "STFP", "STVS"))
 
-pdf("Membership_Shifting.pdf", width = 18, height = 12, family = "Times")
+mat_df<-subset(mat_df, mat_df$Stream_Name %in% tot_10years_clean$Stream_Name)
 
 #visualize cluster membership over time
 p1<-ggplot(tot_10years_clust, aes(x=year, y=Stream_Name))+
   geom_tile(aes(fill=Centroid_Name.x))+
   scale_fill_manual(values = carto_pal(n=5, "Bold"))+
   scale_y_discrete(limits=unique(rev(mat_df$Stream_Name[order(mat_df$Centroid_Name)])))+
-  labs(x="Year", y="", fill="Regime Membership")+
+  labs(x="Year", y="", fill="Regime Membership", tag = "b")+
   theme_classic()+
   theme(axis.text.y = element_blank(), text = element_text(size=20), axis.ticks.y = element_blank())
-
-dev.off()
 
 #visualize proportional cluster membership
 p2<-ggplot(mat_df, aes(x=as.character(cluster), y=Stream_Name))+
@@ -190,14 +204,14 @@ p2<-ggplot(mat_df, aes(x=as.character(cluster), y=Stream_Name))+
   theme(axis.text.y = element_blank(), text = element_text(size=20), axis.ticks.y = element_blank())+
   labs(x="Regime",y="", fill="Membership Proportion", tag = "a")
 
-pdf("Membership_Propotion_Timing_UpdatedFeb2024.pdf", width = 15, height = 8, family = "Times")
+pdf("Membership_Propotion_Timing_06212024.pdf", width = 15, height = 8, family = "Times")
 
 ggarrange(p2, p1)
 
 dev.off()
 
 #remove any rows with na
-tot_10years_clean<- tot_10years %>%
+tot_10years_clean<-tot_10years %>%
   drop_na()
 
 #convert green up day to julian day
@@ -206,11 +220,11 @@ tot_10years_clean$cycle0<-as.Date(unlist(tot_10years_clean$cycle0))
 tot_10years_clean$cycle0<-format(as.Date(tot_10years_clean$cycle0), "%j")
 
 #add centroid name from cluster number
-tot_10years_clean$Centroid_Name<-case_when(tot_10years_clean$Cluster== 1~"ST",
-                                           tot_10years_clean$Cluster== 2~"FT",
-                                           tot_10years_clean$Cluster== 3~"FP",
-                                           tot_10years_clean$Cluster== 4~"STFP",
-                                           tot_10years_clean$Cluster== 5~"STVS")
+tot_10years_clean$Centroid_Name<-case_when(tot_10years_clean$Cluster== 1~"Spring Trough",
+                                           tot_10years_clean$Cluster== 2~"Fall Trough",
+                                           tot_10years_clean$Cluster== 3~"Fall Peak",
+                                           tot_10years_clean$Cluster== 4~"Spring Trough, Fall Peak",
+                                           tot_10years_clean$Cluster== 5~"Spring Trough, Variable Summer")
 
 #turn centroid name to factor
 tot_10years_clean$Centroid_Name<-as.factor(tot_10years_clean$Centroid_Name)
@@ -219,6 +233,8 @@ tot_10years_clean[,c(4:14)]<-lapply(tot_10years_clean[,c(4:14)], as.numeric)
 
 tot_10years_clean<-tot_10years_clean[complete.cases(tot_10years_clean),]
 
+unique(tot_10years_clean$Stream_Name)
+
 #remove any sites with less than 10 years of data
 check_numyears<-tot_10years_clean %>%
   group_by(Stream_Name) %>%
@@ -226,6 +242,10 @@ check_numyears<-tot_10years_clean %>%
   filter(n < 10)
 
 tot_10years_clean<-tot_10years_clean[!c(tot_10years_clean$Stream_Name %in% check_numyears$Stream_Name),]
+
+setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn/USGS_DataReview_SeasonalityDrivers")
+
+write.csv(tot_10years_clean, "SeasonalityDrivers_USGS_AnnualDrivers_07192024.csv")
 
 #remove column names
 tot_df<-tot_10years_clean[,!colnames(tot_10years_clean) %in% c("Stream_Name", "year", "Cluster")]
@@ -282,7 +302,8 @@ tuneRF(tot_df[,c(1:11)], tot_df[,12], ntreeTry = 2000, stepFactor = 1, improve =
 
 set.seed(123)
 rf_model1<-randomForest(Centroid_Name~.,
-                        data=tot_df, importance=TRUE, proximity=TRUE, ntree=2000,sampsize=c(260,260,260,260,260), mtry=3)
+                        data=tot_df, importance=TRUE, proximity=TRUE, 
+                        ntree=2000,sampsize=c(260,260,260,260,260), mtry=3)
 
 rf_model1
 
@@ -385,7 +406,8 @@ tuneRF(kept_drivers, tot_df[,1], ntreeTry = 2000, stepFactor = 1, improve = 0.5,
 
 set.seed(123)
 rf_model2<-randomForest(rf_formula,
-                        data=tot_df, importance=TRUE, proximity=TRUE, ntree=2000,sampsize=c(260,260,260,260,260), mtry=3)
+                        data=tot_df, importance=TRUE, proximity=TRUE, 
+                        ntree=2000,sampsize=c(260,260,260,260,260), mtry=3)
 
 rf_model2
 
@@ -400,7 +422,7 @@ df_new$cluster<-rownames(df_new)
 df_new_melt<-melt(df_new, id.vars = "cluster")
 df_new_melt$same<-ifelse(df_new_melt$cluster==df_new_melt$variable, "yes","no")
 
-tiff("Annual_Regime_Confusion_Matrix.tiff", width = 8, height = 7, units = "in", res = 300)
+tiff("Annual_Regime_Confusion_Matrix_06212024.tiff", width = 8, height = 7, units = "in", res = 300)
 
 #visualize matrix
 ggplot(df_new_melt, aes(variable, cluster))+geom_raster(aes(fill=same))+
@@ -425,7 +447,7 @@ importance_melt$driver<-factor(importance_melt$driver, levels = vars_order$drive
 vars_labels<-c("Temperature", "Evapotranspiration", "q(5)", "q(95)", "Maximum Snow Covered Area", "Precipitation",
                "NPP", "CV(Q)", "Green Up Day")
 
-tiff("Annual_Regime_Variable_Importance.tiff", width = 10, height = 10, units = "in", res = 300)
+tiff("Annual_Regime_Variable_Importance_06212024.tiff", width = 10, height = 10, units = "in", res = 300)
 
 ggplot(importance_melt, aes(variable, driver))+geom_raster(aes(fill=value))+
   scale_fill_gradient(low="grey90", high="red")+theme_classic()+labs(x="", y="Variable",fill="Mean Decrease Accuracy")+

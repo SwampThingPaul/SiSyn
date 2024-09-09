@@ -17,6 +17,9 @@ avg_monthly_results<-monthly_results %>%
 
 colnames(avg_monthly_results)<-c("Stream_Name","Min_Conc","Max_Conc")
 
+mean(drivers$Min_Conc)
+mean(drivers$Max_Conc)
+
 #read in drivers data
 setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
 
@@ -26,7 +29,7 @@ setwd("/Users/keirajohnson/Box Sync/Keira_Johnson/SiSyn")
 # 
 # drive_download(file_get$drive_resource, overwrite = T)
 
-drivers<-read.csv("AllDrivers_Harmonized_20231129.csv")
+drivers<-read.csv("AllDrivers_Harmonized_20240621.csv")
 
 #remove any duplicated rows
 drivers<-drivers[!duplicated(drivers$Stream_ID),]
@@ -61,11 +64,12 @@ keep_these_too<-drivers[,colnames(drivers) %like% c("rock|land")]
 
 drivers_df<-bind_cols(drivers_df, keep_these_too)
 
-drivers_df[,c(18:31)]<-replace(drivers_df[,c(18:31)], is.na(drivers_df[,c(18:31)]), 0)
+drivers_df[,c(18:33)]<-replace(drivers_df[,c(18:33)], is.na(drivers_df[,c(18:33)]), 0)
 
 vars_order<-c("temp","precip","cycle0","evapotrans","prop_area","npp","N","P","Max_Daylength","CV_Q","q_5","q_95","q_min_day","q_max_day",
               "rocks_volcanic","rocks_sedimentary","rocks_plutonic","rocks_metamorphic","rocks_carbonate_evaporite",
-              "land_evergreen_needleleaf_forest","land_tundra","land_shrubland_grassland","land_cropland","land_mixed_forest",
+              "land_evergreen_needleleaf_forest","land_tundra","land_shrubland_grassland","land_cropland",
+              "land_deciduous_broadleaf_forest", "land_deciduous_needleleaf_forest", "land_mixed_forest",
               "land_urban_and_built_up_land","land_barren_or_sparsely_vegetated","land_wetland","land_evergreen_broadleaf_forest")
 
 #cor_plot_drivers<-drivers_df[,vars_order]
@@ -382,10 +386,11 @@ colnames(importance_df)<-c("Variable","Inc_MSE","Inc_Node_Purity","Centroid_Name
 
 vars_order_min<-c("temp","precip","cycle0","evapotrans","prop_area","npp","N","P","Max_Daylength","CV_Q","q_5","q_95","q_min_day","q_max_day",
                   "rocks_volcanic","rocks_sedimentary","rocks_plutonic","rocks_metamorphic","rocks_carbonate_evaporite",
-                  "land_evergreen_needleleaf_forest","land_tundra","land_shrubland_grassland","land_cropland","land_mixed_forest",
+                  "land_evergreen_needleleaf_forest","land_tundra","land_shrubland_grassland","land_cropland",
+                  "land_deciduous_broadleaf_forest", "land_deciduous_needleleaf_forest", "land_mixed_forest",
                   "land_urban_and_built_up_land","land_barren_or_sparsely_vegetated","land_wetland","land_evergreen_broadleaf_forest")
 
-remove_this<-setdiff(vars_order_min, importance_df$Variable)
+#remove_this<-setdiff(vars_order_min, importance_df$Variable)
 
 #vars_order_min_cropped<-vars_order_min[-c(vars_order_min %in% remove_this)]
 
@@ -400,8 +405,8 @@ colnames(pred_df)<-c("Predicted","Actual","Centroid_Name")
 vars_legend<-c("Temperature","Precipitation","Green Up Day","Evapotranspiration","Maximum Snow Covered Area", "NPP",
                "N Concentration","P Concentration","Maximum Daylength","CV(Q)", "q(95)", "q(5)", "Day of Minimum Q",
                "Day of Maximum Q", "Volcanic", "Sedimentary", "Plutonic", "Metamorphic", "Carbonate/Evaporite",
-               "Evergreen Needleaf Forest", "Tundra", "Shrubland/Grassland", "Cropland", "Mixed Forest", "Urban",
-               "Barren", "Wetland", "Evergreen Broadleaf Forest")
+               "Evergreen Needleaf Forest", "Tundra", "Shrubland/Grassland", "Cropland", "Deciduous Broadleaf Forest",
+               "Deciduous Needleleaf Forest", "Mixed Forest", "Urban","Barren", "Wetland", "Evergreen Broadleaf Forest")
 
 p1<-ggplot(pred_df, aes(Predicted, Actual))+geom_point()+geom_abline(intercept = 0, slope = 1, col="red")+
   theme_classic()+facet_wrap(~Centroid_Name, nrow = 1)+theme(text = element_text(size=15))+
@@ -413,7 +418,8 @@ p1
 k1<-ggplot(importance_df, mapping=aes(Centroid_Name, Variable, fill=Inc_MSE))+
   geom_tile()+
   geom_tile(data=importance_df[importance_df$Inc_MSE < 0.05,], mapping=aes(Centroid_Name, Variable), fill="grey90")+
-  scale_fill_gradientn(colors = c("lightyellow","lightsalmon", "red"), breaks=c(0.05, 0.3, 0.6, 0.9, 1.2))+
+  geom_tile(data=importance_df[importance_df$Inc_MSE ==0,], mapping=aes(Centroid_Name, Variable), fill="white")+
+  scale_fill_gradientn(colors = c("lightyellow","lightsalmon", "red"), breaks=c(0.5, 1, 1.5))+
   theme_classic()+labs(x="Cluster", y="Variable",fill="Increase MSE")+
   theme(text = element_text(size=15, family = "Times"))+scale_x_discrete(labels=c("FP","FT","ST","STFP","STVS"))+
   scale_y_discrete(limits=rev, labels=rev(vars_legend))+
@@ -562,7 +568,14 @@ for (i in 1:length(clusters)) {
   
   is_df <- sapply(one_var_partial_data, is.data.frame)
   
-  dfList <- one_var_partial_data[is_df]
+  if(length(one_var_partial_data)==0){
+    
+    dfList<-0
+    
+  }else{
+    dfList <- one_var_partial_data[is_df]
+    
+  }
   
   var_partial_list <- mapply(cbind, dfList, 
                              "Variable"=pdp_vars[pdp_vars %in% rownames(impotance_list[[i]])], SIMPLIFY=F)
@@ -585,7 +598,9 @@ rfe_model_max_results_df<-data.frame(do.call(rbind, rfe_model_max_results))
 rfe_model_max_results_df$Centroid_Name<-clusters
 colnames(rfe_model_max_results_df)<-c("MSE","R2","Centroid_Name")
 
-all_models_partials_plots <- mapply(cbind, all_models_partial_df, "Centroid_Name"=clusters, SIMPLIFY=F)
+all_models_partial_df<-all_models_partial_df[-4]
+
+all_models_partials_plots <- mapply(cbind, all_models_partial_df, "Centroid_Name"=clusters[c(1,2,3,5)], SIMPLIFY=F)
 all_models_partials_plots_df<-data.frame(do.call(rbind, all_models_partials_plots))
 
 all_models_partials_plots_df_max<-all_models_partials_plots_df
@@ -606,15 +621,23 @@ unique(importance_df$rowname)
 colnames(importance_df)<-c("Variable","Inc_MSE","Inc_Node_Purity","Centroid_Name")
 
 vars_order_max<-c("temp","precip","cycle0","evapotrans","prop_area","npp","N","P","Max_Daylength","CV_Q","q_5","q_95","q_min_day","q_max_day",
-                   "rocks_volcanic","rocks_sedimentary","rocks_plutonic","rocks_metamorphic","rocks_carbonate_evaporite",
-                   "land_evergreen_needleleaf_forest","land_tundra","land_shrubland_grassland","land_cropland","land_mixed_forest",
-                   "land_urban_and_built_up_land","land_barren_or_sparsely_vegetated","land_wetland","land_evergreen_broadleaf_forest")
+                  "rocks_volcanic","rocks_sedimentary","rocks_plutonic","rocks_metamorphic","rocks_carbonate_evaporite",
+                  "land_evergreen_needleleaf_forest","land_tundra","land_shrubland_grassland","land_cropland",
+                  "land_deciduous_broadleaf_forest", "land_deciduous_needleleaf_forest", "land_mixed_forest",
+                  "land_urban_and_built_up_land","land_barren_or_sparsely_vegetated","land_wetland","land_evergreen_broadleaf_forest")
 
 #remove_this<-setdiff(vars_order_max, importance_df$Variable)
 
 #vars_order_max_cropped<-vars_order_max[-c(vars_order_max %in% remove_this)]
+#this is a dummy row since land_wetland isnt retained in anything but it needs to be there to match the other k1 plot
+importance_df[nrow(importance_df) + 1,]<-c("land_wetland", 0, 0, "Fall Peak")
+
+importance_df$Inc_MSE<-as.numeric(importance_df$Inc_MSE)
+importance_df$Inc_Node_Purity<-as.numeric(importance_df$Inc_Node_Purity)
 
 importance_df$Variable<-factor(importance_df$Variable, levels=vars_order_max)
+
+#setdiff(vars_order_max, unique(importance_df$Variable))
 
 pred_list_centroid <- mapply(cbind, pred_actual_df, "Centroid_Name"=clusters, SIMPLIFY=F)
 
@@ -632,7 +655,8 @@ p2
 k2<-ggplot(importance_df, mapping=aes(Centroid_Name, Variable, fill=Inc_MSE))+
   geom_tile()+
   geom_tile(data=importance_df[importance_df$Inc_MSE < 0.05,], mapping=aes(Centroid_Name, Variable), fill="grey90")+
-  scale_fill_gradientn(colors = c("lightyellow","lightsalmon", "red"), breaks=c(0.05, 0.5, 1, 1.5, 2))+
+  geom_tile(data=importance_df[importance_df$Inc_MSE ==0,], mapping=aes(Centroid_Name, Variable), fill="white")+
+  scale_fill_gradientn(colors = c("lightyellow","lightsalmon", "red"), breaks=c(1, 5, 10))+
   theme_classic()+labs(x="Cluster", y="Variable",fill="Increase MSE")+
   theme(text = element_text(size=15, family = "Times"))+scale_x_discrete(labels=c("FP","FT","ST","STFP","STVS"))+
   scale_y_discrete(limits=rev, labels=rev(vars_legend))+
@@ -644,14 +668,13 @@ importance_df %>%
   group_by(Variable) %>%
   summarise(mean(Inc_MSE))
 
-
-pdf("Actual_Predicted_MinMax_SiConc.pdf", width = 18, height = 8)
+pdf("Actual_Predicted_MinMax_SiConc_06212024.pdf", width = 18, height = 8, family = "Times")
 
 ggarrange(p1, p2, nrow = 2, align = "v")
 
 dev.off()
 
-tiff("VariablesRetained_MinMax_SiConc_March2024.tiff", width = 16, height = 10, units="in", res = 300)
+tiff("VariablesRetained_MinMax_SiConc_06212024.tiff", width = 16, height = 10, units="in", res = 300)
 
 ggarrange(k1, k2, nrow = 1, align = "h")
 
@@ -659,7 +682,7 @@ dev.off()
 
 all_model_results<-bind_rows(rfe_model_min_results_df, rfe_model_max_results_df, .id="model")
 
-write.csv(all_model_results, "Model_Output_MinMax.csv")
+write.csv(all_model_results, "Model_Output_MinMax_06212024.csv")
 
 
 ###partial dependence plots####
@@ -668,7 +691,7 @@ pdps<-bind_rows(all_models_partials_plots_df_max, all_models_partials_plots_df_m
 
 vars<-unique(pdps$variable)
 
-x_axis_labs<-c("uM", "uM", "unitless", "proportion of watershed", "mm/day", "proportion of watershed")
+x_axis_labs<-c(expression(paste(mu, "M")), expression(paste(mu, "M")), "unitless", "proportion of watershed", "mm/day", "proportion of watershed")
 
 title<-c("N Concentration", "P Concentration", "CV(Q)", "Cropland", "Precipitation", "Evergreen Needleleaf Forest")
 
@@ -707,19 +730,9 @@ gg_plot<-ggarrange(plotlist = list(plot_list_pdp[[1]], plot_list_pdp[[2]], plot_
                        plot_list_pdp[[5]], plot_list_pdp[[4]], plot_list_pdp[[6]]), 
           common.legend = TRUE, legend = "right")
 
-pdf("PDP_min_and_max_cropped_NP_axes.pdf", width = 15, height = 8.5, family = "Times")
+pdf("PDP_min_and_max_cropped_NP_axes_06222024.pdf", width = 15, height = 8.5, family = "Times")
 
 annotate_figure(gg_plot, left = textGrob("Marginal Variable Impact (yhat)", rot = 90, vjust = 1, gp = gpar(cex = 1.3)))
 
 dev.off()
-
-
-
-
-
-
-
-
-
-
 
